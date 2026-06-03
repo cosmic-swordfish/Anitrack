@@ -508,6 +508,36 @@
     .grid{grid-template-columns:1fr}
     .settings-container{max-width:100%}
   }
+  /* ── PWA Install Banner ── */
+  .pwa-banner{
+    position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(120px);
+    width:calc(100% - 32px);max-width:420px;
+    display:flex;align-items:center;gap:12px;
+    padding:14px 14px 14px 16px;border-radius:20px;
+    background:var(--surface);border:1px solid var(--glass-border);
+    box-shadow:0 8px 32px rgba(0,0,0,0.18);
+    z-index:9999;opacity:0;
+    transition:transform .4s cubic-bezier(.22,1,.36,1), opacity .4s ease;
+    backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  }
+  .pwa-banner.show{transform:translateX(-50%) translateY(0);opacity:1}
+  .pwa-icon{width:42px;height:42px;border-radius:12px;flex-shrink:0}
+  .pwa-text{flex:1;min-width:0}
+  .pwa-title{font-size:13px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pwa-sub{font-size:11px;color:var(--text-sub);margin-top:2px}
+  .pwa-install{
+    flex-shrink:0;padding:8px 16px;border-radius:100px;
+    background:var(--accent);color:#fff;border:none;
+    font-size:12px;font-weight:700;cursor:pointer;
+    transition:opacity .2s;
+  }
+  .pwa-install:hover{opacity:0.85}
+  .pwa-close{
+    flex-shrink:0;background:none;border:none;
+    color:var(--text-sub);font-size:14px;cursor:pointer;
+    padding:4px 6px;line-height:1;
+  }
+  [data-theme="light"] .pwa-install{background:#0071e3}
 </style>
 
 
@@ -1377,7 +1407,55 @@ document.addEventListener('DOMContentLoaded', () => {
   loadList();
   buildBackTop();
 });
+
+// ── PWA Install Prompt ────────────────────────────────────────────────────────
+(function() {
+  let deferredPrompt = null;
+
+  const banner = document.getElementById('pwa-banner');
+  const installBtn = document.getElementById('pwa-install-btn');
+  const dismissBtn = document.getElementById('pwa-dismiss-btn');
+
+  // Don't show if already installed or dismissed in this session
+  if (window.matchMedia('(display-mode: standalone)').matches) return;
+  if (sessionStorage.getItem('pwa-dismissed')) return;
+
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    deferredPrompt = e;
+    setTimeout(() => banner.classList.add('show'), 2000);
+  });
+
+  installBtn.addEventListener('click', async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    deferredPrompt = null;
+    banner.classList.remove('show');
+  });
+
+  dismissBtn.addEventListener('click', () => {
+    banner.classList.remove('show');
+    sessionStorage.setItem('pwa-dismissed', '1');
+  });
+
+  window.addEventListener('appinstalled', () => {
+    banner.classList.remove('show');
+    deferredPrompt = null;
+  });
+})();
 </script>
+
+<!-- PWA Install Banner -->
+<div id="pwa-banner" class="pwa-banner">
+  <img src="/static/favicon.png" class="pwa-icon" alt="AniTrack"/>
+  <div class="pwa-text">
+    <div class="pwa-title">Add AniTrack to Home Screen</div>
+    <div class="pwa-sub">Install for quick access, offline support</div>
+  </div>
+  <button id="pwa-install-btn" class="pwa-install">Install</button>
+  <button id="pwa-dismiss-btn" class="pwa-close">✕</button>
+</div>
 
 </body>
 </html>
