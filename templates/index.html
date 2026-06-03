@@ -187,9 +187,9 @@
   }
   .anitrack-navbar::before{
     content:'';position:absolute;inset:0;
-    background:rgba(18,20,32,0.6);
-    backdrop-filter:blur(32px) saturate(1.8);
-    -webkit-backdrop-filter:blur(32px) saturate(1.8);
+    background:rgba(18,20,32,0.45);
+    backdrop-filter:blur(40px) saturate(2);
+    -webkit-backdrop-filter:blur(40px) saturate(2);
     border-radius:36px;transition:background 0.3s;
   }
   .anitrack-navbar.no-blur::before{
@@ -198,10 +198,10 @@
     background:rgba(18,20,32,0.95) !important;
   }
   [data-theme="light"] .anitrack-navbar::before{
-    background:rgba(230,233,242,0.72);
+    background:rgba(210,215,235,0.55);
   }
   [data-theme="light"] .anitrack-navbar.no-blur::before{
-    background:rgba(230,233,242,0.97) !important;
+    background:rgba(210,215,235,0.97) !important;
   }
 
   .anav-item{
@@ -228,32 +228,34 @@
   /* Colored glow blob per button */
   .anav-item::before{
     content:'';position:absolute;
-    width:56px;height:56px;border-radius:50%;
-    opacity:0;transform:scale(0.5);
-    transition:opacity 0.35s ease, transform 0.35s cubic-bezier(.22,1,.36,1);
-    pointer-events:none;filter:blur(16px);
+    width:90px;height:90px;border-radius:50%;
+    opacity:0;transform:scale(0.3);
+    transition:opacity 0.4s ease, transform 0.4s cubic-bezier(.22,1,.36,1);
+    pointer-events:none;filter:blur(22px);
+    z-index:0;
   }
-  #anav-watching::before { background: radial-gradient(circle, #ff6b6b 0%, transparent 70%); }
-  #anav-planned::before  { background: radial-gradient(circle, #6b8eff 0%, transparent 70%); }
-  #anav-sync-btn::before     { background: radial-gradient(circle, #6bffb8 0%, transparent 70%); }
-  #anav-settings-btn::before { background: radial-gradient(circle, #ffb86b 0%, transparent 70%); }
+  #anav-watching::before     { background: radial-gradient(circle, rgba(220,80,80,0.9) 0%, transparent 65%); }
+  #anav-planned::before      { background: radial-gradient(circle, rgba(80,100,220,0.9) 0%, transparent 65%); }
+  #anav-sync-btn::before     { background: radial-gradient(circle, rgba(80,210,140,0.9) 0%, transparent 65%); }
+  #anav-settings-btn::before { background: radial-gradient(circle, rgba(220,150,60,0.9) 0%, transparent 65%); }
 
-  /* Glow toggle — hide blobs when disabled */
+  /* Glow toggle */
   .anitrack-navbar.no-glow .anav-item.active::before { opacity: 0 !important; }
   .anitrack-navbar.no-glow .anav-item.active svg { filter: none; }
-  #anav-sync::before     { background: radial-gradient(circle, #6bffb8 0%, transparent 70%); }
-  #anav-settings::before { background: radial-gradient(circle, #ffb86b 0%, transparent 70%); }
 
   .anav-item.active::before{
-    opacity:0.85;transform:scale(1.1);
+    opacity:1;transform:scale(1.4);
   }
   .anav-item.active svg{
-    stroke:#ffffff;
-    filter:drop-shadow(0 0 6px rgba(255,255,255,0.6));
+    stroke:rgba(0,0,0,0.75);
+    filter:none;
   }
-  [data-theme="light"] .anav-item.active svg{
-    stroke:#1a1a2e;
-    filter:drop-shadow(0 0 4px rgba(0,0,0,0.25));
+  [data-theme="dark"] .anav-item svg{
+    stroke:rgba(255,255,255,0.4);
+  }
+  [data-theme="dark"] .anav-item.active svg{
+    stroke:rgba(255,255,255,0.9);
+    filter:none;
   }
   .anav-item:active{ transform:scale(0.88); }
 
