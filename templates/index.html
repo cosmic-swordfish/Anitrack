@@ -617,7 +617,7 @@
 
 <header>
   <div class="header-top">
-    <a class="logo" href="/" style="text-decoration:none;cursor:pointer;" title="Home"><span class="logo-icon">⬡</span> ANITRACK</a>
+    <a class="logo" href="/" style="text-decoration:none;cursor:pointer;" title="Home" onclick="hap(8)"><span class="logo-icon">⬡</span> ANITRACK</a>
     <div class="user-pill">
       <span class="dot"></span> {{ anilist_username }}
       <span class="pill-sep">·</span><span class="dot {% if al_connected %}dot-al{% else %}dot-disconnected{% endif %}"></span> AL
@@ -876,11 +876,14 @@ function hap(ms) { try { navigator.vibrate && navigator.vibrate(ms ?? 8); } catc
 // ── Auto-dismiss success banners ─────────────────────────────────────────────
 ["mal-success-banner","al-success-banner"].forEach(id => {
   const el = document.getElementById(id);
-  if (el) setTimeout(() => {
-    el.style.transition = "opacity 0.4s ease";
-    el.style.opacity = "0";
-    setTimeout(() => el.remove(), 500);
-  }, 1800);
+  if (el) {
+    hap(15);
+    setTimeout(() => {
+      el.style.transition = "opacity 0.4s ease";
+      el.style.opacity = "0";
+      setTimeout(() => el.remove(), 500);
+    }, 1800);
+  }
 });
 // Strip ?mal_success / ?al_success from URL so refresh doesn't re-show banner
 if (location.search.includes("al_success") || location.search.includes("mal_success")) {
@@ -1495,9 +1498,42 @@ async function updateEp(entryId, currentProgress, maxEp, delta) {
   // Init — set widths immediately (no animation)
   allBtns.forEach(btn => {
     if (!btn) return;
+    // Remove from natural tab order — we manage focus ourselves
+    btn.setAttribute('tabindex', '-1');
     const isActive = btn.classList.contains('active');
     btn.style.width = (isActive ? ACTIVE_W : INACTIVE_W) + 'px';
     animState.set(btn, { progress: isActive ? 1 : 0, raf: null });
+  });
+  // Give the active button tab-focus entry point
+  const firstActive = allBtns.find(b => b?.classList.contains('active'));
+  if (firstActive) firstActive.setAttribute('tabindex', '0');
+
+  // ── Keyboard navigation ──────────────────────────────────────────────────────
+  // Tab cycles focus through buttons; arrows move between them; Enter activates.
+  navEl?.addEventListener('keydown', e => {
+    const focused = allBtns.indexOf(document.activeElement);
+    if (focused === -1) return;
+
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      const next = allBtns[(focused + 1) % allBtns.length];
+      if (next) { allBtns.forEach(b => b?.setAttribute('tabindex','-1')); next.setAttribute('tabindex','0'); next.focus(); }
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      const prev = allBtns[(focused - 1 + allBtns.length) % allBtns.length];
+      if (prev) { allBtns.forEach(b => b?.setAttribute('tabindex','-1')); prev.setAttribute('tabindex','0'); prev.focus(); }
+    } else if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      allBtns[focused]?.click();
+    }
+  });
+
+  // When Tab key lands focus on the navbar from outside, land on active button
+  navEl?.addEventListener('focusin', e => {
+    if (allBtns.includes(e.target)) return; // already on a button
+    const active = allBtns.find(b => b?.classList.contains('active')) || allBtns[0];
+    allBtns.forEach(b => b?.setAttribute('tabindex','-1'));
+    if (active) { active.setAttribute('tabindex','0'); active.focus(); }
   });
 
   // Init indicator position
