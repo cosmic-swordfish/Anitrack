@@ -20,7 +20,9 @@ Built with Python + Flask. Deployed on Vercel.
 - **Two-way sync**: higher value wins (e.g. MAL ep 3 vs AniList ep 1 → both become ep 3)
 - Auto-sync everything at once or apply changes one by one
 - Dark / light theme
+- Smooth sliding pill navbar animation
 - Oneko pixel cat that follows your cursor (toggle in Settings)
+- Navbar glass blur toggle in Settings
 - Clean footer with attribution
 
 ---
@@ -159,6 +161,9 @@ Cookies must be enabled. Also ensure `HTTPS=true` is set in Vercel env vars.
 
 **Sync only going one way**
 Connect your AniList account via **Settings → Connect AniList**. Two-way sync requires both accounts.
+
+**Oneko not appearing**
+Enable it in **Settings → Oneko** and move your cursor around the screen.
 
 ---
 
