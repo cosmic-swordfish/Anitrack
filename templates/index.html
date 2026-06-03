@@ -225,46 +225,45 @@
     stroke:rgba(0,0,0,0.28);
   }
 
-  /* Active inner pill */
-  .anav-item::before{
-    content:'';position:absolute;inset:4px;
+  /* Remove per-item pseudo pill */
+  .anav-item::before{ display:none; }
+
+  /* Sliding pill — single element that moves */
+  .anav-slider{
+    position:absolute;
+    height:calc(100% - 8px);top:4px;
     border-radius:22px;
-    background:rgba(255,255,255,0.18);
-    opacity:0;transform:scale(0.85);
-    transition:opacity 0.25s ease, transform 0.25s cubic-bezier(.22,1,.36,1);
-    pointer-events:none;
-    z-index:0;
+    background:rgba(255,255,255,0.13);
+    border:1px solid rgba(255,255,255,0.10);
+    pointer-events:none;z-index:0;
+    transition:left 0.35s cubic-bezier(.34,1.56,.64,1), width 0.35s cubic-bezier(.34,1.56,.64,1);
   }
-  [data-theme="light"] .anav-item::before{
-    background:rgba(255,255,255,0.75);
+  [data-theme="light"] .anav-slider{
+    background:rgba(0,0,0,0.07);
+    border:1px solid rgba(0,0,0,0.06);
   }
-  .anav-item.active::before{
-    opacity:1;transform:scale(1);
+
+  .anav-item svg{
+    width:24px;height:24px;
+    fill:none;stroke:rgba(255,255,255,0.35);
+    stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;
+    transition:stroke 0.25s ease;
+    position:relative;z-index:1;
   }
-  .anav-item.active svg{
-    stroke:rgba(0,0,0,0.8);
-    filter:none;
-  }
-  [data-theme="dark"] .anav-item svg{
-    stroke:rgba(255,255,255,0.4);
-  }
-  [data-theme="dark"] .anav-item.active svg{
-    stroke:rgba(255,255,255,0.95);
-    filter:none;
-  }
+  [data-theme="light"] .anav-item svg{ stroke:rgba(0,0,0,0.28); }
+  .anav-item.active svg{ stroke:rgba(0,0,0,0.8); }
+  [data-theme="dark"] .anav-item.active svg{ stroke:rgba(255,255,255,0.95); }
+
   .anav-item:active{ transform:scale(0.88); }
 
   /* Tap ripple */
   .anav-item::after{
     content:'';position:absolute;inset:0;border-radius:26px;
-    background:radial-gradient(circle,rgba(255,255,255,0.15) 0%,transparent 70%);
+    background:radial-gradient(circle,rgba(255,255,255,0.12) 0%,transparent 70%);
     opacity:0;transform:scale(0.5);
     transition:opacity 0.15s,transform 0.3s;pointer-events:none;
   }
   .anav-item:active::after{opacity:1;transform:scale(1);}
-
-  /* Glow toggle — no-op now but kept for settings switch compat */
-  .anitrack-navbar.no-glow .anav-item.active::before { opacity:1; }
 
   /* hide old indicator */
   .anav-indicator{ display:none; }
@@ -803,6 +802,7 @@
 <div class="anitrack-navbar-wrap" id="anitrack-navbar-wrap">
   <nav class="anitrack-navbar" id="anitrack-navbar">
     <div class="anav-indicator" id="anav-indicator"></div>
+    <div class="anav-slider" id="anav-slider"></div>
 
     <!-- Watching -->
     <button class="anav-item active" id="anav-watching" aria-label="Watching">
@@ -891,7 +891,17 @@ function showPage(name, btn) {
   const pillMap = { sync: 'anav-sync-btn', settings: 'anav-settings-btn', list: 'anav-watching' };
   if (pillMap[name]) {
     document.querySelectorAll('.anav-item').forEach(i => i.classList.remove('active'));
-    document.getElementById(pillMap[name])?.classList.add('active');
+    const activeBtn = document.getElementById(pillMap[name]);
+    activeBtn?.classList.add('active');
+    // Move slider
+    const slider = document.getElementById('anav-slider');
+    const navEl  = document.getElementById('anitrack-navbar');
+    if (slider && activeBtn && navEl) {
+      const navRect = navEl.getBoundingClientRect();
+      const btnRect = activeBtn.getBoundingClientRect();
+      slider.style.left  = (btnRect.left - navRect.left) + 'px';
+      slider.style.width = btnRect.width + 'px';
+    }
   }
 }
 
@@ -1292,11 +1302,21 @@ async function updateEp(entryId, currentProgress, maxEp, delta) {
   const syncBtn     = document.getElementById('anav-sync-btn');
   const settingsBtn = document.getElementById('anav-settings-btn');
   const navEl       = document.getElementById('anitrack-navbar');
-  const listNavBtns = [watchBtn, planBtn];
+  const slider      = document.getElementById('anav-slider');
+  const allBtns     = [watchBtn, planBtn, syncBtn, settingsBtn];
+
+  function moveSlider(btn) {
+    if (!slider || !btn || !navEl) return;
+    const navRect = navEl.getBoundingClientRect();
+    const btnRect = btn.getBoundingClientRect();
+    slider.style.left  = (btnRect.left - navRect.left) + 'px';
+    slider.style.width = btnRect.width + 'px';
+  }
 
   function setActive(btn) {
-    [watchBtn, planBtn, syncBtn, settingsBtn].forEach(b => b?.classList.remove('active'));
+    allBtns.forEach(b => b?.classList.remove('active'));
     btn?.classList.add('active');
+    moveSlider(btn);
   }
 
   function selectListTab(btn, view) {
@@ -1315,19 +1335,26 @@ async function updateEp(entryId, currentProgress, maxEp, delta) {
 
   syncBtn?.addEventListener('click', () => {
     setActive(syncBtn);
-    // Navigate to sync page
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    const syncPage = document.getElementById('page-sync');
-    if (syncPage) syncPage.classList.add('active');
+    document.getElementById('page-sync')?.classList.add('active');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
 
   settingsBtn?.addEventListener('click', () => {
     setActive(settingsBtn);
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    const settingsPage = document.getElementById('page-settings');
-    if (settingsPage) settingsPage.classList.add('active');
+    document.getElementById('page-settings')?.classList.add('active');
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
+  // Init slider on load
+  requestAnimationFrame(() => {
+    const active = navEl?.querySelector('.anav-item.active');
+    if (active) moveSlider(active);
+  });
+  window.addEventListener('resize', () => {
+    const active = navEl?.querySelector('.anav-item.active');
+    if (active) moveSlider(active);
   });
 
   // Restore blur pref
