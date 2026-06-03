@@ -1408,51 +1408,6 @@ document.addEventListener('DOMContentLoaded', () => {
   buildBackTop();
 });
 
-// ── PWA Install Prompt ────────────────────────────────────────────────────────
-(function() {
-  let deferredPrompt = null;
-
-  const banner = document.getElementById('pwa-banner');
-  const installBtn = document.getElementById('pwa-install-btn');
-  const dismissBtn = document.getElementById('pwa-dismiss-btn');
-
-  // Don't show if already running as installed app
-  if (window.matchMedia('(display-mode: standalone)').matches) return;
-  if (navigator.standalone) return; // iOS
-  if (sessionStorage.getItem('pwa-dismissed')) return;
-
-  // Capture prompt if browser fires it
-  window.addEventListener('beforeinstallprompt', e => {
-    e.preventDefault();
-    deferredPrompt = e;
-  });
-
-  // Show banner after short delay regardless
-  setTimeout(() => banner.classList.add('show'), 1500);
-
-  installBtn.addEventListener('click', async () => {
-    if (deferredPrompt) {
-      // Native prompt available
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      deferredPrompt = null;
-      banner.classList.remove('show');
-    } else {
-      // Fallback: show instructions
-      banner.querySelector('.pwa-sub').textContent = 'Tap ⋮ menu → "Add to Home screen"';
-      installBtn.style.display = 'none';
-    }
-  });
-
-  dismissBtn.addEventListener('click', () => {
-    banner.classList.remove('show');
-    sessionStorage.setItem('pwa-dismissed', '1');
-  });
-
-  window.addEventListener('appinstalled', () => {
-    banner.classList.remove('show');
-  });
-})();
 </script>
 
 <!-- PWA Install Banner -->
@@ -1463,8 +1418,46 @@ document.addEventListener('DOMContentLoaded', () => {
     <div class="pwa-sub">Install for quick access, offline support</div>
   </div>
   <button id="pwa-install-btn" class="pwa-install">Install</button>
-  <button id="pwa-dismiss-btn" class="pwa-close">✕</button>
+  <button id="pwa-dismiss-btn" class="pwa-close">&#x2715;</button>
 </div>
+
+<script>
+// ── PWA Install Prompt ──────────────────────────────────────────────────────
+(function() {
+  let deferredPrompt = null;
+  const banner     = document.getElementById('pwa-banner');
+  const installBtn = document.getElementById('pwa-install-btn');
+  const dismissBtn = document.getElementById('pwa-dismiss-btn');
+  if (!banner) return;
+  if (window.matchMedia('(display-mode: standalone)').matches) return;
+  if (navigator.standalone) return;
+  if (localStorage.getItem('pwa-dismissed')) return;
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    deferredPrompt = e;
+  });
+  setTimeout(() => banner.classList.add('show'), 1500);
+  installBtn.addEventListener('click', async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      deferredPrompt = null;
+      banner.classList.remove('show');
+    } else {
+      banner.querySelector('.pwa-sub').textContent = 'Tap ⋮ menu → "Add to Home screen"';
+      installBtn.style.display = 'none';
+    }
+  });
+  dismissBtn.addEventListener('click', () => {
+    banner.classList.remove('show');
+    localStorage.setItem('pwa-dismissed', '1');
+  });
+  window.addEventListener('appinstalled', () => {
+    banner.classList.remove('show');
+    localStorage.setItem('pwa-dismissed', '1');
+  });
+})();
+</script>
 
 </body>
 </html>
