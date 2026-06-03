@@ -870,6 +870,9 @@
 const AL_CONNECTED = {{ 'true' if al_connected else 'false' }};
 const ANILIST_USERNAME = "{{ anilist_username }}";
 
+// ── Haptic helper ─────────────────────────────────────────────────────────────
+function hap(ms) { try { navigator.vibrate && navigator.vibrate(ms ?? 8); } catch(e) {} }
+
 // ── Auto-dismiss success banners ─────────────────────────────────────────────
 ["mal-success-banner","al-success-banner"].forEach(id => {
   const el = document.getElementById(id);
@@ -915,6 +918,7 @@ function applyTheme(t) {
   }
 }
 function onThemeSwitch(el) {
+  hap(6);
   applyTheme(el.checked ? "light" : "dark");
 }
 applyTheme(localStorage.getItem("anitrack-theme") || "light");
@@ -957,6 +961,7 @@ function ensureListPage() {
 
 // ── Collapsible sections ──────────────────────────────────────────────────────
 function toggleAniSection(id) {
+  hap(6);
   document.getElementById(id).classList.toggle("open");
 }
 
@@ -1041,6 +1046,7 @@ const SORT_LABELS = {
 };
 
 function setFilter(btn, sort) {
+  hap(6);
   if (_currentSort === sort && sort !== 'default') {
     // Same pill clicked again — toggle direction
     _sortDir *= -1;
@@ -1167,6 +1173,7 @@ function onDiffCheck() {
   document.querySelectorAll(".diff-card[data-idx]").forEach(card=>{ const cb=card.querySelector(".diff-check"); if(cb) card.classList.toggle("selected",cb.checked); });
 }
 async function loadDiff() {
+  hap(8);
   setSyncError(""); setSyncSpinner(true,"Comparing lists…");
   document.getElementById("diff-list").innerHTML = "";
   document.getElementById("btn-auto").disabled = true;
@@ -1182,6 +1189,7 @@ async function loadDiff() {
   finally{setSyncSpinner(false);}
 }
 async function autoSync() {
+  hap(10);
   setSyncError(""); setSyncSpinner(true,"Syncing all…"); setSyncStatus("Running auto sync…");
   try {
     const res=await fetch("/api/sync/auto",{method:"POST"}); const json=await res.json();
@@ -1191,6 +1199,7 @@ async function autoSync() {
   } catch(err){setSyncError(err.message);setSyncSpinner(false);}
 }
 async function applySingle(idx) {
+  hap(8);
   const diff=diffData[idx]; if(!diff) return;
   const btn=document.getElementById(`apply-btn-${idx}`);
   if(btn){btn.disabled=true;btn.textContent="…";}
@@ -1201,6 +1210,7 @@ async function applySingle(idx) {
   } catch{if(btn){btn.classList.add("err");btn.textContent="✗ Error";}}
 }
 async function applySelected() {
+  hap(10);
   const selected=[...document.querySelectorAll(".diff-check:checked")].map(cb=>diffData[+cb.dataset.idx]).filter(Boolean);
   if(!selected.length) return;
   setSyncStatus(`Applying ${selected.length} item${selected.length!==1?"s":""}…`);
@@ -1244,6 +1254,7 @@ function stopOneko(){nekoRunning=false;if(nekoAnimFrame){cancelAnimationFrame(ne
 
 // ── Oneko settings switch ─────────────────────────────────────────────────────
 function onOnekoSwitch(el) {
+  hap(6);
   if (el.checked) { startOneko(); } else { stopOneko(); }
   localStorage.setItem("oneko-on", el.checked ? "1" : "0");
   const icon = document.getElementById("oneko-icon");
@@ -1254,6 +1265,7 @@ function onOnekoSwitch(el) {
 
 // ── Sync settings switch ──────────────────────────────────────────────────────
 function onSyncSwitch(el) {
+  hap(6);
   localStorage.setItem("sync-enabled", el.checked ? "1" : "0");
   document.getElementById("open-sync-row").style.display = el.checked ? "" : "none";
   const icon = document.getElementById("sync-icon");
@@ -1262,6 +1274,7 @@ function onSyncSwitch(el) {
     : `<svg viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>`;
 }
 function openSyncPage() {
+  hap(8);
   showPage("sync", null);
   document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
 }
@@ -1289,6 +1302,7 @@ mutation($id: Int, $progress: Int) {
 const epProgress = {};
 
 async function updateEp(entryId, currentProgress, maxEp, delta) {
+  hap(8);
   // Use in-memory value if available (handles rapid clicks correctly)
   const cur = epProgress[entryId] !== undefined ? epProgress[entryId] : currentProgress;
   const next = cur + delta;
@@ -1360,12 +1374,6 @@ async function updateEp(entryId, currentProgress, maxEp, delta) {
 
   // Per-button animation state: { progress: 0–1, raf: id|null }
   const animState = new Map();
-
-  // ── Haptic feedback ──────────────────────────────────────────────────────────
-  function haptic() {
-    // Vibration API (Android Chrome / most mobile browsers)
-    try { navigator.vibrate && navigator.vibrate(8); } catch(e) {}
-  }
 
   // ── Icon animation ───────────────────────────────────────────────────────────
   // Adds 'icon-anim' class, removes it after the longest animation completes
@@ -1441,7 +1449,7 @@ async function updateEp(entryId, currentProgress, maxEp, delta) {
   }
 
   function setActive(btn) {
-    haptic();
+    hap(6);
     triggerIconAnim(btn);
     allBtns.forEach(b => {
       if (!b) return;
@@ -1502,6 +1510,7 @@ async function updateEp(entryId, currentProgress, maxEp, delta) {
 
 // ── Navbar Blur switch ───────────────────────────────────────────────────────
 function onNavBlurSwitch(el) {
+  hap(6);
   const navEl = document.getElementById('anitrack-navbar');
   navEl.classList.toggle('no-blur', !el.checked);
   localStorage.setItem('navbar-blur', el.checked ? '1' : '0');
@@ -1568,7 +1577,7 @@ function buildBackTop() {
     alignItems: 'center',
     justifyContent: 'center',
   });
-  btn.onclick = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+  btn.onclick = () => { hap(6); window.scrollTo({ top: 0, behavior: 'smooth' }); };
   document.body.appendChild(btn);
   let _rafPending = false;
   window.addEventListener('scroll', () => {
