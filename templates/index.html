@@ -256,6 +256,54 @@
   }
   .anav-item:active::after{opacity:1;transform:scale(1);}
 
+  /* ── Icon click animations ─────────────────────────── */
+
+  /* Sync: full 360° spin */
+  @keyframes anav-spin{
+    0%  { transform: rotate(0deg)   scale(1.1); }
+    60% { transform: rotate(300deg) scale(1.15); }
+    100%{ transform: rotate(360deg) scale(1.1); }
+  }
+  #anav-sync-btn.icon-anim svg{
+    animation: anav-spin 500ms cubic-bezier(0.22,1,0.36,1) both;
+  }
+
+  /* Settings: jolt-rotate ±25° */
+  @keyframes anav-jolt{
+    0%  { transform: rotate(0deg)   scale(1.1); }
+    25% { transform: rotate(28deg)  scale(1.15); }
+    55% { transform: rotate(-18deg) scale(1.12); }
+    78% { transform: rotate(12deg)  scale(1.1); }
+    100%{ transform: rotate(0deg)   scale(1.1); }
+  }
+  #anav-settings-btn.icon-anim svg{
+    animation: anav-jolt 480ms cubic-bezier(0.34,1.56,0.64,1) both;
+  }
+
+  /* Grid (Planned): tiles pop in staggered */
+  @keyframes anav-pop{
+    0%  { transform: scale(1.1); }
+    40% { transform: scale(1.28); }
+    70% { transform: scale(1.0);  }
+    100%{ transform: scale(1.1); }
+  }
+  #anav-planned.icon-anim svg rect:nth-child(1){ animation: anav-pop 380ms 0ms   cubic-bezier(0.34,1.56,0.64,1) both; }
+  #anav-planned.icon-anim svg rect:nth-child(2){ animation: anav-pop 380ms 55ms  cubic-bezier(0.34,1.56,0.64,1) both; }
+  #anav-planned.icon-anim svg rect:nth-child(3){ animation: anav-pop 380ms 110ms cubic-bezier(0.34,1.56,0.64,1) both; }
+  #anav-planned.icon-anim svg rect:nth-child(4){ animation: anav-pop 380ms 165ms cubic-bezier(0.34,1.56,0.64,1) both; }
+
+  /* Eye (Watching): scale pulse + blink */
+  @keyframes anav-blink{
+    0%  { transform: scale(1.1); }
+    18% { transform: scaleY(0.15) scaleX(1.1); }
+    36% { transform: scale(1.18); }
+    60% { transform: scale(1.05); }
+    100%{ transform: scale(1.1); }
+  }
+  #anav-watching.icon-anim svg{
+    animation: anav-blink 420ms cubic-bezier(0.34,1.56,0.64,1) both;
+  }
+
 
   /* ─── Episode update buttons ─── */
   .ep-controls{display:flex;align-items:center;gap:6px;margin-top:6px}
@@ -477,6 +525,13 @@
   .settings-row:last-child{border-bottom:none}
   .settings-row:hover{background:var(--surface-hover)}
   .settings-icon{font-size:17px;flex-shrink:0;width:24px;text-align:center}
+  .settings-icon svg{
+    width:20px;height:20px;
+    fill:none;stroke:var(--text-sub);
+    stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;
+    display:block;margin:0 auto;
+    transition:stroke 0.25s ease;
+  }
   .settings-label-wrap{flex:1;min-width:0}
   .settings-label{font-size:14px;font-weight:500;color:var(--text);line-height:1.3}
   .settings-sublabel{font-size:11px;color:var(--text-sub);margin-top:2px;line-height:1.4}
@@ -647,7 +702,9 @@
       <div class="settings-group">
         <!-- Mode toggle -->
         <div class="settings-row">
-          <span class="settings-icon" id="mode-icon">🌙</span>
+          <span class="settings-icon" id="mode-icon">
+            <svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          </span>
           <div class="settings-label-wrap">
             <div class="settings-label" id="mode-label">Dark Mode</div>
             <div class="settings-sublabel">Switch between light &amp; dark</div>
@@ -660,7 +717,9 @@
         </div>
         <!-- Oneko toggle -->
         <div class="settings-row">
-          <span class="settings-icon">🐱</span>
+          <span class="settings-icon" id="oneko-icon">
+            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="10" x2="9.01" y2="10"/><line x1="15" y1="10" x2="15.01" y2="10"/><path d="M7 7 L5 3"/><path d="M17 7 L19 3"/></svg>
+          </span>
           <div class="settings-label-wrap">
             <div class="settings-label">Oneko</div>
             <div class="settings-sublabel">Pixel cat that follows your cursor</div>
@@ -673,7 +732,9 @@
         </div>
         <!-- Navbar Blur toggle -->
         <div class="settings-row">
-          <span class="settings-icon">🌫️</span>
+          <span class="settings-icon" id="blur-icon">
+            <svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+          </span>
           <div class="settings-label-wrap">
             <div class="settings-label">Navbar Blur</div>
             <div class="settings-sublabel">Glass blur effect on bottom navigation</div>
@@ -691,7 +752,9 @@
       <div class="settings-section-title">Sync</div>
       <div class="settings-group">
         <div class="settings-row">
-          <span class="settings-icon">🔄</span>
+          <span class="settings-icon" id="sync-icon">
+            <svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
+          </span>
           <div class="settings-label-wrap">
             <div class="settings-label">MAL Sync</div>
             <div class="settings-sublabel">Sync progress from AniList to MyAnimeList</div>
@@ -829,7 +892,9 @@ function applyTheme(t) {
   const sw   = document.getElementById("switch-theme");
   const isDark = t === "dark";
   if (lbl)  lbl.textContent  = isDark ? "Dark Mode" : "Light Mode";
-  if (icon) icon.textContent = isDark ? "🌙" : "☀️";
+  if (icon) icon.innerHTML   = isDark
+    ? `<svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`
+    : `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`;
   if (sw)   sw.checked = !isDark;  // checked = light
   localStorage.setItem("anitrack-theme", t);
   // Update PWA theme-color to match
@@ -1181,12 +1246,20 @@ function stopOneko(){nekoRunning=false;if(nekoAnimFrame){cancelAnimationFrame(ne
 function onOnekoSwitch(el) {
   if (el.checked) { startOneko(); } else { stopOneko(); }
   localStorage.setItem("oneko-on", el.checked ? "1" : "0");
+  const icon = document.getElementById("oneko-icon");
+  if (icon) icon.innerHTML = el.checked
+    ? `<svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="10" x2="9.01" y2="10"/><line x1="15" y1="10" x2="15.01" y2="10"/><path d="M7 7 L5 3"/><path d="M17 7 L19 3"/></svg>`
+    : `<svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M8 15h8"/><path d="M8 11 Q9 10 10 11"/><path d="M14 11 Q15 10 16 11"/><path d="M7 7 L5 3"/><path d="M17 7 L19 3"/></svg>`;
 }
 
 // ── Sync settings switch ──────────────────────────────────────────────────────
 function onSyncSwitch(el) {
   localStorage.setItem("sync-enabled", el.checked ? "1" : "0");
   document.getElementById("open-sync-row").style.display = el.checked ? "" : "none";
+  const icon = document.getElementById("sync-icon");
+  if (icon) icon.innerHTML = el.checked
+    ? `<svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>`
+    : `<svg viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>`;
 }
 function openSyncPage() {
   showPage("sync", null);
@@ -1288,6 +1361,41 @@ async function updateEp(entryId, currentProgress, maxEp, delta) {
   // Per-button animation state: { progress: 0–1, raf: id|null }
   const animState = new Map();
 
+  // ── Haptic feedback ──────────────────────────────────────────────────────────
+  function haptic() {
+    // Vibration API (Android Chrome / most mobile browsers)
+    try { navigator.vibrate && navigator.vibrate(8); } catch(e) {}
+  }
+
+  // ── Icon animation ───────────────────────────────────────────────────────────
+  // Adds 'icon-anim' class, removes it after the longest animation completes
+  // so it can be re-triggered on every tap.
+  const ANIM_DURATIONS = {
+    'anav-watching':    420,
+    'anav-planned':     380 + 165, // last tile delay + duration
+    'anav-sync-btn':    500,
+    'anav-settings-btn':480,
+  };
+  // Per-button timeout handle so rapid taps restart cleanly
+  const animTimers = {};
+
+  function triggerIconAnim(btn) {
+    if (!btn) return;
+    const id = btn.id;
+    // Cancel any in-flight removal timer and restart
+    if (animTimers[id]) {
+      clearTimeout(animTimers[id]);
+      btn.classList.remove('icon-anim');
+      // Force reflow so the browser sees the class removal before re-adding
+      void btn.offsetWidth;
+    }
+    btn.classList.add('icon-anim');
+    animTimers[id] = setTimeout(() => {
+      btn.classList.remove('icon-anim');
+      animTimers[id] = null;
+    }, (ANIM_DURATIONS[id] || 500) + 20);
+  }
+
   function easeOutQuint(t) {
     return 1 - Math.pow(1 - t, 5);
   }
@@ -1333,6 +1441,8 @@ async function updateEp(entryId, currentProgress, maxEp, delta) {
   }
 
   function setActive(btn) {
+    haptic();
+    triggerIconAnim(btn);
     allBtns.forEach(b => {
       if (!b) return;
       if (b.classList.contains('active')) {
@@ -1395,12 +1505,34 @@ function onNavBlurSwitch(el) {
   const navEl = document.getElementById('anitrack-navbar');
   navEl.classList.toggle('no-blur', !el.checked);
   localStorage.setItem('navbar-blur', el.checked ? '1' : '0');
+  const icon = document.getElementById('blur-icon');
+  if (icon) icon.innerHTML = el.checked
+    ? `<svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>`
+    : `<svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/></svg>`;
 }
 // Restore navbar blur pref
 (function restoreNavbarPrefs() {
   const blurSw = document.getElementById('switch-navbar-blur');
   const blurOn = localStorage.getItem('navbar-blur') !== '0';
   if (blurSw) blurSw.checked = blurOn;
+  const blurIcon = document.getElementById('blur-icon');
+  if (blurIcon) blurIcon.innerHTML = blurOn
+    ? `<svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>`
+    : `<svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/></svg>`;
+
+  // Oneko icon
+  const onekoOn = localStorage.getItem('oneko-on') === '1';
+  const onekoIcon = document.getElementById('oneko-icon');
+  if (onekoIcon) onekoIcon.innerHTML = onekoOn
+    ? `<svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="10" x2="9.01" y2="10"/><line x1="15" y1="10" x2="15.01" y2="10"/><path d="M7 7 L5 3"/><path d="M17 7 L19 3"/></svg>`
+    : `<svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M8 15h8"/><path d="M8 11 Q9 10 10 11"/><path d="M14 11 Q15 10 16 11"/><path d="M7 7 L5 3"/><path d="M17 7 L19 3"/></svg>`;
+
+  // Sync icon
+  const syncOn = localStorage.getItem('sync-enabled') === '1';
+  const syncIcon = document.getElementById('sync-icon');
+  if (syncIcon) syncIcon.innerHTML = syncOn
+    ? `<svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>`
+    : `<svg viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>`;
 })();
 
 // ── Init deferred to DOMContentLoaded (after glass library loads) ─────────────
