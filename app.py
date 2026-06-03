@@ -117,8 +117,8 @@ mutation($mediaId: Int, $status: MediaListStatus, $progress: Int, $score: Float)
   }
 }"""
 
-def get_anilist_list(token=None):
-    data = anilist_query(GQL_USER_LIST, {"userName": ANILIST_USERNAME}, token=token)
+def get_anilist_list(token=None, username=None):
+    data = anilist_query(GQL_USER_LIST, {"userName": username or ANILIST_USERNAME}, token=token)
     entries = []
     for lst in data["data"]["MediaListCollection"]["lists"]:
         for e in lst["entries"]:
@@ -517,8 +517,9 @@ def al_logout():
 def sync_diff():
     if "mal_token" not in session:
         return jsonify({"error": "MAL not connected"}), 401
+    username = request.args.get("username", ANILIST_USERNAME).strip() or ANILIST_USERNAME
     try:
-        al_list  = get_anilist_list(token=al_headers())
+        al_list  = get_anilist_list(token=al_headers(), username=username)
         mal_list = get_mal_list()
         diffs    = compute_diff(al_list, mal_list)
         return jsonify({"diffs": diffs, "al_count": len(al_list), "mal_count": len(mal_list)})
@@ -542,8 +543,9 @@ def sync_apply():
 def sync_auto():
     if "mal_token" not in session:
         return jsonify({"error": "MAL not connected"}), 401
+    username = request.args.get("username", ANILIST_USERNAME).strip() or ANILIST_USERNAME
     try:
-        al_list  = get_anilist_list(token=al_headers())
+        al_list  = get_anilist_list(token=al_headers(), username=username)
         mal_list = get_mal_list()
         diffs    = compute_diff(al_list, mal_list)
         results  = []
