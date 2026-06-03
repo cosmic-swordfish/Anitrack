@@ -214,20 +214,6 @@
     -webkit-tap-highlight-color:transparent;
     will-change:transform;
   }
-  .anav-item svg{
-    width:24px;height:24px;
-    fill:none;stroke:rgba(255,255,255,0.35);
-    stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;
-    transition:stroke 0.25s ease, filter 0.25s ease;
-    position:relative;z-index:1;
-  }
-  [data-theme="light"] .anav-item svg{
-    stroke:rgba(0,0,0,0.28);
-  }
-
-  /* Remove per-item pseudo pill */
-  .anav-item::before{ display:none; }
-
   /* Sliding pill — single element that moves */
   .anav-slider{
     position:absolute;
@@ -265,8 +251,6 @@
   }
   .anav-item:active::after{opacity:1;transform:scale(1);}
 
-  /* hide old indicator */
-  .anav-indicator{ display:none; }
 
   /* ─── Episode update buttons ─── */
   .ep-controls{display:flex;align-items:center;gap:6px;margin-top:6px}
@@ -695,19 +679,7 @@
             <div class="ios-thumb"></div>
           </label>
         </div>
-        <!-- Navbar Glow toggle -->
-        <div class="settings-row">
-          <span class="settings-icon">✨</span>
-          <div class="settings-label-wrap">
-            <div class="settings-label">Navbar Glow</div>
-            <div class="settings-sublabel">Active icon glow on bottom navigation</div>
-          </div>
-          <label class="ios-switch" title="Toggle navbar glow">
-            <input type="checkbox" id="switch-navbar-glow" checked onchange="onNavGlowSwitch(this)">
-            <div class="ios-track"></div>
-            <div class="ios-thumb"></div>
-          </label>
-        </div>
+
       </div>
 
       <!-- Sync -->
@@ -801,7 +773,6 @@
 <!-- ── Bottom Navbar ── -->
 <div class="anitrack-navbar-wrap" id="anitrack-navbar-wrap">
   <nav class="anitrack-navbar" id="anitrack-navbar">
-    <div class="anav-indicator" id="anav-indicator"></div>
     <div class="anav-slider" id="anav-slider"></div>
 
     <!-- Watching -->
@@ -1192,7 +1163,7 @@ function startOneko(){
   if(mousePosX===0&&mousePosY===0){mousePosX=Math.round(window.innerWidth/2);mousePosY=Math.round(window.innerHeight/2);}
   nekoPosX=mousePosX;nekoPosY=mousePosY;
   nekoEl=document.createElement("div");nekoEl.id="oneko";
-  nekoEl.style.cssText=`width:32px;height:32px;position:fixed;pointer-events:none;image-rendering:pixelated;left:${nekoPosX-16}px;top:${nekoPosY-16}px;z-index:2147483647;background-image:url(${ONEKO_GIF})`;
+  nekoEl.style.cssText=`width:32px;height:32px;position:fixed;pointer-events:none;image-rendering:pixelated;left:${nekoPosX-16}px;top:${nekoPosY-16}px;z-index:2147483647;background-image:url(${ONEKO_GIF});background-size:256px 128px;`;
   document.body.appendChild(nekoEl);
   nekoRunning=true;
   nekoAnimFrame=requestAnimationFrame(nekoAnimLoop);
@@ -1361,28 +1332,17 @@ async function updateEp(entryId, currentProgress, maxEp, delta) {
   if (localStorage.getItem('navbar-blur') === '0') navEl?.classList.add('no-blur');
 })();
 
-// ── Navbar Blur / Glow settings switches ─────────────────────────────────────
+// ── Navbar Blur switch ───────────────────────────────────────────────────────
 function onNavBlurSwitch(el) {
   const navEl = document.getElementById('anitrack-navbar');
   navEl.classList.toggle('no-blur', !el.checked);
   localStorage.setItem('navbar-blur', el.checked ? '1' : '0');
 }
-function onNavGlowSwitch(el) {
-  const navEl = document.getElementById('anitrack-navbar');
-  navEl?.classList.toggle('no-glow', !el.checked);
-  localStorage.setItem('navbar-glow', el.checked ? '1' : '0');
-}
-
-// Restore navbar blur/glow prefs
+// Restore navbar blur pref
 (function restoreNavbarPrefs() {
   const blurSw = document.getElementById('switch-navbar-blur');
-  const glowSw = document.getElementById('switch-navbar-glow');
   const blurOn = localStorage.getItem('navbar-blur') !== '0';
-  const glowOn = localStorage.getItem('navbar-glow') !== '0';
   if (blurSw) blurSw.checked = blurOn;
-  if (glowSw) glowSw.checked = glowOn;
-  const navEl = document.getElementById('anitrack-navbar');
-  if (navEl && !glowOn) navEl.classList.add('no-glow');
 })();
 
 // ── Init deferred to DOMContentLoaded (after glass library loads) ─────────────
