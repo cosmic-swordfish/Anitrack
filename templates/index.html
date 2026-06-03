@@ -1416,22 +1416,32 @@ document.addEventListener('DOMContentLoaded', () => {
   const installBtn = document.getElementById('pwa-install-btn');
   const dismissBtn = document.getElementById('pwa-dismiss-btn');
 
-  // Don't show if already installed or dismissed in this session
+  // Don't show if already running as installed app
   if (window.matchMedia('(display-mode: standalone)').matches) return;
+  if (navigator.standalone) return; // iOS
   if (sessionStorage.getItem('pwa-dismissed')) return;
 
+  // Capture prompt if browser fires it
   window.addEventListener('beforeinstallprompt', e => {
     e.preventDefault();
     deferredPrompt = e;
-    setTimeout(() => banner.classList.add('show'), 2000);
   });
 
+  // Show banner after short delay regardless
+  setTimeout(() => banner.classList.add('show'), 1500);
+
   installBtn.addEventListener('click', async () => {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    deferredPrompt = null;
-    banner.classList.remove('show');
+    if (deferredPrompt) {
+      // Native prompt available
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      deferredPrompt = null;
+      banner.classList.remove('show');
+    } else {
+      // Fallback: show instructions
+      banner.querySelector('.pwa-sub').textContent = 'Tap ⋮ menu → "Add to Home screen"';
+      installBtn.style.display = 'none';
+    }
   });
 
   dismissBtn.addEventListener('click', () => {
@@ -1441,7 +1451,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   window.addEventListener('appinstalled', () => {
     banner.classList.remove('show');
-    deferredPrompt = null;
   });
 })();
 </script>
