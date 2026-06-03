@@ -187,7 +187,7 @@
   }
   .anitrack-navbar::before{
     content:'';position:absolute;inset:0;
-    background:rgba(18,20,32,0.45);
+    background:rgba(255,255,255,0.10);
     backdrop-filter:blur(40px) saturate(2);
     -webkit-backdrop-filter:blur(40px) saturate(2);
     border-radius:34px;transition:background 0.3s;
@@ -195,7 +195,7 @@
   .anitrack-navbar.no-blur::before{
     backdrop-filter:none !important;
     -webkit-backdrop-filter:none !important;
-    background:rgba(18,20,32,0.95) !important;
+    background:rgba(28,30,40,0.96) !important;
   }
   [data-theme="light"] .anitrack-navbar::before{
     background:rgba(210,215,235,0.55);
@@ -219,30 +219,30 @@
   /* Top-edge indicator bar */
   .anav-indicator{
     position:absolute;top:0;height:2px;width:30px;
-    background:var(--accent);border-radius:0 0 2px 2px;
-    box-shadow:0 0 10px rgba(2,169,255,0.7);
+    background:#FFFFFF;border-radius:0 0 2px 2px;
+    box-shadow:0 0 8px rgba(255,255,255,0.5);
     transition:left 300ms cubic-bezier(0.25,0.46,0.45,0.94);
     z-index:2;pointer-events:none;
   }
 
   .anav-item svg{
     width:22px;height:22px;flex-shrink:0;
-    fill:none;stroke:rgba(255,255,255,0.35);
+    fill:none;stroke:#C3CBD8;
     stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;
     transition:stroke 0.25s ease,transform 300ms cubic-bezier(0.34,1.56,0.64,1),filter 300ms ease;
     position:relative;z-index:1;
   }
-  [data-theme="light"] .anav-item svg{ stroke:rgba(0,0,0,0.28); }
+  [data-theme="light"] .anav-item svg{ stroke:rgba(0,0,0,0.35); }
   .anav-item.active svg{
-    stroke:var(--accent);
+    stroke:#FFFFFF;
     transform:scale(1.1);
-    filter:drop-shadow(0 0 6px rgba(2,169,255,0.7));
+    filter:none;
   }
-  [data-theme="dark"] .anav-item.active svg{ stroke:var(--accent); }
+  [data-theme="dark"] .anav-item.active svg{ stroke:#FFFFFF; }
 
   .anav-item.active{
-    background:var(--accent-bg);
-    box-shadow:0 0 18px var(--accent-border),0 0 50px rgba(2,169,255,0.12),inset 0 0 12px rgba(2,169,255,0.07);
+    background:rgba(255,255,255,0.14);
+    box-shadow:none;
   }
 
   .anav-item:active{ transform:scale(0.88); }
