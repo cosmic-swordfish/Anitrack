@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="static/logo-512.png" width="96" alt="AniTrack logo"/>
+  <img src="static/anitrack-logo-transparent-512.png" width="96" alt="AniTrack logo"/>
 </p>
 
 # AniTrack
