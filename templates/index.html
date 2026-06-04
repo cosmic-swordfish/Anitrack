@@ -1,0 +1,1791 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AniTrack – {{ anilist_username }}</title>
+<link rel="icon" type="image/png" href="/static/favicon.png"/>
+<link rel="manifest" href="/static/manifest.json"/>
+<meta name="theme-color" content="#ffffff" id="theme-color-meta"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+<meta name="apple-mobile-web-app-title" content="AniTrack"/>
+<link rel="apple-touch-icon" href="/static/logo-512.png"/>
+<script>
+  if ('serviceWorker' in navigator)
+    navigator.serviceWorker.register('/service-worker.js');
+</script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @keyframes ci{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+  @keyframes slideUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+  /* ─────────────────── DARK THEME (default) ─────────────────── */
+  :root {
+    --bg: #0a0c12;
+    --bg-mesh: radial-gradient(ellipse 80% 60% at 20% 10%, rgba(2,169,255,0.06) 0%, transparent 60%),
+               radial-gradient(ellipse 60% 50% at 80% 80%, rgba(192,132,252,0.05) 0%, transparent 55%),
+               #0a0c12;
+    --surface: rgba(255,255,255,0.08);
+    --surface-hover: rgba(24,27,42,0.72);
+    --header-bg: rgba(8,10,18,0.75);
+    --glass-bg: rgba(255,255,255,0.04);
+    --glass-border: rgba(255,255,255,0.09);
+    --border: rgba(255,255,255,0.11);
+    --border-lo: rgba(255,255,255,0.055);
+    --text: #e4e4e8;
+    --text-title: #f0f0f4;
+    --text-sub: rgba(255,255,255,0.38);
+    --text-muted: rgba(255,255,255,0.24);
+    --text-dim: rgba(255,255,255,0.42);
+    --accent: #02A9FF;
+    --accent-bg: rgba(2,169,255,0.11);
+    --accent-border: rgba(2,169,255,0.30);
+    --purple: #c084fc;
+    --purple-bg: rgba(192,132,252,0.11);
+    --green: #00e87a;
+    --green-bg: rgba(0,232,122,0.07);
+    --green-border: rgba(0,232,122,0.2);
+    --yellow: rgba(255,200,80,0.8);
+    --yellow-bg: rgba(255,170,0,0.07);
+    --yellow-border: rgba(255,170,0,0.2);
+    --al-color: #02a9ff;
+    --mal-color: #2e51a2;
+    --tab-active-bg: rgba(2,169,255,0.11);
+    --tab-hover-bg: rgba(255,255,255,0.05);
+    --pill-bg: rgba(255,255,255,0.05);
+    --pill-border: rgba(255,255,255,0.1);
+    --air-box-bg: rgba(255,255,255,0.04);
+    --genre-bg: rgba(255,255,255,0.055);
+    --genre-color: rgba(255,255,255,0.34);
+    --diff-card-bg: rgba(12,14,22,0.9);
+    --diff-sel-bg: rgba(2,169,255,0.05);
+    --diff-sel-border: rgba(2,169,255,0.30);
+    --diff-change-bg: rgba(255,255,255,0.04);
+    --empty-color: rgba(255,255,255,0.24);
+    --error-bg: rgba(255,60,60,0.08);
+    --error-border: rgba(255,60,60,0.22);
+    --error-color: #ff7070;
+    --success-bg: rgba(0,200,100,0.08);
+    --success-border: rgba(0,200,100,0.22);
+    --success-color: #00cc66;
+    --spinner-border: rgba(255,255,255,0.08);
+    --divider: rgba(255,255,255,0.06);
+    --card-shadow:
+    0 12px 60px rgba(0,0,0,0.45),
+    inset 0 1px 0 rgba(255,255,255,0.12), inset 0 1px 0 rgba(255,255,255,0.055);
+    --card-hover-shadow: 0 18px 56px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.1);
+    --glass: blur(40px) saturate(260%);
+    --not-yet-bg: rgba(255,170,0,0.06);
+    --not-yet-border: 1px solid rgba(255,170,0,0.15);
+    --not-yet-color: rgba(255,200,80,0.7);
+    --cover-blank-bg: #111420;
+    --ep-badge-bg: rgba(0,0,0,0.88);
+    --no-sched-color: rgba(255,255,255,0.2);
+    --logo-color: rgba(255,255,255,0.88);
+    --settings-row-bg: rgba(255,255,255,0.03);
+    --settings-row-border: rgba(255,255,255,0.065);
+    --settings-label: rgba(255,255,255,0.5);
+    --settings-section-label: rgba(255,255,255,0.25);
+    --switch-track-off: rgba(255,255,255,0.12);
+    --switch-thumb: #ffffff;
+  }
+
+  /* ─────────────────── LIGHT THEME ─────────────────── */
+  [data-theme="light"] {
+    --bg: #F5F5F7;
+    --bg-mesh: radial-gradient(ellipse 80% 60% at 15% 5%, rgba(0,113,227,0.07) 0%, transparent 55%),
+               radial-gradient(ellipse 60% 50% at 85% 85%, rgba(109,40,217,0.06) 0%, transparent 50%),
+               radial-gradient(ellipse 50% 40% at 50% 50%, rgba(255,200,230,0.15) 0%, transparent 60%),
+               #F5F5F7;
+    --surface: rgba(255,255,255,0.52);
+    --surface-hover: rgba(255,255,255,0.72);
+    --header-bg: rgba(245,245,247,0.72);
+    --glass-bg: rgba(255,255,255,0.45);
+    --glass-border: rgba(255,255,255,0.75);
+    --border: rgba(0,0,0,0.08);
+    --border-lo: rgba(0,0,0,0.05);
+    --text: #1d1d1f;
+    --text-title: #000000;
+    --text-sub: rgba(0,0,0,0.45);
+    --text-muted: rgba(0,0,0,0.3);
+    --text-dim: rgba(0,0,0,0.55);
+    --accent: #0071e3;
+    --accent-bg: rgba(0,113,227,0.08);
+    --accent-border: rgba(0,113,227,0.24);
+    --purple: #6d28d9;
+    --purple-bg: rgba(109,40,217,0.08);
+    --green: #059669;
+    --green-bg: rgba(5,150,105,0.08);
+    --green-border: rgba(5,150,105,0.22);
+    --yellow: rgba(130,80,0,0.85);
+    --yellow-bg: rgba(200,130,0,0.07);
+    --yellow-border: rgba(180,110,0,0.2);
+    --tab-active-bg: rgba(0,113,227,0.09);
+    --tab-hover-bg: rgba(0,0,0,0.04);
+    --pill-bg: rgba(0,0,0,0.05);
+    --pill-border: rgba(0,0,0,0.1);
+    --air-box-bg: rgba(255,255,255,0.6);
+    --genre-bg: rgba(0,0,0,0.05);
+    --genre-color: rgba(0,0,0,0.45);
+    --diff-card-bg: rgba(255,255,255,0.65);
+    --diff-sel-bg: rgba(0,113,227,0.06);
+    --diff-sel-border: rgba(0,113,227,0.28);
+    --diff-change-bg: rgba(0,0,0,0.04);
+    --empty-color: rgba(0,0,0,0.28);
+    --error-bg: rgba(220,38,38,0.07);
+    --error-border: rgba(220,38,38,0.18);
+    --error-color: #b91c1c;
+    --success-bg: rgba(5,150,105,0.07);
+    --success-border: rgba(5,150,105,0.2);
+    --success-color: #047857;
+    --spinner-border: rgba(0,0,0,0.08);
+    --divider: rgba(0,0,0,0.07);
+    --card-shadow: 0 8px 32px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.9);
+    --card-hover-shadow: 0 22px 60px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.98);
+    --glass: blur(24px) saturate(210%);
+    --not-yet-bg: rgba(200,130,0,0.06);
+    --not-yet-border: 1px solid rgba(180,110,0,0.16);
+    --not-yet-color: rgba(130,80,0,0.8);
+    --cover-blank-bg: rgba(0,0,0,0.07);
+    --ep-badge-bg: rgba(0,0,0,0.55);
+    --no-sched-color: rgba(0,0,0,0.28);
+    --logo-color: #1d1d1f;
+    --settings-row-bg: rgba(255,255,255,0.55);
+    --settings-row-border: rgba(0,0,0,0.07);
+    --settings-label: rgba(0,0,0,0.55);
+    --settings-section-label: rgba(0,0,0,0.3);
+    --switch-track-off: rgba(0,0,0,0.15);
+    --switch-thumb: #ffffff;
+  }
+
+  body{
+    background: var(--bg-mesh);
+    background-attachment: fixed;
+    color:var(--text);
+    font-family:'SF Pro Display',-apple-system,'Helvetica Neue',system-ui,sans-serif;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    transition:background 0.4s ease,color 0.25s ease
+  }
+  main{flex:1;padding-bottom:110px}
+
+  /* ─── Floating Icon Pill Navbar ─── */
+  .anitrack-navbar-wrap{
+    position:fixed;bottom:max(24px, env(safe-area-inset-bottom));
+    left:50%;transform:translateX(-50%);
+    z-index:300;width:calc(100% - 64px);max-width:320px;
+    transition:transform 0.35s cubic-bezier(0.32,0,0.67,0), opacity 0.35s ease;
+  }
+  .anitrack-navbar-wrap.nav-hidden{
+    transform:translateX(-50%) translateY(calc(100% + 32px));
+    opacity:0;
+    pointer-events:none;
+  }
+  .anitrack-navbar{
+    height:68px;border-radius:34px;
+    border:1px solid rgba(255,255,255,0.13);
+    display:flex;align-items:center;justify-content:space-evenly;
+    padding:0 10px;position:relative;overflow:hidden;
+  }
+  .anitrack-navbar::before{
+    content:'';position:absolute;inset:0;
+    background:rgba(255,255,255,0.10);
+    backdrop-filter:blur(40px) saturate(2);
+    -webkit-backdrop-filter:blur(40px) saturate(2);
+    border-radius:34px;transition:background 0.3s;
+  }
+  .anitrack-navbar.no-blur::before{
+    backdrop-filter:none !important;
+    -webkit-backdrop-filter:none !important;
+    background:rgba(28,30,40,0.96) !important;
+  }
+  [data-theme="light"] .anitrack-navbar::before{
+    background:rgba(210,215,235,0.55);
+  }
+  [data-theme="light"] .anitrack-navbar.no-blur::before{
+    background:rgba(210,215,235,0.97) !important;
+  }
+
+  .anav-item{
+    position:relative;z-index:1;
+    display:flex;align-items:center;justify-content:center;
+    height:48px;border-radius:24px;
+    cursor:pointer;border:none;background:transparent;
+    outline:none;
+    transition:background 300ms ease,box-shadow 300ms ease;
+    -webkit-tap-highlight-color:transparent;
+    will-change:width;
+    /* width driven by JS RAF animation */
+  }
+
+  /* Top-edge indicator bar */
+  .anav-indicator{
+    position:absolute;top:0;height:2px;width:30px;
+    background:#FFFFFF;border-radius:0 0 2px 2px;
+    box-shadow:0 0 8px rgba(255,255,255,0.5);
+    transition:left 300ms cubic-bezier(0.25,0.46,0.45,0.94);
+    z-index:2;pointer-events:none;
+  }
+
+  .anav-item svg{
+    width:22px;height:22px;flex-shrink:0;
+    fill:none;stroke:#C3CBD8;
+    stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;
+    transition:stroke 0.25s ease,transform 300ms cubic-bezier(0.34,1.56,0.64,1),filter 300ms ease;
+    position:relative;z-index:1;
+  }
+  [data-theme="light"] .anav-item svg{ stroke:rgba(0,0,0,0.35); }
+  .anav-item.active svg{
+    stroke:#FFFFFF;
+    transform:scale(1.1);
+    filter:none;
+  }
+  [data-theme="dark"] .anav-item.active svg{ stroke:#FFFFFF; }
+
+  .anav-item.active{
+    background:rgba(255,255,255,0.22);
+    box-shadow:none;
+  }
+  [data-theme="light"] .anav-item.active{
+    background:rgba(0,0,0,0.12);
+  }
+
+  .anav-item:active{ transform:scale(0.88); }
+
+  /* Tap ripple */
+  .anav-item::after{
+    content:'';position:absolute;inset:0;border-radius:26px;
+    background:radial-gradient(circle,rgba(255,255,255,0.12) 0%,transparent 70%);
+    opacity:0;transform:scale(0.5);
+    transition:opacity 0.15s,transform 0.3s;pointer-events:none;
+  }
+  .anav-item:active::after{opacity:1;transform:scale(1);}
+
+  /* ── Icon click animations ─────────────────────────── */
+
+  /* Sync: full 360° spin */
+  @keyframes anav-spin{
+    0%  { transform: rotate(0deg)   scale(1.1); }
+    60% { transform: rotate(300deg) scale(1.15); }
+    100%{ transform: rotate(360deg) scale(1.1); }
+  }
+  #anav-sync-btn.icon-anim svg{
+    animation: anav-spin 650ms cubic-bezier(0.22,1,0.36,1) both;
+  }
+
+  /* Settings: jolt-rotate ±25° */
+  @keyframes anav-jolt{
+    0%  { transform: rotate(0deg)   scale(1.1); }
+    25% { transform: rotate(28deg)  scale(1.15); }
+    55% { transform: rotate(-18deg) scale(1.12); }
+    78% { transform: rotate(12deg)  scale(1.1); }
+    100%{ transform: rotate(0deg)   scale(1.1); }
+  }
+  #anav-settings-btn.icon-anim svg{
+    animation: anav-jolt 650ms cubic-bezier(0.34,1.56,0.64,1) both;
+  }
+
+  /* Grid (Planned): tiles pop in staggered */
+  @keyframes anav-pop{
+    0%  { transform: scale(1.1); }
+    40% { transform: scale(1.28); }
+    70% { transform: scale(1.0);  }
+    100%{ transform: scale(1.1); }
+  }
+  #anav-planned.icon-anim svg rect:nth-child(1){ animation: anav-pop 500ms 0ms   cubic-bezier(0.34,1.56,0.64,1) both; }
+  #anav-planned.icon-anim svg rect:nth-child(2){ animation: anav-pop 500ms 70ms  cubic-bezier(0.34,1.56,0.64,1) both; }
+  #anav-planned.icon-anim svg rect:nth-child(3){ animation: anav-pop 500ms 140ms cubic-bezier(0.34,1.56,0.64,1) both; }
+  #anav-planned.icon-anim svg rect:nth-child(4){ animation: anav-pop 500ms 210ms cubic-bezier(0.34,1.56,0.64,1) both; }
+
+  /* Eye (Watching): scale pulse + blink */
+  @keyframes anav-blink{
+    0%  { transform: scale(1.1); }
+    18% { transform: scaleY(0.15) scaleX(1.1); }
+    36% { transform: scale(1.18); }
+    60% { transform: scale(1.05); }
+    100%{ transform: scale(1.1); }
+  }
+  #anav-watching.icon-anim svg{
+    animation: anav-blink 650ms cubic-bezier(0.34,1.56,0.64,1) both;
+  }
+
+
+  /* ─── Episode update buttons ─── */
+  .ep-controls{display:flex;align-items:center;gap:6px;margin-top:6px}
+  .ep-btn{
+    width:26px;height:26px;border-radius:7px;border:1px solid var(--border);
+    background:var(--glass-bg);color:var(--text);font-size:14px;font-weight:700;
+    cursor:pointer;display:flex;align-items:center;justify-content:center;
+    transition:all .15s;line-height:1;
+    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  }
+  .ep-btn:hover:not(:disabled){background:rgba(2,169,255,0.15);border-color:var(--accent-border);color:var(--accent);}
+  .ep-btn:disabled{opacity:.3;cursor:not-allowed;}
+  .ep-btn:active:not(:disabled){transform:scale(0.9);}
+  .ep-count{font-size:12px;font-family:monospace;color:var(--text);min-width:28px;text-align:center;}
+  .ep-updating{opacity:.5;pointer-events:none;}
+
+  /* ─── Header / Glass Nav ─── */
+  header{
+    padding:max(18px, env(safe-area-inset-top)) 22px 14px;
+    background:var(--header-bg);
+    border-bottom:1px solid var(--border);
+    position:sticky;top:0;z-index:100;
+    backdrop-filter:var(--glass);
+    -webkit-backdrop-filter:var(--glass);
+    transition:background 0.4s ease,border-color 0.25s ease;
+    box-shadow:0 1px 0 rgba(255,255,255,0.04),0 8px 40px rgba(0,0,0,0.25)
+  }
+
+  .header-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:10px}
+  .logo{display:flex;align-items:center;gap:7px;font-weight:800;font-size:13px;letter-spacing:.22em;color:var(--logo-color);flex-shrink:0}
+  .logo-icon{color:var(--accent);font-size:17px}
+  .header-right{display:flex;flex-direction:column;align-items:flex-end;gap:5px}
+  .user-pill{display:flex;align-items:center;gap:6px;background:var(--pill-bg);border:1px solid var(--pill-border);padding:4px 12px;border-radius:20px;font-size:11px;color:var(--text-sub)}
+  .dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 5px var(--green);display:inline-block}
+  .dot-mal{background:#2e51a2;box-shadow:0 0 5px #2e51a2}
+  .dot-al{background:#02a9ff;box-shadow:0 0 5px #02a9ff}
+  .dot-disconnected{background:#ff4444;box-shadow:0 0 5px #ff4444}
+  .pill-sep{opacity:.4}
+
+  /* ─── Nav tabs ─── */
+  .nav-tabs{display:flex;gap:4px}
+  .tab{padding:6px 14px;border-radius:9px;font-size:12px;font-family:monospace;cursor:pointer;border:1px solid var(--border);background:var(--glass-bg);color:var(--text-sub);transition:all .2s;letter-spacing:.02em;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+  .tab.active{background:var(--tab-active-bg);border-color:var(--accent-border);color:var(--accent);box-shadow:0 0 12px rgba(2,169,255,0.15)}
+  .tab:hover:not(.active){background:var(--tab-hover-bg);color:var(--text)}
+
+  /* ─── Connection bars ─── */
+  .conn-bars{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+  .conn-bar{display:flex;align-items:center;gap:10px;padding:9px 14px;border-radius:10px;font-size:12px;font-family:monospace;flex-wrap:wrap;transition:all 0.3s}
+  .conn-bar.disconnected{background:var(--yellow-bg);border:1px solid var(--yellow-border);color:var(--yellow)}
+  .conn-bar a{color:inherit;font-weight:700;text-decoration:none;padding:3px 10px;border-radius:5px;border:1px solid currentColor;opacity:.8;transition:opacity .2s;margin-left:auto}
+  .conn-bar a:hover{opacity:1}
+
+  .notif-bar{display:flex;align-items:center;gap:8px;padding:9px 14px;border-radius:9px;font-size:12px;font-family:monospace;margin-top:8px;animation:fadeIn 0.3s ease}
+  .notif-bar.error{background:var(--error-bg);border:1px solid var(--error-border);color:var(--error-color)}
+  .notif-bar.success{background:var(--success-bg);border:1px solid var(--success-border);color:var(--success-color)}
+
+  .stats{font-size:12px;color:var(--text-sub)}
+  .stats b{color:var(--accent)}
+
+  /* ─── Pages ─── */
+  main{padding:22px 26px 110px}
+  .page{display:none}.page.active{display:block;animation:slideUp 0.3s ease both}
+
+  /* ─── Filter Pills ─── */
+  .filter-row{
+    display:flex;align-items:center;gap:8px;
+    overflow-x:auto;padding:0 26px 10px 26px;margin:0 -26px 4px -26px;
+    -webkit-overflow-scrolling:touch;scrollbar-width:none;
+  }
+  .filter-row::-webkit-scrollbar{display:none}
+  .filter-pill{
+    flex-shrink:0;
+    padding:7px 16px;border-radius:100px;
+    font-size:12px;font-weight:600;letter-spacing:.02em;
+    border:1.5px solid var(--border);
+    background:var(--glass-bg);color:var(--text-sub);
+    cursor:pointer;transition:all .2s;white-space:nowrap;
+    backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  }
+  .filter-pill:hover{background:var(--surface);color:var(--text)}
+  .filter-pill.active{
+    background:var(--accent-bg);border-color:var(--accent-border);
+    color:var(--accent);
+  }
+  [data-theme="light"] .filter-pill.active{
+    background:rgba(0,113,227,0.09);border-color:rgba(0,113,227,0.3);color:#0071e3;
+  }
+
+  /* ─── Grid & Cards ─── */
+  .grid{display:grid;grid-template-columns:1fr;gap:12px}
+  .card{
+    border-radius:18px;overflow:hidden;
+    background:var(--surface);border:1px solid var(--glass-border);
+    display:flex;animation:ci .4s ease both;
+    transition:transform .45s cubic-bezier(.22,1,.36,1),box-shadow .45s ease,background 0.35s;
+    position:relative;box-shadow:var(--card-shadow);
+  }
+  .card:hover{transform:translateY(-4px) scale(1.01);box-shadow:var(--card-hover-shadow)}
+  .card-top-bar{position:absolute;top:0;left:0;right:0;height:2px}
+  .cover{flex-shrink:0;width:110px;position:relative}
+  .cover img{width:110px;height:160px;object-fit:cover;display:block}
+  .cover-blank{width:110px;height:160px;background:var(--cover-blank-bg);display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:22px}
+  .ep-badge{position:absolute;bottom:5px;left:50%;transform:translateX(-50%);background:var(--ep-badge-bg);font-size:9px;font-family:monospace;padding:2px 6px;border-radius:3px;white-space:nowrap;color:#fff}
+  .body{flex:1;padding:12px 14px;display:flex;flex-direction:column;gap:6px;min-width:0}
+  .anime-title{font-weight:700;font-size:14px;color:var(--text-title);line-height:1.35;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+  .prog-row{display:flex;align-items:center;gap:6px;font-size:10px;font-family:monospace}
+  .prog-label{color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em}
+  .prog-val{font-weight:700;font-family:monospace}
+  .genres{display:flex;flex-wrap:wrap;gap:4px}
+  .genre{font-size:9px;color:var(--genre-color);background:var(--genre-bg);padding:2px 6px;border-radius:3px;font-family:monospace}
+  .air-box{display:flex;justify-content:space-between;align-items:center;background:var(--air-box-bg);border-radius:8px;padding:7px 9px;margin-top:auto}
+  .air-label{font-size:8px;color:var(--text-muted);font-family:monospace;text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px}
+  .air-date{font-size:10px;color:var(--text-dim);font-family:monospace}
+  .countdown{font-size:17px;font-weight:700;text-align:right}
+  .countdown-sub{font-size:8px;color:var(--text-muted);font-family:monospace;text-transform:uppercase}
+  .no-sched{text-align:center;font-size:10px;color:var(--no-sched-color);font-family:monospace;padding:7px;margin-top:auto}
+  .not-yet{background:var(--not-yet-bg);border:var(--not-yet-border);color:var(--not-yet-color);padding:8px 12px;border-radius:8px;font-size:11px;font-family:monospace;text-align:center;margin-top:auto}
+
+  /* ─── Sync page ─── */
+  .sync-toolbar{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;align-items:center}
+  .btn{padding:8px 18px;border-radius:9px;font-size:12px;font-family:monospace;cursor:pointer;border:1px solid;transition:all .2s;font-weight:600;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+  .btn-primary{background:var(--accent-bg);border-color:var(--accent-border);color:var(--accent)}
+  .btn-primary:hover{background:rgba(2,169,255,0.2);border-color:var(--accent)}
+  .btn-success{background:var(--green-bg);border-color:var(--green-border);color:var(--green)}
+  .btn-success:hover{background:rgba(0,200,100,0.14)}
+  .btn-warn{background:var(--yellow-bg);border-color:var(--yellow-border);color:var(--yellow)}
+  .btn-warn:hover{background:rgba(200,130,0,0.12)}
+  .btn:disabled{opacity:.4;cursor:not-allowed}
+  .sync-status{font-size:12px;font-family:monospace;color:var(--text-dim);padding:6px 0}
+
+  .diff-list{display:flex;flex-direction:column;gap:10px}
+  .diff-card{background:var(--diff-card-bg);border:1px solid var(--border);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:14px;animation:ci .3s ease both;backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);box-shadow:var(--card-shadow);transition:background 0.25s,border-color 0.25s}
+  .diff-card.selected{border-color:var(--diff-sel-border);background:var(--diff-sel-bg)}
+  .diff-check{width:18px;height:18px;cursor:pointer;flex-shrink:0;accent-color:var(--accent)}
+  .diff-info{flex:1;min-width:0}
+  .diff-title{font-weight:700;font-size:14px;color:var(--text-title);margin-bottom:4px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+  .diff-label{display:inline-block;font-size:9px;font-family:monospace;padding:2px 7px;border-radius:3px;margin-bottom:6px;font-weight:700;text-transform:uppercase}
+  .label-missing{background:rgba(255,100,100,.12);color:#ff8080;border:1px solid rgba(255,100,100,.2)}
+  .label-outdated{background:var(--yellow-bg);color:var(--yellow);border:1px solid var(--yellow-border)}
+  .label-malonly{background:var(--purple-bg);color:var(--purple);border:1px solid rgba(192,132,252,.2)}
+  .diff-changes{font-size:11px;font-family:monospace;color:var(--text-dim);display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
+  .diff-change{background:var(--diff-change-bg);padding:2px 8px;border-radius:4px}
+  .diff-targets{display:flex;gap:5px;font-size:9px;font-family:monospace}
+  .target-badge{padding:2px 7px;border-radius:3px;font-weight:700}
+  .target-mal{background:rgba(46,81,162,0.15);color:#6b8dd6;border:1px solid rgba(46,81,162,0.3)}
+  .target-al{background:rgba(2,169,255,0.1);color:#02a9ff;border:1px solid rgba(2,169,255,0.25)}
+  .diff-action{flex-shrink:0}
+  .apply-btn{padding:6px 14px;border-radius:6px;font-size:11px;font-family:monospace;cursor:pointer;border:1px solid var(--accent-border);background:var(--accent-bg);color:var(--accent);transition:all .2s;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+  .apply-btn:hover{background:rgba(2,169,255,.18)}
+  .apply-btn.done{border-color:var(--green-border);background:var(--green-bg);color:var(--green);cursor:default}
+  .apply-btn.err{border-color:rgba(255,100,100,.3);background:rgba(255,100,100,.08);color:#ff8080;cursor:default}
+
+  .empty-sync{text-align:center;padding:60px 20px;color:var(--empty-color);font-size:13px;font-family:monospace}
+  .empty-sync .icon{font-size:40px;margin-bottom:12px}
+  .spinner-wrap{display:flex;flex-direction:column;align-items:center;gap:12px;padding:70px 0;color:var(--text-dim);font-size:13px}
+  .spinner{width:34px;height:34px;border-radius:50%;border:2px solid var(--spinner-border);border-top-color:var(--accent);animation:spin .9s linear infinite}
+  .error-box{background:var(--error-bg);border:1px solid var(--error-border);color:var(--error-color);padding:14px 18px;border-radius:10px;font-size:13px;margin-bottom:16px}
+
+  /* ─── Collapsible sections ─── */
+  .ani-section{margin-bottom:6px;border-radius:18px;overflow:hidden;border:1px solid var(--border);transition:border-color 0.2s;backdrop-filter:blur(16px) saturate(160%);-webkit-backdrop-filter:blur(16px) saturate(160%);box-shadow:0 2px 20px rgba(0,0,0,0.18),inset 0 1px 0 rgba(255,255,255,0.045)}
+  .ani-section.open{border-color:var(--glass-border)}
+  [data-theme="light"] .ani-section-header{background:rgba(255,255,255,0.5)}
+  [data-theme="light"] .ani-section-header:hover{background:rgba(255,255,255,0.7)}
+  [data-theme="light"] .ani-section-body{background:rgba(255,255,255,0.28)}
+  .ani-section-header{display:flex;align-items:center;gap:10px;padding:13px 16px;cursor:pointer;background:transparent;user-select:none;transition:background .2s}
+  .ani-section-header:hover{background:rgba(255,255,255,0.04)}
+  [data-theme="dark"] .ani-section-header{background:rgba(12,14,22,0.45)}
+  [data-theme="dark"] .ani-section-header:hover{background:rgba(18,22,36,0.6)}
+  .ani-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+  .ani-section-label{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase}
+  .ani-section-badge{font-size:10px;padding:2px 8px;border-radius:10px;font-weight:700;font-family:monospace}
+  .ani-chevron{margin-left:auto;font-size:10px;color:var(--text-muted);transition:transform .25s}
+  .ani-section.open .ani-chevron{transform:rotate(180deg)}
+  .ani-section-body{display:none;padding:0 12px 12px;background:rgba(6,8,14,0.35)}
+  .ani-section.open .ani-section-body{display:block}
+  .ani-section-body .grid{padding-top:12px}
+
+  /* Dropped compact rows */
+  .ani-drop-body{padding:4px 12px 10px !important}
+  .drop-row{display:flex;align-items:center;gap:10px;padding:9px 4px;border-bottom:1px solid var(--divider);opacity:.5;transition:opacity .2s}
+  .drop-row:hover{opacity:.75}
+  .drop-row:last-child{border-bottom:none}
+  .drop-thumb{width:30px;height:44px;border-radius:4px;flex-shrink:0;background:#111420;display:flex;align-items:center;justify-content:center;font-size:13px;color:rgba(255,255,255,0.1);overflow:hidden}
+  .drop-thumb img{width:100%;height:100%;object-fit:cover}
+  .drop-title{font-size:12px;font-weight:600;color:var(--text-sub);flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+  .drop-ep{font-size:10px;font-family:monospace;color:var(--text-muted);flex-shrink:0}
+
+  /* ──────────────────────────────────────
+     SETTINGS PAGE
+  ────────────────────────────────────── */
+  footer{border-top:1px solid var(--border);padding:18px 24px;text-align:center;font-size:12px;color:var(--text-sub);display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap}
+  footer a{color:var(--text-sub);text-decoration:none;opacity:.7}
+  footer a:hover{opacity:1}
+  .footer-sep{opacity:.35}
+  .settings-container{max-width:480px;margin:0 auto}
+  .settings-section-title{
+    font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--settings-section-label);
+    padding:0 4px 8px;margin-top:28px;margin-bottom:4px;
+  }
+  .settings-section-title:first-child{margin-top:0}
+  .settings-group{
+    border-radius:16px;overflow:hidden;
+    border:1px solid var(--glass-border);
+    background:var(--glass-bg);
+    backdrop-filter:var(--glass);
+    -webkit-backdrop-filter:var(--glass);
+    box-shadow:var(--card-shadow);
+  }
+  .settings-row{
+    display:flex;align-items:center;
+    padding:15px 18px;
+    border-bottom:1px solid var(--settings-row-border);
+    background:var(--settings-row-bg);
+    transition:background 0.2s;
+    gap:14px;
+  }
+  .settings-row a{backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+  .settings-row:last-child{border-bottom:none}
+  .settings-row:hover{background:var(--surface-hover)}
+  .settings-icon{font-size:17px;flex-shrink:0;width:24px;text-align:center}
+  .settings-icon svg{
+    width:20px;height:20px;
+    fill:none;stroke:var(--text-sub);
+    stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;
+    display:block;margin:0 auto;
+    transition:stroke 0.25s ease;
+  }
+  .settings-label-wrap{flex:1;min-width:0}
+  .settings-label{font-size:14px;font-weight:500;color:var(--text);line-height:1.3}
+  .settings-sublabel{font-size:11px;color:var(--text-sub);margin-top:2px;line-height:1.4}
+
+  /* ─── iOS-style toggle switch ─── */
+  .ios-switch{
+    position:relative;flex-shrink:0;
+    width:51px;height:31px;
+    cursor:pointer;
+  }
+  .ios-switch input{opacity:0;width:0;height:0;position:absolute}
+  .ios-track{
+    position:absolute;inset:0;border-radius:31px;
+    background:var(--switch-track-off);
+    transition:background 0.28s cubic-bezier(.4,0,.2,1);
+    box-shadow:inset 0 0 0 1px rgba(0,0,0,0.12);
+  }
+  .ios-switch input:checked + .ios-track{background:#34c759}
+  [data-theme="light"] .ios-switch input:checked + .ios-track{background:#34c759}
+  .ios-thumb{
+    position:absolute;
+    top:2px;left:2px;
+    width:27px;height:27px;border-radius:50%;
+    background:var(--switch-thumb);
+    box-shadow:0 2px 8px rgba(0,0,0,0.32),0 1px 2px rgba(0,0,0,0.2);
+    transition:transform 0.28s cubic-bezier(.4,0,.2,1),box-shadow 0.2s;
+  }
+  .ios-switch input:checked ~ .ios-thumb{transform:translateX(20px)}
+  .ios-switch:active .ios-thumb{transform:scaleX(1.12)}
+  .ios-switch input:checked:active ~ .ios-thumb{transform:translateX(20px) scaleX(1.12)}
+
+  /* ── Toggle fix: ensure switches render cleanly without WebGL ── */
+  .ios-switch { cursor: pointer; display: inline-flex; align-items: center; }
+  .ios-track { transition: background 0.28s; }
+  .ios-thumb { transition: transform 0.28s cubic-bezier(.4,0,.2,1); }
+
+  @media(max-width:600px){
+    header{padding:max(14px, env(safe-area-inset-top)) 16px 12px}
+    main{padding:16px 16px 110px}
+    .filter-row{padding:0 16px 10px 16px;margin:0 -16px 4px -16px;}
+    .sync-toolbar{flex-direction:column;align-items:stretch}
+    .btn{text-align:center}
+    .grid{grid-template-columns:1fr}
+    .settings-container{max-width:100%}
+  }
+  /* ── PWA Install Banner ── */
+  .pwa-banner{
+    position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(120px);
+    width:calc(100% - 32px);max-width:420px;
+    display:flex;align-items:center;gap:12px;
+    padding:14px 14px 14px 16px;border-radius:20px;
+    background:var(--surface);border:1px solid var(--glass-border);
+    box-shadow:0 8px 32px rgba(0,0,0,0.18);
+    z-index:9999;opacity:0;
+    transition:transform .4s cubic-bezier(.22,1,.36,1), opacity .4s ease;
+    backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  }
+  .pwa-banner.show{transform:translateX(-50%) translateY(0);opacity:1}
+  .pwa-icon{width:42px;height:42px;border-radius:12px;flex-shrink:0}
+  .pwa-text{flex:1;min-width:0}
+  .pwa-title{font-size:13px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pwa-sub{font-size:11px;color:var(--text-sub);margin-top:2px}
+  .pwa-install{
+    flex-shrink:0;padding:8px 16px;border-radius:100px;
+    background:var(--accent);color:#fff;border:none;
+    font-size:12px;font-weight:700;cursor:pointer;
+    transition:opacity .2s;
+  }
+  .pwa-install:hover{opacity:0.85}
+  .pwa-close{
+    flex-shrink:0;background:none;border:none;
+    color:var(--text-sub);font-size:14px;cursor:pointer;
+    padding:4px 6px;line-height:1;
+  }
+  [data-theme="light"] .pwa-install{background:#0071e3}
+</style>
+
+
+
+
+</head>
+<body>
+
+<header>
+  <div class="header-top">
+    <a class="logo" href="/" style="text-decoration:none;cursor:pointer;" title="Home" onclick="hap(8)"><img src="/static/anitrack-logo-transparent-512.png" alt="AniTrack" style="height:36px;width:auto;display:block;"></a>
+    <div class="header-right">
+      <div class="stats" id="stats">
+        <b id="total-watching">0</b> watching · <b id="total-planned">0</b> planned · <b id="total-airing">0</b> airing soon
+      </div>
+      <div class="user-pill">
+        <span class="dot"></span> {{ anilist_username }}
+        <span class="pill-sep">·</span><span class="dot {% if al_connected %}dot-al{% else %}dot-disconnected{% endif %}"></span> AL
+        <span class="pill-sep">·</span><span class="dot {% if mal_connected %}dot-mal{% else %}dot-disconnected{% endif %}"></span> MAL
+      </div>
+    </div>
+  </div>
+
+
+
+  {% if mal_error %}<div class="notif-bar error">⚠ MAL error: {{ mal_error }}</div>{% endif %}
+  {% if mal_success %}<div class="notif-bar success" id="mal-success-banner">✓ MyAnimeList connected!</div>{% endif %}
+  {% if al_error %}<div class="notif-bar error">⚠ AniList error: {{ al_error }}</div>{% endif %}
+  {% if al_success %}<div class="notif-bar success" id="al-success-banner">✓ AniList connected!</div>{% endif %}
+
+
+</header>
+
+<main>
+  <!-- ── Anime List Page ── -->
+  <div class="page active" id="page-list">
+    <div id="spinner" class="spinner-wrap">
+      <div class="spinner"></div>
+      <span>Fetching your list…</span>
+    </div>
+    <div id="cal-error" class="error-box" style="display:none"></div>
+    <div id="cal-content" style="display:none">
+
+      <!-- Filter pills -->
+      <div class="filter-row" id="filter-row">
+        <button class="filter-pill active" data-sort="default"  onclick="setFilter(this,'default')">✦ Default</button>
+        <button class="filter-pill"        data-sort="updated"  onclick="setFilter(this,'updated')">🕒 Last Updated</button>
+        <button class="filter-pill"        data-sort="airing"   onclick="setFilter(this,'airing')">📡 Airing Soon</button>
+        <button class="filter-pill"        data-sort="title"    onclick="setFilter(this,'title')">A → Z</button>
+        <button class="filter-pill"        data-sort="score"    onclick="setFilter(this,'score')">★ Score</button>
+        <button class="filter-pill"        data-sort="progress" onclick="setFilter(this,'progress')">▶ Progress</button>
+        <button class="filter-pill"        data-sort="eps-left" onclick="setFilter(this,'eps-left')">⏳ Eps Left</button>
+      </div>
+
+      <!-- Watching tab: airing + finished merged -->
+      <div id="view-watching" class="grid"></div>
+      <!-- Planned tab: planned/upcoming -->
+      <div id="view-planned" class="grid" style="display:none"></div>
+
+    </div>
+  </div>
+
+  <!-- ── Sync Page ── -->
+  <div class="page" id="page-sync">
+    {% if not mal_connected %}
+    <div class="error-box">Connect your MyAnimeList account above to use sync.</div>
+    {% else %}
+    <div class="sync-toolbar">
+      <button class="btn btn-primary" onclick="loadDiff()">🔍 Check Differences</button>
+      <button class="btn btn-success" id="btn-auto" onclick="autoSync()" disabled>⚡ Auto Sync All</button>
+      <button class="btn btn-warn" id="btn-apply-sel" onclick="applySelected()" disabled>✓ Apply Selected</button>
+      <span class="sync-status" id="sync-status"></span>
+    </div>
+    {% if not al_connected and al_client_set %}
+    <div class="notif-bar" style="background:rgba(2,169,255,0.07);border:1px solid rgba(2,169,255,0.2);color:var(--accent);margin-bottom:12px">
+      ℹ Connect AniList above for full two-way sync. Currently syncing to MAL only.
+    </div>
+    {% endif %}
+    <div id="sync-error" class="error-box" style="display:none"></div>
+    <div id="sync-spinner" class="spinner-wrap" style="display:none">
+      <div class="spinner"></div>
+      <span id="sync-spinner-label">Loading...</span>
+    </div>
+    <div id="diff-list" class="diff-list"></div>
+    {% endif %}
+  </div>
+
+  <!-- ── Settings Page ── -->
+  <div class="page" id="page-settings">
+    <div class="settings-container">
+
+      <!-- Appearance -->
+      <div class="settings-section-title">Appearance</div>
+      <div class="settings-group">
+        <!-- Mode toggle -->
+        <div class="settings-row">
+          <span class="settings-icon" id="mode-icon">
+            <svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          </span>
+          <div class="settings-label-wrap">
+            <div class="settings-label" id="mode-label">Dark Mode</div>
+            <div class="settings-sublabel">Switch between light &amp; dark</div>
+          </div>
+          <label class="ios-switch" title="Toggle theme">
+            <input type="checkbox" id="switch-theme" onchange="onThemeSwitch(this)">
+            <div class="ios-track"></div>
+            <div class="ios-thumb"></div>
+          </label>
+        </div>
+        <!-- Oneko toggle -->
+        <div class="settings-row">
+          <span class="settings-icon" id="oneko-icon">
+            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="10" x2="9.01" y2="10"/><line x1="15" y1="10" x2="15.01" y2="10"/><path d="M7 7 L5 3"/><path d="M17 7 L19 3"/></svg>
+          </span>
+          <div class="settings-label-wrap">
+            <div class="settings-label">Oneko</div>
+            <div class="settings-sublabel">Pixel cat that follows your cursor</div>
+          </div>
+          <label class="ios-switch" title="Toggle Oneko">
+            <input type="checkbox" id="switch-oneko" onchange="onOnekoSwitch(this)">
+            <div class="ios-track"></div>
+            <div class="ios-thumb"></div>
+          </label>
+        </div>
+        <!-- Navbar Blur toggle -->
+        <div class="settings-row">
+          <span class="settings-icon" id="blur-icon">
+            <svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+          </span>
+          <div class="settings-label-wrap">
+            <div class="settings-label">Navbar Blur</div>
+            <div class="settings-sublabel">Glass blur effect on bottom navigation</div>
+          </div>
+          <label class="ios-switch" title="Toggle navbar blur">
+            <input type="checkbox" id="switch-navbar-blur" checked onchange="onNavBlurSwitch(this)">
+            <div class="ios-track"></div>
+            <div class="ios-thumb"></div>
+          </label>
+        </div>
+
+      </div>
+
+      <!-- AniList Username -->
+      <div class="settings-section-title">AniList Username</div>
+      <div class="settings-group">
+        <div class="settings-row" style="flex-direction:column;align-items:stretch;gap:10px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <span class="settings-icon">⬡</span>
+            <div class="settings-label-wrap">
+              <div class="settings-label">Viewing list for</div>
+              <div class="settings-sublabel" id="current-username-label">{{ anilist_username }}</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;padding:0 4px">
+            <input
+              id="username-input"
+              type="text"
+              placeholder="Enter AniList username…"
+              autocomplete="off"
+              autocorrect="off"
+              autocapitalize="off"
+              spellcheck="false"
+              style="
+                flex:1;padding:9px 14px;border-radius:10px;
+                border:1px solid var(--border);
+                background:var(--glass-bg);
+                color:var(--text);
+                font-size:13px;font-family:monospace;
+                outline:none;
+                transition:border-color 0.2s;
+              "
+              onfocus="this.style.borderColor='var(--accent-border)'"
+              onblur="this.style.borderColor='var(--border)'"
+              onkeydown="if(event.key==='Enter') saveUsername()"
+            />
+            <button
+              onclick="saveUsername()"
+              style="
+                padding:9px 18px;border-radius:10px;
+                background:var(--accent);color:#fff;
+                border:none;font-size:13px;font-weight:700;
+                cursor:pointer;white-space:nowrap;
+                transition:opacity 0.2s;
+              "
+              onmouseover="this.style.opacity='0.85'"
+              onmouseout="this.style.opacity='1'"
+            >Save</button>
+          </div>
+          <div id="username-feedback" style="display:none;font-size:11px;font-family:monospace;padding:0 4px"></div>
+        </div>
+      </div>
+
+      <!-- About -->
+      <div class="settings-section-title">Accounts</div>
+      <div class="settings-group">
+        {% if al_connected %}
+        <div class="settings-row">
+          <span class="settings-icon">⬡</span>
+          <div class="settings-label-wrap">
+            <div class="settings-label">AniList</div>
+            <div class="settings-sublabel">Connected as {{ anilist_username }}</div>
+          </div>
+          <a href="/al/logout" style="font-size:12px;font-family:monospace;padding:5px 12px;border-radius:7px;border:1px solid var(--error-border);color:var(--error-color);background:var(--error-bg);text-decoration:none;white-space:nowrap">Disconnect</a>
+        </div>
+        {% else %}
+        <div class="settings-row">
+          <span class="settings-icon">⬡</span>
+          <div class="settings-label-wrap">
+            <div class="settings-label">AniList</div>
+            <div class="settings-sublabel">Not connected</div>
+          </div>
+          <a href="/al/login" style="font-size:12px;font-family:monospace;padding:5px 12px;border-radius:7px;border:1px solid var(--accent-border);color:var(--accent);background:var(--accent-bg);text-decoration:none;white-space:nowrap">Connect</a>
+        </div>
+        {% endif %}
+        {% if mal_connected %}
+        <div class="settings-row">
+          <span class="settings-icon" style="color:#2e51a2">M</span>
+          <div class="settings-label-wrap">
+            <div class="settings-label">MyAnimeList</div>
+            <div class="settings-sublabel">Connected</div>
+          </div>
+          <a href="/mal/logout" style="font-size:12px;font-family:monospace;padding:5px 12px;border-radius:7px;border:1px solid var(--error-border);color:var(--error-color);background:var(--error-bg);text-decoration:none;white-space:nowrap">Disconnect</a>
+        </div>
+        {% else %}
+        <div class="settings-row">
+          <span class="settings-icon" style="color:#2e51a2">M</span>
+          <div class="settings-label-wrap">
+            <div class="settings-label">MyAnimeList</div>
+            <div class="settings-sublabel">Not connected</div>
+          </div>
+          <a href="/mal/login" style="font-size:12px;font-family:monospace;padding:5px 12px;border-radius:7px;border:1px solid var(--accent-border);color:var(--accent);background:var(--accent-bg);text-decoration:none;white-space:nowrap">Connect</a>
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="settings-section-title">About</div>
+      <div class="settings-group">
+        <div class="settings-row">
+          <span class="settings-icon">⬡</span>
+          <div class="settings-label-wrap">
+            <div class="settings-label">AniTrack</div>
+            <div class="settings-sublabel">{{ anilist_username }} · AL + MAL tracker</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</main>
+
+<footer>
+  <span>© AniTrack</span>
+  <span class="footer-sep">·</span>
+  <span>Built with <a href="https://anilist.co" target="_blank" rel="noopener">AniList</a> &amp; <a href="https://myanimelist.net" target="_blank" rel="noopener">MyAnimeList</a></span>
+</footer>
+
+<!-- ── Bottom Navbar ── -->
+<div class="anitrack-navbar-wrap" id="anitrack-navbar-wrap">
+  <nav class="anitrack-navbar" id="anitrack-navbar">
+    <div class="anav-indicator" id="anav-indicator"></div>
+
+    <!-- Watching -->
+    <button class="anav-item active" id="anav-watching" aria-label="Watching">
+      <svg viewBox="0 0 24 24"><path d="M3 12s3-7 9-7 9 7 9 7-3 7-9 7-9-7-9-7z"/><circle cx="12" cy="12" r="3"/></svg>
+    </button>
+
+    <!-- Planned -->
+    <button class="anav-item" id="anav-planned" aria-label="Planned">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+    </button>
+
+    <!-- Sync -->
+    <button class="anav-item" id="anav-sync-btn" aria-label="Sync">
+      <svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
+    </button>
+
+    <!-- Settings -->
+    <button class="anav-item" id="anav-settings-btn" aria-label="Settings">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </button>
+
+  </nav>
+</div>
+
+<script>
+const AL_CONNECTED = {{ 'true' if al_connected else 'false' }};
+const _DEFAULT_USERNAME = "{{ anilist_username }}";
+let ANILIST_USERNAME = localStorage.getItem('anitrack-username') || _DEFAULT_USERNAME;
+
+// ── Haptic helper ─────────────────────────────────────────────────────────────
+function hap(ms) { try { navigator.vibrate && navigator.vibrate(ms ?? 8); } catch(e) {} }
+
+// ── Auto-dismiss success banners ─────────────────────────────────────────────
+["mal-success-banner","al-success-banner"].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) {
+    hap(15);
+    setTimeout(() => {
+      el.style.transition = "opacity 0.4s ease";
+      el.style.opacity = "0";
+      setTimeout(() => el.remove(), 500);
+    }, 1800);
+  }
+});
+// Strip ?mal_success / ?al_success from URL so refresh doesn't re-show banner
+if (location.search.includes("al_success") || location.search.includes("mal_success")) {
+  history.replaceState(null, "", location.pathname);
+}
+
+// ── Theme ────────────────────────────────────────────────────────────────────
+function applyTheme(t) {
+  document.documentElement.setAttribute("data-theme", t);
+  const lbl  = document.getElementById("mode-label");
+  const icon = document.getElementById("mode-icon");
+  const sw   = document.getElementById("switch-theme");
+  const isDark = t === "dark";
+  if (lbl)  lbl.textContent  = isDark ? "Dark Mode" : "Light Mode";
+  if (icon) icon.innerHTML   = isDark
+    ? `<svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`
+    : `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`;
+  if (sw)   sw.checked = !isDark;  // checked = light
+  localStorage.setItem("anitrack-theme", t);
+  // Update PWA theme-color to match
+  const tcMeta = document.getElementById("theme-color-meta");
+  if (tcMeta) tcMeta.setAttribute("content", isDark ? "#0d0f1a" : "#ffffff");
+
+  // Invalidate WebGL snapshot so all glass instances re-sample the new theme
+  if (typeof Container !== 'undefined' && Container.pageSnapshot) {
+    Container.pageSnapshot = null;
+    // Brief delay for CSS transition to settle, then recapture
+    setTimeout(() => {
+      if (Container.instances.length > 0) {
+        Container.isCapturing = true;
+        Container.waitingForSnapshot = Container.instances.slice();
+        Container.instances[0].capturePageSnapshot();
+      }
+    }, 450);
+  }
+}
+function onThemeSwitch(el) {
+  hap(6);
+  applyTheme(el.checked ? "light" : "dark");
+}
+applyTheme(localStorage.getItem("anitrack-theme") || "light");
+
+// ── Tab navigation ────────────────────────────────────────────────────────────
+function showPage(name, btn) {
+  document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+  document.querySelectorAll(".tab").forEach(b => b.classList.remove("active"));
+  const pg = document.getElementById("page-" + name);
+  if (pg) pg.classList.add("active");
+  if (btn) btn.classList.add("active");
+  // Always show navbar; sync active pill
+  const navWrap = document.getElementById("anitrack-navbar-wrap");
+  if (navWrap) navWrap.style.display = "";
+  const pillMap = { sync: 'anav-sync-btn', settings: 'anav-settings-btn', list: 'anav-watching' };
+  if (pillMap[name]) {
+    document.querySelectorAll('.anav-item').forEach(i => i.classList.remove('active'));
+    const activeBtn = document.getElementById(pillMap[name]);
+    activeBtn?.classList.add('active');
+    // Update indicator
+    const indicator = document.getElementById('anav-indicator');
+    const navEl     = document.getElementById('anitrack-navbar');
+    if (indicator && activeBtn && navEl) {
+      requestAnimationFrame(() => {
+        const w = parseFloat(activeBtn.style.width) || 80;
+        indicator.style.left = (activeBtn.offsetLeft + w / 2 - 15) + 'px';
+      });
+    }
+  }
+}
+
+// Ensure list page is visible without disturbing tab active states
+function ensureListPage() {
+  document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+  const pg = document.getElementById("page-list");
+  if (pg) pg.classList.add("active");
+  const navWrap = document.getElementById("anitrack-navbar-wrap");
+  if (navWrap) navWrap.style.display = "";
+}
+
+// ── Collapsible sections ──────────────────────────────────────────────────────
+function toggleAniSection(id) {
+  hap(6);
+  document.getElementById(id).classList.toggle("open");
+}
+
+// ── GQL ───────────────────────────────────────────────────────────────────────
+const GQL_USER_LIST = `
+query($userName: String) {
+  MediaListCollection(userName: $userName, type: ANIME) {
+    lists {
+      entries {
+        id mediaId status score progress updatedAt
+        media {
+          id idMal title { romaji english } status episodes
+          coverImage { large color }
+          nextAiringEpisode { airingAt episode timeUntilAiring }
+          startDate { year month day }
+          siteUrl genres
+        }
+      }
+    }
+  }
+}`;
+
+function fmtCountdown(secs) {
+  if (secs <= 0) return "Now";
+  const d = Math.floor(secs / 86400);
+  const h = Math.floor((secs % 86400) / 3600);
+  const m = Math.floor((secs % 3600) / 60);
+  if (d > 0) return `${d}d ${h}h`;
+  if (h > 0) return `${h}h ${m}m`;
+  return `${m}m`;
+}
+function fmtDate(ts) {
+  return new Date(ts * 1000).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
+function buildCard(e) {
+  const m      = e.media;
+  const color  = m.coverImage?.color || "#444";
+  const cover  = m.coverImage?.large || "";
+  const total  = m.episodes || "?";
+  const genres = (m.genres || []).slice(0, 3);
+  const next   = m.nextAiringEpisode;
+  const title  = m.title?.english || m.title?.romaji || "Unknown";
+  const scoreHtml = e.score > 0
+    ? `<div class="prog-row"><span class="prog-label">Score</span><span class="prog-val" style="color:${color}">${e.score}/10</span></div>`
+    : "";
+  let airHtml = "";
+  if (next) {
+    airHtml = `<div class="air-box"><div><div class="air-label">Next Ep ${next.episode}</div><div class="air-date">${fmtDate(next.airingAt)}</div></div><div style="text-align:right"><div class="countdown" style="color:${color}">${fmtCountdown(next.timeUntilAiring)}</div><div class="countdown-sub">until ep ${next.episode}</div></div></div>`;
+  } else if (m.status === "FINISHED") {
+    const left = m.episodes ? m.episodes - e.progress : "?";
+    const epWord = left === 1 ? "ep" : "eps";
+    airHtml = `<div class="not-yet" style="background:rgba(2,169,255,0.05);border:1px solid rgba(2,169,255,0.15);color:rgba(2,169,255,0.6)">Series finished · ${left} ${epWord} left</div>`;
+  } else if (m.status === "NOT_YET_RELEASED") {
+    airHtml = `<div class="not-yet">Not yet airing</div>`;
+  } else {
+    airHtml = `<div class="no-sched">No schedule yet</div>`;
+  }
+  const entryId = e.id;
+  const maxEp = m.episodes || null;
+  return `<div class="card" id="card-${entryId}"><div class="card-top-bar" style="background:${color}"></div><div class="cover">${cover?`<img src="${cover}" alt="${title}" loading="lazy">`:`<div class="cover-blank">📺</div>`}<div class="ep-badge" id="ep-badge-${entryId}">EP ${e.progress} / ${total}</div></div><div class="body"><a href="${m.siteUrl||'#'}" target="_blank" rel="noopener" class="anime-title" style="text-decoration:none;color:inherit">${title}</a><div class="prog-row"><span class="prog-label">Progress</span><span class="prog-val" id="ep-val-${entryId}">${e.progress} / ${total}</span></div>${scoreHtml}<div class="ep-controls"><button class="ep-btn" id="ep-dec-${entryId}" onclick="updateEp(${entryId},${e.progress},${maxEp},-1)" ${e.progress<=0?'disabled':''}>−</button><span class="ep-count" id="ep-cur-${entryId}">${e.progress}</span><button class="ep-btn" id="ep-inc-${entryId}" onclick="updateEp(${entryId},${e.progress},${maxEp},+1)" ${maxEp&&e.progress>=maxEp?'disabled':''}>+</button></div><div class="genres">${genres.map(g=>`<span class="genre">${g}</span>`).join("")}</div>${airHtml}</div></div>`;
+}
+
+function buildDropRow(e) {
+  const m = e.media, cover = m.coverImage?.large || "", title = m.title?.english || m.title?.romaji || "Unknown", total = m.episodes || "?";
+  return `<div class="drop-row"><div class="drop-thumb">${cover?`<img src="${cover}" loading="lazy">`:"📺"}</div><div class="drop-title">${title}</div><div class="drop-ep">EP ${e.progress} / ${total}</div></div>`;
+}
+
+// ── Filter / Sort ─────────────────────────────────────────────────────────────
+let _allEntries = [];
+let _currentSort = 'default';
+let _sortDir = 1; // 1 = default direction, -1 = reversed
+
+const SORT_LABELS = {
+  default:  { asc: '✦ Default',    desc: '✦ Default' },
+  updated:  { asc: '🕒 Oldest',    desc: '🕒 Last Updated' },
+  airing:   { asc: '📡 Airing Last', desc: '📡 Airing Soon' },
+  title:    { asc: 'A → Z',         desc: 'Z → A' },
+  score:    { asc: '★ Low Score',   desc: '★ High Score' },
+  progress: { asc: '▶ Least Eps',   desc: '▶ Most Eps' },
+  'eps-left':{ asc: '⏳ Most Left', desc: '⏳ Fewest Left' },
+};
+
+function setFilter(btn, sort) {
+  hap(6);
+  if (_currentSort === sort && sort !== 'default') {
+    // Same pill clicked again — toggle direction
+    _sortDir *= -1;
+  } else {
+    // New pill — reset to default direction
+    _currentSort = sort;
+    _sortDir = 1;
+  }
+  document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  // Update label to reflect direction
+  const labels = SORT_LABELS[sort];
+  if (labels) btn.textContent = _sortDir === 1 ? labels.desc : labels.asc;
+  applyFilter();
+}
+
+function applyFilter() {
+  const isWatching = document.getElementById('view-watching').style.display !== 'none';
+  const entries = isWatching
+    ? _allEntries.filter(e => e.status === 'CURRENT')
+    : _allEntries.filter(e => e.status === 'PLANNING');
+
+  const dir = _sortDir;
+  let sorted;
+
+  if (_currentSort === 'default') {
+    const airing   = entries.filter(e => e.media?.nextAiringEpisode).sort((a,b) => (a.media.nextAiringEpisode.timeUntilAiring||0)-(b.media.nextAiringEpisode.timeUntilAiring||0));
+    const noSched  = entries.filter(e => !e.media?.nextAiringEpisode && e.media?.status !== 'FINISHED');
+    const finished = entries.filter(e => e.media?.status === 'FINISHED').sort((a,b) => ((b.media.episodes||0)-b.progress)-((a.media.episodes||0)-a.progress));
+    sorted = isWatching ? [...airing, ...noSched, ...finished] : entries;
+
+  } else if (_currentSort === 'updated') {
+    sorted = [...entries].sort((a,b) => dir * ((b.updatedAt||0) - (a.updatedAt||0)));
+
+  } else if (_currentSort === 'airing') {
+    const hasAiring = [...entries].filter(e => e.media?.nextAiringEpisode)
+      .sort((a,b) => dir * ((a.media.nextAiringEpisode.timeUntilAiring||0)-(b.media.nextAiringEpisode.timeUntilAiring||0)));
+    const rest = entries.filter(e => !e.media?.nextAiringEpisode);
+    sorted = [...hasAiring, ...rest];
+
+  } else if (_currentSort === 'title') {
+    sorted = [...entries].sort((a,b) => {
+      const ta = (a.media?.title?.english || a.media?.title?.romaji || '').toLowerCase();
+      const tb = (b.media?.title?.english || b.media?.title?.romaji || '').toLowerCase();
+      return dir * ta.localeCompare(tb);
+    });
+
+  } else if (_currentSort === 'score') {
+    sorted = [...entries].sort((a,b) => dir * ((b.score||0) - (a.score||0)));
+
+  } else if (_currentSort === 'progress') {
+    sorted = [...entries].sort((a,b) => dir * ((b.progress||0) - (a.progress||0)));
+
+  } else if (_currentSort === 'eps-left') {
+    sorted = [...entries].sort((a,b) => {
+      const la = (a.media?.episodes||0) - (a.progress||0);
+      const lb = (b.media?.episodes||0) - (b.progress||0);
+      return dir * (la - lb);
+    });
+
+  } else {
+    sorted = entries;
+  }
+
+  const target = isWatching ? 'view-watching' : 'view-planned';
+  document.getElementById(target).innerHTML = sorted.map(buildCard).join('') || emptyMsg('Nothing here');
+}
+
+async function loadList() {
+  const spinner = document.getElementById("spinner");
+  const errBox  = document.getElementById("cal-error");
+  const content = document.getElementById("cal-content");
+  const statsEl = document.getElementById("stats");
+  spinner.style.display = "flex"; errBox.style.display = "none"; content.style.display = "none";
+  try {
+    const res  = await fetch("https://graphql.anilist.co", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({query:GQL_USER_LIST,variables:{userName:ANILIST_USERNAME}}) });
+    const json = await res.json();
+    if (json.error)  throw new Error(json.error);
+    if (json.errors) throw new Error(json.errors[0]?.message || "AniList error");
+    const entries = (json.data?.MediaListCollection?.lists || []).flatMap(l => l.entries);
+    _allEntries = entries;
+    const watching = entries.filter(e=>e.status==="CURRENT");
+    const planned  = entries.filter(e=>e.status==="PLANNING");
+    const airing   = watching.filter(e=>e.media?.nextAiringEpisode);
+    // Render watching via active filter
+    applyFilter();
+    // Pre-render planned (hidden)
+    document.getElementById("view-planned").innerHTML = planned.map(buildCard).join("") || emptyMsg("Nothing planned");
+    // Stats bar
+    document.getElementById("total-watching").textContent = watching.length;
+    document.getElementById("total-planned").textContent  = planned.length;
+    document.getElementById("total-airing").textContent   = airing.length;
+    statsEl.style.display = "";
+    spinner.style.display = "none"; content.style.display = "";
+  } catch (err) {
+    spinner.style.display = "none"; errBox.style.display = ""; errBox.textContent = "⚠ Failed to load list: " + err.message;
+  }
+}
+function emptyMsg(msg) { return `<div style="color:var(--text-muted);font-family:monospace;font-size:12px;padding:12px 4px">${msg}</div>`; }
+
+// ── Sync page ─────────────────────────────────────────────────────────────────
+let diffData = [];
+function setSyncSpinner(show, label) { const sp=document.getElementById("sync-spinner"); sp.style.display=show?"flex":"none"; if(label) document.getElementById("sync-spinner-label").textContent=label; }
+function setSyncStatus(msg) { document.getElementById("sync-status").textContent=msg; }
+function setSyncError(msg) { const el=document.getElementById("sync-error"); if(msg){el.style.display="";el.textContent="⚠ "+msg;}else{el.style.display="none";} }
+function buildDiffCard(d,idx) {
+  const labelClass = d.action==="add_to_mal"?"label-missing":d.action==="only_on_mal"?"label-malonly":"label-outdated";
+  const changesHtml = (d.changes||[]).map(c=>`<span class="diff-change">${c}</span>`).join("");
+  const targetsHtml = `<div class="diff-targets">${d.action!=="only_on_mal"?`<span class="target-badge target-mal">MAL</span>`:""} ${d.needs_al_update?`<span class="target-badge target-al">AL</span>`:""}</div>`;
+  const actionable = d.action==="add_to_mal"||d.action==="update";
+  const checkHtml = actionable?`<input type="checkbox" class="diff-check" data-idx="${idx}" checked onchange="onDiffCheck()">`:`<div style="width:18px"></div>`;
+  return `<div class="diff-card selected" id="diff-card-${idx}" data-idx="${idx}">${checkHtml}<div class="diff-info"><div class="diff-title">${d.title||"Unknown"}</div><span class="diff-label ${labelClass}">${d.label}</span>${changesHtml?`<div class="diff-changes">${changesHtml}</div>`:""} ${targetsHtml}</div>${actionable?`<div class="diff-action"><button class="apply-btn" id="apply-btn-${idx}" onclick="applySingle(${idx})">Apply</button></div>`:""}</div>`;
+}
+function renderDiffs(diffs) {
+  const list = document.getElementById("diff-list");
+  if (!diffs.length) { list.innerHTML=`<div class="empty-sync"><div class="icon">✅</div>Everything is in sync!</div>`; return; }
+  list.innerHTML = diffs.map((d,i)=>buildDiffCard(d,i)).join("");
+  document.getElementById("btn-auto").disabled = false;
+  onDiffCheck();
+}
+function onDiffCheck() {
+  const checked = document.querySelectorAll(".diff-check:checked");
+  document.getElementById("btn-apply-sel").disabled = checked.length===0;
+  document.querySelectorAll(".diff-card[data-idx]").forEach(card=>{ const cb=card.querySelector(".diff-check"); if(cb) card.classList.toggle("selected",cb.checked); });
+}
+async function loadDiff() {
+  hap(8);
+  setSyncError(""); setSyncSpinner(true,"Comparing lists…");
+  document.getElementById("diff-list").innerHTML = "";
+  document.getElementById("btn-auto").disabled = true;
+  document.getElementById("btn-apply-sel").disabled = true;
+  setSyncStatus("");
+  try {
+    const res=await fetch(`/api/sync/diff?username=${encodeURIComponent(ANILIST_USERNAME)}`); const json=await res.json();
+    if(json.error) throw new Error(json.error);
+    diffData=json.diffs||[];
+    setSyncStatus(`AL: ${json.al_count} · MAL: ${json.mal_count} · ${diffData.length} difference${diffData.length!==1?"s":""}`);
+    renderDiffs(diffData);
+  } catch(err){setSyncError(err.message);}
+  finally{setSyncSpinner(false);}
+}
+async function autoSync() {
+  hap(10);
+  setSyncError(""); setSyncSpinner(true,"Syncing all…"); setSyncStatus("Running auto sync…");
+  try {
+    const res=await fetch(`/api/sync/auto?username=${encodeURIComponent(ANILIST_USERNAME)}`,{method:"POST"}); const json=await res.json();
+    if(json.error) throw new Error(json.error);
+    setSyncStatus(`✓ Synced ${json.synced} item${json.synced!==1?"s":""}`);
+    await loadDiff();
+  } catch(err){setSyncError(err.message);setSyncSpinner(false);}
+}
+async function applySingle(idx) {
+  hap(8);
+  const diff=diffData[idx]; if(!diff) return;
+  const btn=document.getElementById(`apply-btn-${idx}`);
+  if(btn){btn.disabled=true;btn.textContent="…";}
+  try {
+    const res=await fetch("/api/sync/apply",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({items:[diff]})});
+    const json=await res.json(); const r=json.results?.[0];
+    if(btn){btn.classList.add(r?.mal_ok?"done":"err");btn.textContent=r?.mal_ok?"✓ Done":"✗ Error";}
+  } catch{if(btn){btn.classList.add("err");btn.textContent="✗ Error";}}
+}
+async function applySelected() {
+  hap(10);
+  const selected=[...document.querySelectorAll(".diff-check:checked")].map(cb=>diffData[+cb.dataset.idx]).filter(Boolean);
+  if(!selected.length) return;
+  setSyncStatus(`Applying ${selected.length} item${selected.length!==1?"s":""}…`);
+  document.getElementById("btn-apply-sel").disabled=true;
+  try {
+    const res=await fetch("/api/sync/apply",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({items:selected})});
+    const json=await res.json(); const ok=(json.results||[]).filter(r=>r.mal_ok).length;
+    setSyncStatus(`✓ Applied ${ok} / ${selected.length}`);
+    await loadDiff();
+  } catch(err){setSyncError(err.message);}
+}
+
+// ── Oneko ─────────────────────────────────────────────────────────────────────
+const ONEKO_PNG = "data:image/png;base64,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";
+let nekoRunning = false, nekoEl = null, nekoAnimFrame = null;
+let nekoPosX=64,nekoPosY=64,mousePosX=0,mousePosY=0,frameCount=0,idleTime=0,idleAnimation=null,idleAnimFrame=0;
+const NEKO_SPEED=10;
+const spriteSets={idle:[[-3,-3]],alert:[[-7,-3]],scratchSelf:[[-5,0],[-6,0],[-7,0]],scratchWallN:[[0,0],[0,-1]],scratchWallS:[[-7,-1],[-6,-2]],scratchWallE:[[-2,-2],[-2,-3]],scratchWallW:[[-4,0],[-4,-1]],tired:[[-3,-2]],sleeping:[[-2,0],[-2,-1]],N:[[-1,-2],[-1,-3]],NE:[[0,-2],[0,-3]],E:[[-3,0],[-3,-1]],SE:[[-5,-1],[-5,-2]],S:[[-6,-3],[-7,-2]],SW:[[-5,-3],[-6,-1]],W:[[-4,-2],[-4,-3]],NW:[[-1,0],[-1,-1]]};
+document.addEventListener("mousemove",e=>{mousePosX=e.clientX;mousePosY=e.clientY;});
+function nekoSetSprite(name,f){const s=spriteSets[name][f%spriteSets[name].length];nekoEl.style.backgroundPosition=`${s[0]*32}px ${s[1]*32}px`;}
+function nekoResetIdle(){idleAnimation=null;idleAnimFrame=0;}
+function nekoIdle(){idleTime++;if(idleTime>10&&Math.floor(Math.random()*200)===0&&!idleAnimation){const opts=["sleeping","scratchSelf"];if(nekoPosX<32)opts.push("scratchWallW");if(nekoPosY<32)opts.push("scratchWallN");if(nekoPosX>window.innerWidth-32)opts.push("scratchWallE");if(nekoPosY>window.innerHeight-32)opts.push("scratchWallS");idleAnimation=opts[Math.floor(Math.random()*opts.length)];}switch(idleAnimation){case"sleeping":if(idleAnimFrame<8){nekoSetSprite("tired",0);break;}nekoSetSprite("sleeping",Math.floor(idleAnimFrame/4));if(idleAnimFrame>192)nekoResetIdle();break;case"scratchWallN":case"scratchWallS":case"scratchWallE":case"scratchWallW":case"scratchSelf":nekoSetSprite(idleAnimation,idleAnimFrame);if(idleAnimFrame>9)nekoResetIdle();break;default:nekoSetSprite("idle",0);return;}idleAnimFrame++;}
+let lastNekoTs;
+function nekoAnimLoop(ts){if(!nekoEl||!nekoEl.isConnected)return;if(!lastNekoTs)lastNekoTs=ts;if(ts-lastNekoTs>100){lastNekoTs=ts;frameCount++;const dx=nekoPosX-mousePosX,dy=nekoPosY-mousePosY,dist=Math.sqrt(dx*dx+dy*dy);if(dist<NEKO_SPEED||dist<48){nekoIdle();}else{idleAnimation=null;idleAnimFrame=0;if(idleTime>1){nekoSetSprite("alert",0);idleTime=Math.min(idleTime,7)-1;}else{let dir=dy/dist>0.5?"S":"";dir+=dy/dist<-0.5?"N":"";dir+=dx/dist>0.5?"W":"";dir+=dx/dist<-0.5?"E":"";nekoSetSprite(dir,frameCount);nekoPosX-=(dx/dist)*NEKO_SPEED;nekoPosY-=(dy/dist)*NEKO_SPEED;nekoPosX=Math.min(Math.max(16,nekoPosX),window.innerWidth-16);nekoPosY=Math.min(Math.max(16,nekoPosY),window.innerHeight-16);nekoEl.style.left=`${nekoPosX-16}px`;nekoEl.style.top=`${nekoPosY-16}px`;}}}nekoAnimFrame=requestAnimationFrame(nekoAnimLoop);}
+function startOneko(){
+  if(nekoRunning)return;
+  // reset all animation state so restarts are clean
+  frameCount=0;idleTime=0;idleAnimation=null;idleAnimFrame=0;lastNekoTs=null;
+  // seed position to current mouse or viewport centre
+  if(mousePosX===0&&mousePosY===0){mousePosX=Math.round(window.innerWidth/2);mousePosY=Math.round(window.innerHeight/2);}
+  nekoPosX=mousePosX;nekoPosY=mousePosY;
+  nekoEl=document.createElement("div");nekoEl.id="oneko";
+  nekoEl.style.cssText=`width:32px;height:32px;position:fixed;pointer-events:none;image-rendering:pixelated;left:${nekoPosX-16}px;top:${nekoPosY-16}px;z-index:2147483647;background-image:url(${ONEKO_PNG});background-size:256px 128px;`;
+  document.body.appendChild(nekoEl);
+  nekoRunning=true;
+  nekoAnimFrame=requestAnimationFrame(nekoAnimLoop);
+}
+function stopOneko(){nekoRunning=false;if(nekoAnimFrame){cancelAnimationFrame(nekoAnimFrame);nekoAnimFrame=null;}if(nekoEl){nekoEl.remove();nekoEl=null;}
+  frameCount=0;idleTime=0;idleAnimation=null;idleAnimFrame=0;lastNekoTs=null;
+}
+
+// ── Oneko settings switch ─────────────────────────────────────────────────────
+function onOnekoSwitch(el) {
+  hap(6);
+  if (el.checked) { startOneko(); } else { stopOneko(); }
+  localStorage.setItem("oneko-on", el.checked ? "1" : "0");
+  const icon = document.getElementById("oneko-icon");
+  if (icon) icon.innerHTML = el.checked
+    ? `<svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="10" x2="9.01" y2="10"/><line x1="15" y1="10" x2="15.01" y2="10"/><path d="M7 7 L5 3"/><path d="M17 7 L19 3"/></svg>`
+    : `<svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M8 15h8"/><path d="M8 11 Q9 10 10 11"/><path d="M14 11 Q15 10 16 11"/><path d="M7 7 L5 3"/><path d="M17 7 L19 3"/></svg>`;
+}
+
+// ── Sync settings switch ──────────────────────────────────────────────────────
+function onSyncSwitch(el) {
+  hap(6);
+  localStorage.setItem("sync-enabled", el.checked ? "1" : "0");
+  document.getElementById("open-sync-row").style.display = el.checked ? "" : "none";
+  const icon = document.getElementById("sync-icon");
+  if (icon) icon.innerHTML = el.checked
+    ? `<svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>`
+    : `<svg viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>`;
+}
+function openSyncPage() {
+  hap(8);
+  showPage("sync", null);
+  document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+}
+
+// ── Restore preferences ───────────────────────────────────────────────────────
+if (localStorage.getItem("oneko-on") === "1") {
+  requestAnimationFrame(() => { startOneko(); });
+  document.getElementById("switch-oneko").checked = true;
+}
+if (localStorage.getItem("sync-enabled") === "1") {
+  document.getElementById("switch-sync").checked = true;
+  document.getElementById("open-sync-row").style.display = "";
+}
+
+
+// ── Username setting ──────────────────────────────────────────────────────────
+function saveUsername() {
+  hap(8);
+  const input = document.getElementById('username-input');
+  const feedback = document.getElementById('username-feedback');
+  const val = input.value.trim();
+  if (!val) {
+    feedback.style.display = '';
+    feedback.style.color = 'var(--error-color)';
+    feedback.textContent = '⚠ Please enter a username';
+    return;
+  }
+  ANILIST_USERNAME = val;
+  localStorage.setItem('anitrack-username', val);
+  // Update the label
+  const label = document.getElementById('current-username-label');
+  if (label) label.textContent = val;
+  // Show success feedback
+  feedback.style.display = '';
+  feedback.style.color = 'var(--success-color)';
+  feedback.textContent = `✓ Switched to ${val} — reloading list…`;
+  input.value = '';
+  // Reload the list with the new username
+  setTimeout(() => {
+    feedback.style.display = 'none';
+    _allEntries = [];
+    loadList();
+  }, 800);
+}
+
+// Init username input placeholder with current active username
+(function initUsernameInput() {
+  const label = document.getElementById('current-username-label');
+  if (label) label.textContent = ANILIST_USERNAME;
+})();
+const GQL_UPDATE_PROGRESS = `
+mutation($id: Int, $progress: Int) {
+  SaveMediaListEntry(id: $id, progress: $progress) {
+    id progress
+  }
+}`;
+
+// In-memory progress store so we always have the latest value
+const epProgress = {};
+
+async function updateEp(entryId, currentProgress, maxEp, delta) {
+  hap(8);
+  // Use in-memory value if available (handles rapid clicks correctly)
+  const cur = epProgress[entryId] !== undefined ? epProgress[entryId] : currentProgress;
+  const next = cur + delta;
+  if (next < 0) return;
+  if (maxEp && next > maxEp) return;
+
+  // Optimistic UI update
+  epProgress[entryId] = next;
+  const curEl   = document.getElementById(`ep-cur-${entryId}`);
+  const badgeEl = document.getElementById(`ep-badge-${entryId}`);
+  const valEl   = document.getElementById(`ep-val-${entryId}`);
+  const decBtn  = document.getElementById(`ep-dec-${entryId}`);
+  const incBtn  = document.getElementById(`ep-inc-${entryId}`);
+  const card    = document.getElementById(`card-${entryId}`);
+
+  const totalStr = maxEp ? maxEp : '?';
+  if (curEl)   curEl.textContent   = next;
+  if (badgeEl) badgeEl.textContent = `EP ${next} / ${totalStr}`;
+  if (valEl)   valEl.textContent   = `${next} / ${totalStr}`;
+  if (decBtn)  decBtn.disabled     = (next <= 0);
+  if (incBtn)  incBtn.disabled     = (maxEp && next >= maxEp);
+  if (card)    card.classList.add('ep-updating');
+
+  try {
+    const res = await fetch('/api/anilist', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: GQL_UPDATE_PROGRESS, variables: { id: entryId, progress: next } })
+    });
+    const json = await res.json();
+    if (json.errors) throw new Error(json.errors[0]?.message || 'AniList error');
+    // Confirm with server value
+    const serverProgress = json.data?.SaveMediaListEntry?.progress;
+    if (serverProgress !== undefined) {
+      epProgress[entryId] = serverProgress;
+      if (curEl)   curEl.textContent   = serverProgress;
+      if (badgeEl) badgeEl.textContent = `EP ${serverProgress} / ${totalStr}`;
+      if (valEl)   valEl.textContent   = `${serverProgress} / ${totalStr}`;
+      if (decBtn)  decBtn.disabled     = (serverProgress <= 0);
+      if (incBtn)  incBtn.disabled     = (maxEp && serverProgress >= maxEp);
+    }
+  } catch (err) {
+    // Revert on error
+    epProgress[entryId] = cur;
+    if (curEl)   curEl.textContent   = cur;
+    if (badgeEl) badgeEl.textContent = `EP ${cur} / ${totalStr}`;
+    if (valEl)   valEl.textContent   = `${cur} / ${totalStr}`;
+    if (decBtn)  decBtn.disabled     = (cur <= 0);
+    if (incBtn)  incBtn.disabled     = (maxEp && cur >= maxEp);
+    console.error('Episode update failed:', err);
+  } finally {
+    if (card) card.classList.remove('ep-updating');
+  }
+}
+
+// ── Bottom Navbar ─────────────────────────────────────────────────────────────
+(function initAniNavbar() {
+  const watchBtn    = document.getElementById('anav-watching');
+  const planBtn     = document.getElementById('anav-planned');
+  const syncBtn     = document.getElementById('anav-sync-btn');
+  const settingsBtn = document.getElementById('anav-settings-btn');
+  const navEl       = document.getElementById('anitrack-navbar');
+  const indicator   = document.getElementById('anav-indicator');
+  const allBtns     = [watchBtn, planBtn, syncBtn, settingsBtn];
+
+  const INACTIVE_W = 50;
+  const ACTIVE_W   = 80;
+  const DURATION   = 300; // ms — mirrors Flutter's 300ms
+
+  // Per-button animation state: { progress: 0–1, raf: id|null }
+  const animState = new Map();
+
+  // ── Icon animation ───────────────────────────────────────────────────────────
+  // Adds 'icon-anim' class, removes it after the longest animation completes
+  // so it can be re-triggered on every tap.
+  const ANIM_DURATIONS = {
+    'anav-watching':    650,
+    'anav-planned':     500 + 210, // last tile delay + duration
+    'anav-sync-btn':    650,
+    'anav-settings-btn':650,
+  };
+  // Per-button timeout handle so rapid taps restart cleanly
+  const animTimers = {};
+
+  function triggerIconAnim(btn) {
+    if (!btn) return;
+    const id = btn.id;
+    // Cancel any in-flight removal timer and restart
+    if (animTimers[id]) {
+      clearTimeout(animTimers[id]);
+      btn.classList.remove('icon-anim');
+      // Force reflow so the browser sees the class removal before re-adding
+      void btn.offsetWidth;
+    }
+    btn.classList.add('icon-anim');
+    animTimers[id] = setTimeout(() => {
+      btn.classList.remove('icon-anim');
+      animTimers[id] = null;
+    }, (ANIM_DURATIONS[id] || 500) + 20);
+  }
+
+  function easeOutQuint(t) {
+    return 1 - Math.pow(1 - t, 5);
+  }
+
+  function animateBtn(el, toActive) {
+    let state = animState.get(el) || { progress: toActive ? 0 : 1, raf: null };
+    if (state.raf) cancelAnimationFrame(state.raf);
+
+    const startProgress = state.progress;
+    const endProgress   = toActive ? 1 : 0;
+    const startTime     = performance.now();
+    const totalDelta    = Math.abs(endProgress - startProgress);
+    const duration      = DURATION * totalDelta; // proportional mid-animation
+
+    function tick(now) {
+      const elapsed = now - startTime;
+      const rawT    = Math.min(elapsed / duration, 1);
+      const easedT  = easeOutQuint(rawT);
+
+      state.progress = startProgress + (endProgress - startProgress) * easedT;
+      el.style.width = (INACTIVE_W + (ACTIVE_W - INACTIVE_W) * state.progress) + 'px';
+
+      if (rawT < 1) {
+        state.raf = requestAnimationFrame(tick);
+      } else {
+        state.progress = endProgress;
+        state.raf = null;
+      }
+      animState.set(el, state);
+      updateIndicator();
+    }
+
+    animState.set(el, state);
+    state.raf = requestAnimationFrame(tick);
+  }
+
+  function updateIndicator() {
+    const active = navEl ? navEl.querySelector('.anav-item.active') : null;
+    if (!active || !indicator) return;
+    const w = parseFloat(active.style.width) || ACTIVE_W;
+    const center = active.offsetLeft + w / 2;
+    indicator.style.left = (center - 15) + 'px';
+  }
+
+  function setActive(btn) {
+    hap(6);
+    triggerIconAnim(btn);
+    allBtns.forEach(b => {
+      if (!b) return;
+      if (b.classList.contains('active')) {
+        b.classList.remove('active');
+        animateBtn(b, false); // collapse: 80→50
+      }
+    });
+    if (btn) {
+      btn.classList.add('active');
+      animateBtn(btn, true); // expand: 50→80
+    }
+  }
+
+  function selectListTab(btn, view) {
+    setActive(btn);
+    ensureListPage();
+    const vw = document.getElementById('view-watching');
+    const vp = document.getElementById('view-planned');
+    if (vw) vw.style.display = (view === 'watching') ? '' : 'none';
+    if (vp) vp.style.display = (view === 'planned')  ? '' : 'none';
+    if (_allEntries.length) applyFilter();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  watchBtn?.addEventListener('click', () => selectListTab(watchBtn, 'watching'));
+  planBtn?.addEventListener('click',  () => selectListTab(planBtn,  'planned'));
+
+  syncBtn?.addEventListener('click', () => {
+    setActive(syncBtn);
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById('page-sync')?.classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
+  settingsBtn?.addEventListener('click', () => {
+    setActive(settingsBtn);
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById('page-settings')?.classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
+  // Init — set widths immediately (no animation)
+  allBtns.forEach(btn => {
+    if (!btn) return;
+    // Remove from natural tab order — we manage focus ourselves
+    btn.setAttribute('tabindex', '-1');
+    const isActive = btn.classList.contains('active');
+    btn.style.width = (isActive ? ACTIVE_W : INACTIVE_W) + 'px';
+    animState.set(btn, { progress: isActive ? 1 : 0, raf: null });
+  });
+  // Give the active button tab-focus entry point
+  const firstActive = allBtns.find(b => b?.classList.contains('active'));
+  if (firstActive) firstActive.setAttribute('tabindex', '0');
+
+  // ── Keyboard navigation ──────────────────────────────────────────────────────
+  // Tab cycles focus through buttons; arrows move between them; Enter activates.
+  navEl?.addEventListener('keydown', e => {
+    const focused = allBtns.indexOf(document.activeElement);
+    if (focused === -1) return;
+
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      const next = allBtns[(focused + 1) % allBtns.length];
+      if (next) { allBtns.forEach(b => b?.setAttribute('tabindex','-1')); next.setAttribute('tabindex','0'); next.focus(); }
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      const prev = allBtns[(focused - 1 + allBtns.length) % allBtns.length];
+      if (prev) { allBtns.forEach(b => b?.setAttribute('tabindex','-1')); prev.setAttribute('tabindex','0'); prev.focus(); }
+    } else if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      allBtns[focused]?.click();
+    }
+  });
+
+  // When Tab key lands focus on the navbar from outside, land on active button
+  navEl?.addEventListener('focusin', e => {
+    if (allBtns.includes(e.target)) return; // already on a button
+    const active = allBtns.find(b => b?.classList.contains('active')) || allBtns[0];
+    allBtns.forEach(b => b?.setAttribute('tabindex','-1'));
+    if (active) { active.setAttribute('tabindex','0'); active.focus(); }
+  });
+
+  // Init indicator position
+  requestAnimationFrame(updateIndicator);
+  window.addEventListener('resize', updateIndicator);
+
+  // Restore blur pref
+  if (localStorage.getItem('navbar-blur') === '0') navEl?.classList.add('no-blur');
+})();
+
+// ── Navbar Blur switch ───────────────────────────────────────────────────────
+function onNavBlurSwitch(el) {
+  hap(6);
+  const navEl = document.getElementById('anitrack-navbar');
+  navEl.classList.toggle('no-blur', !el.checked);
+  localStorage.setItem('navbar-blur', el.checked ? '1' : '0');
+  const icon = document.getElementById('blur-icon');
+  if (icon) icon.innerHTML = el.checked
+    ? `<svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>`
+    : `<svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/></svg>`;
+}
+// Restore navbar blur pref
+(function restoreNavbarPrefs() {
+  const blurSw = document.getElementById('switch-navbar-blur');
+  const blurOn = localStorage.getItem('navbar-blur') !== '0';
+  if (blurSw) blurSw.checked = blurOn;
+  const blurIcon = document.getElementById('blur-icon');
+  if (blurIcon) blurIcon.innerHTML = blurOn
+    ? `<svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>`
+    : `<svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/></svg>`;
+
+  // Oneko icon
+  const onekoOn = localStorage.getItem('oneko-on') === '1';
+  const onekoIcon = document.getElementById('oneko-icon');
+  if (onekoIcon) onekoIcon.innerHTML = onekoOn
+    ? `<svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="10" x2="9.01" y2="10"/><line x1="15" y1="10" x2="15.01" y2="10"/><path d="M7 7 L5 3"/><path d="M17 7 L19 3"/></svg>`
+    : `<svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M8 15h8"/><path d="M8 11 Q9 10 10 11"/><path d="M14 11 Q15 10 16 11"/><path d="M7 7 L5 3"/><path d="M17 7 L19 3"/></svg>`;
+
+  // Sync icon
+  const syncOn = localStorage.getItem('sync-enabled') === '1';
+  const syncIcon = document.getElementById('sync-icon');
+  if (syncIcon) syncIcon.innerHTML = syncOn
+    ? `<svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>`
+    : `<svg viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>`;
+})();
+
+// ── Init deferred to DOMContentLoaded (after glass library loads) ─────────────
+</script>
+
+
+<script>
+// ── Back-to-top button ────────────────────────────────────────────────────
+function buildBackTop() {
+  const btn = document.createElement('button');
+  btn.textContent = '↑';
+  btn.setAttribute('aria-label', 'Back to top');
+  Object.assign(btn.style, {
+    position: 'fixed',
+    bottom: '112px',
+    right: '16px',
+    zIndex: '200',
+    width: '52px',
+    height: '52px',
+    borderRadius: '26px',
+    border: '1px solid var(--border)',
+    background: 'var(--glass-bg)',
+    backdropFilter: 'blur(20px)',
+    webkitBackdropFilter: 'blur(20px)',
+    color: 'var(--text)',
+    fontSize: '18px',
+    fontWeight: '700',
+    cursor: 'pointer',
+    opacity: '0',
+    pointerEvents: 'none',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  });
+  btn.onclick = () => { hap(6); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+  btn.style.transition = 'opacity 0.35s ease, transform 0.35s cubic-bezier(0.32,0,0.67,0)';
+  document.body.appendChild(btn);
+  let _rafPending = false;
+  let _lastY = window.scrollY;
+  window.addEventListener('scroll', () => {
+    if (_rafPending) return;
+    _rafPending = true;
+    requestAnimationFrame(() => {
+      _rafPending = false;
+      const currentY = window.scrollY;
+      const atTop = currentY < 60;
+      const scrollingDown = currentY > _lastY;
+      _lastY = currentY;
+
+      const visible = currentY > 200 && (atTop || !scrollingDown);
+      btn.style.opacity = visible ? '1' : '0';
+      btn.style.pointerEvents = visible ? 'auto' : 'none';
+      btn.style.transform = visible ? 'translateY(0)' : 'translateY(16px)';
+    });
+  }, { passive: true });
+}
+
+// DOMContentLoaded: load list and build UI chrome
+document.addEventListener('DOMContentLoaded', () => {
+  loadList();
+  buildBackTop();
+
+  // ── Navbar hide on scroll down, show on scroll up + always at top ───────────
+  (function initNavbarScroll() {
+    const wrap = document.getElementById('anitrack-navbar-wrap');
+    if (!wrap) return;
+    let lastY    = window.scrollY;
+    let rafPending = false;
+
+    window.addEventListener('scroll', () => {
+      if (rafPending) return;
+      rafPending = true;
+      requestAnimationFrame(() => {
+        rafPending = false;
+        const currentY = window.scrollY;
+        const atTop    = currentY < 60;
+        const scrollingDown = currentY > lastY;
+        lastY = currentY;
+
+        if (atTop || !scrollingDown) {
+          wrap.classList.remove('nav-hidden');
+        } else {
+          wrap.classList.add('nav-hidden');
+        }
+      });
+    }, { passive: true });
+  })();
+});
+
+</script>
+
+<!-- PWA Install Banner -->
+<div id="pwa-banner" class="pwa-banner">
+  <img src="/static/favicon.png" class="pwa-icon" alt="AniTrack"/>
+  <div class="pwa-text">
+    <div class="pwa-title">Add AniTrack to Home Screen</div>
+    <div class="pwa-sub">Install for quick access, offline support</div>
+  </div>
+  <button id="pwa-install-btn" class="pwa-install">Install</button>
+  <button id="pwa-dismiss-btn" class="pwa-close">&#x2715;</button>
+</div>
+
+<script>
+// ── PWA Install Prompt ──────────────────────────────────────────────────────
+(function() {
+  let deferredPrompt = null;
+  const banner     = document.getElementById('pwa-banner');
+  const installBtn = document.getElementById('pwa-install-btn');
+  const dismissBtn = document.getElementById('pwa-dismiss-btn');
+  if (!banner) return;
+  if (window.matchMedia('(display-mode: standalone)').matches) return;
+  if (navigator.standalone) return;
+  if (localStorage.getItem('pwa-dismissed')) return;
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    deferredPrompt = e;
+  });
+  setTimeout(() => banner.classList.add('show'), 1500);
+  installBtn.addEventListener('click', async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      deferredPrompt = null;
+      banner.classList.remove('show');
+    } else {
+      banner.querySelector('.pwa-sub').textContent = 'Tap ⋮ menu → "Add to Home screen"';
+      installBtn.style.display = 'none';
+    }
+  });
+  dismissBtn.addEventListener('click', () => {
+    banner.classList.remove('show');
+    localStorage.setItem('pwa-dismissed', '1');
+  });
+  window.addEventListener('appinstalled', () => {
+    banner.classList.remove('show');
+    localStorage.setItem('pwa-dismissed', '1');
+  });
+})();
+</script>
+
+</body>
+</html>
