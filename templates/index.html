@@ -626,15 +626,15 @@
 
 <header>
   <div class="header-top">
-    <a class="logo" href="/" style="text-decoration:none;cursor:pointer;" title="Home" onclick="hap(8)"><img src="/static/anitrack-logo-transparent-512.png" alt="AniTrack" style="height:36px;width:auto;display:block;"></a>
+    <a class="logo" href="/" style="text-decoration:none;cursor:pointer;" title="Home" onclick="hap(8)"><img src="/static/anitrack-logo-transparent-512.png" alt="AniTrack" style="height:52px;width:auto;display:block;"></a>
     <div class="header-right">
-      <div class="stats" id="stats">
-        <b id="total-watching">0</b> watching · <b id="total-planned">0</b> planned · <b id="total-airing">0</b> airing soon
-      </div>
       <div class="user-pill">
         <span class="dot"></span> {{ anilist_username }}
         <span class="pill-sep">·</span><span class="dot {% if al_connected %}dot-al{% else %}dot-disconnected{% endif %}"></span> AL
         <span class="pill-sep">·</span><span class="dot {% if mal_connected %}dot-mal{% else %}dot-disconnected{% endif %}"></span> MAL
+      </div>
+      <div class="stats" id="stats">
+        <b id="total-watching">0</b> watching · <b id="total-planned">0</b> planned · <b id="total-airing">0</b> airing soon
       </div>
     </div>
   </div>
