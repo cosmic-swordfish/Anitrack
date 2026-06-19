@@ -23,7 +23,7 @@ try:
             raise RuntimeError("DATABASE_URL is not set")
         return psycopg2.connect(DB_URL, sslmode="require")
 
-    def _ensure_table():
+    def _ensure_tables():
         if not DB_URL:
             return
         try:
@@ -36,13 +36,35 @@ try:
                     updated_at TIMESTAMPTZ DEFAULT now()
                 )
             """)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS anime_list (
+                    id          BIGSERIAL PRIMARY KEY,
+                    username    TEXT NOT NULL,
+                    al_id       INT,
+                    mal_id      INT,
+                    title       TEXT NOT NULL,
+                    status      TEXT,
+                    progress    INT DEFAULT 0,
+                    score       NUMERIC(4,1) DEFAULT 0,
+                    episodes    INT,
+                    media_status TEXT,
+                    updated_at  TIMESTAMPTZ DEFAULT now(),
+                    synced_at   TIMESTAMPTZ DEFAULT now(),
+                    UNIQUE (username, al_id),
+                    UNIQUE (username, mal_id)
+                )
+            """)
+            cur.execute("""
+                CREATE INDEX IF NOT EXISTS idx_anime_list_username
+                ON anime_list (username)
+            """)
             conn.commit(); cur.close(); conn.close()
-            print("[DB] Connected — user_tokens table ready.")
+            print("[DB] Connected — user_tokens + anime_list tables ready.")
         except Exception as e:
             print(f"[DB] Table init error: {e}")
             print("[DB] Check that DATABASE_URL is correct and the database is reachable.")
 
-    _ensure_table()
+    _ensure_tables()
 
     def db_save_tokens(username, al_token, mal_token):
         if not DB_URL: return
@@ -79,7 +101,121 @@ try:
         except Exception as e:
             print(f"[DB] Delete error: {e}")
 
+    def db_save_anime_list(username, entries):
+        """Upsert a list of anime entries for a user into Supabase.
+        entries: list of dicts from _parse_entry() (AL format) or mal entries.
+        Each entry must have at least: alId or malId, title, status, progress, score.
+        """
+        if not DB_URL or not entries: return
+        try:
+            conn = _get_db(); cur = conn.cursor()
+            for e in entries:
+                al_id       = e.get("alId")
+                mal_id      = e.get("malId")
+                title       = e.get("title", "Unknown")
+                status      = e.get("status", "")
+                progress    = e.get("progress", 0)
+                score       = e.get("score", 0)
+                episodes    = e.get("episodes")
+                media_status = e.get("mediaStatus")
+
+                # Build the conflict target: prefer alId, fallback to malId
+                if al_id:
+                    cur.execute("""
+                        INSERT INTO anime_list
+                            (username, al_id, mal_id, title, status, progress, score, episodes, media_status, updated_at, synced_at)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, now(), now())
+                        ON CONFLICT (username, al_id) DO UPDATE SET
+                            mal_id       = EXCLUDED.mal_id,
+                            title        = EXCLUDED.title,
+                            status       = EXCLUDED.status,
+                            progress     = EXCLUDED.progress,
+                            score        = EXCLUDED.score,
+                            episodes     = EXCLUDED.episodes,
+                            media_status = EXCLUDED.media_status,
+                            updated_at   = EXCLUDED.updated_at,
+                            synced_at    = now()
+                    """, (username, al_id, mal_id, title, status, progress, score, episodes, media_status))
+                elif mal_id:
+                    cur.execute("""
+                        INSERT INTO anime_list
+                            (username, al_id, mal_id, title, status, progress, score, episodes, media_status, updated_at, synced_at)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, now(), now())
+                        ON CONFLICT (username, mal_id) DO UPDATE SET
+                            al_id        = EXCLUDED.al_id,
+                            title        = EXCLUDED.title,
+                            status       = EXCLUDED.status,
+                            progress     = EXCLUDED.progress,
+                            score        = EXCLUDED.score,
+                            episodes     = EXCLUDED.episodes,
+                            media_status = EXCLUDED.media_status,
+                            updated_at   = EXCLUDED.updated_at,
+                            synced_at    = now()
+                    """, (username, al_id, mal_id, title, status, progress, score, episodes, media_status))
+            conn.commit(); cur.close(); conn.close()
+            print(f"[DB] anime_list: saved {len(entries)} entries for {username}")
+        except Exception as e:
+            print(f"[DB] anime_list save error: {e}")
+
+    def db_load_anime_list(username, status_filter=None):
+        """Load stored anime list for a user. Optionally filter by status."""
+        if not DB_URL: return []
+        try:
+            conn = _get_db()
+            cur  = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            if status_filter:
+                cur.execute(
+                    "SELECT * FROM anime_list WHERE username=%s AND status=%s ORDER BY title",
+                    (username, status_filter)
+                )
+            else:
+                cur.execute(
+                    "SELECT * FROM anime_list WHERE username=%s ORDER BY title",
+                    (username,)
+                )
+            rows = cur.fetchall(); cur.close(); conn.close()
+            return [dict(r) for r in rows]
+        except Exception as e:
+            print(f"[DB] anime_list load error: {e}"); return []
+
+    def db_delete_anime_list(username):
+        """Delete all anime entries for a user (e.g. on logout)."""
+        if not DB_URL: return
+        try:
+            conn = _get_db(); cur = conn.cursor()
+            cur.execute("DELETE FROM anime_list WHERE username=%s", (username,))
+            conn.commit(); cur.close(); conn.close()
+        except Exception as e:
+            print(f"[DB] anime_list delete error: {e}")
+
     DB_AVAILABLE = True
+
+    # ── Owner-only guard ──────────────────────────────────────────────────────
+    # Set OWNER_USERNAME in your .env / Vercel env vars to your AniList username.
+    # When set, only that username's data is ever written to the database.
+    # Visitors can still use the site (sync, view diffs) but nothing is persisted.
+    OWNER_USERNAME = os.environ.get("OWNER_USERNAME", "").strip().lower()
+
+    def _is_owner(username):
+        if not OWNER_USERNAME:
+            return True  # not set → no restriction (backwards-compatible)
+        return username.strip().lower() == OWNER_USERNAME
+
+    # Wrap save functions with the owner check
+    _db_save_tokens_inner    = db_save_tokens
+    _db_save_anime_list_inner = db_save_anime_list
+
+    def db_save_tokens(username, al_token, mal_token):
+        if not _is_owner(username):
+            print(f"[DB] Skipped token save for non-owner: {username}")
+            return
+        _db_save_tokens_inner(username, al_token, mal_token)
+
+    def db_save_anime_list(username, entries):
+        if not _is_owner(username):
+            print(f"[DB] Skipped anime_list save for non-owner: {username}")
+            return
+        _db_save_anime_list_inner(username, entries)
 
 except ImportError:
     DB_AVAILABLE = False
@@ -89,6 +225,9 @@ except ImportError:
     def db_save_tokens(u, a, m): pass
     def db_load_all_tokens(): return []
     def db_delete_tokens(u): pass
+    def db_save_anime_list(u, e): pass
+    def db_load_anime_list(u, status_filter=None): return []
+    def db_delete_anime_list(u): pass
 
 app = Flask(__name__)
 
@@ -190,6 +329,31 @@ query($malId: Int) {
   Media(idMal: $malId, type: ANIME) { id idMal title { romaji } }
 }"""
 
+GQL_SEARCH = """
+query($search: String, $page: Int) {
+  Page(page: $page, perPage: 10) {
+    media(search: $search, type: ANIME) {
+      id idMal
+      title { romaji english }
+      status episodes
+      coverImage { medium }
+      mediaListEntry {
+        status score(format: POINT_10) progress
+      }
+    }
+  }
+}"""
+
+_AL_DELETE_GQL = """
+mutation($id: Int) {
+  DeleteMediaListEntry(id: $id) { deleted }
+}"""
+
+_AL_GET_LIST_ENTRY_GQL = """
+query($mediaId: Int) {
+  MediaList(mediaId: $mediaId, type: ANIME) { id }
+}"""
+
 def _parse_entry(e):
     t = e["media"]["title"]
     return {
@@ -247,8 +411,8 @@ mutation($mediaId: Int, $status: MediaListStatus, $progress: Int, $score: Float)
     }
 }"""
 
-def al_update(media_id, status=None, progress=None, score=None):
-    token = al_headers()
+def al_update(media_id, status=None, progress=None, score=None, token=None):
+    token = token or al_headers()
     if not token: return False
     if status is None and progress is None and score is None:
         return False
@@ -258,6 +422,22 @@ def al_update(media_id, status=None, progress=None, score=None):
     if score    is not None: vars_["score"]    = float(score)
     r = anilist_query(_AL_UPDATE_GQL, vars_, token=token)
     return "errors" not in r
+
+def al_get_list_entry_id(media_id, token=None):
+    """Get the MediaList entry ID needed for deletion."""
+    token = token or al_headers()
+    if not token: return None
+    data = anilist_query(_AL_GET_LIST_ENTRY_GQL, {"mediaId": media_id}, token=token)
+    return (data.get("data") or {}).get("MediaList", {}).get("id")
+
+def al_delete(media_id, token=None):
+    """Delete an anime from AniList by media ID."""
+    token = token or al_headers()
+    if not token: return False
+    entry_id = al_get_list_entry_id(media_id, token=token)
+    if not entry_id: return False
+    r = anilist_query(_AL_DELETE_GQL, {"id": entry_id}, token=token)
+    return (r.get("data") or {}).get("DeleteMediaListEntry", {}).get("deleted", False)
 
 # ── MAL helpers ───────────────────────────────────────────────────────────────
 def mal_headers():
@@ -410,11 +590,11 @@ def compute_diff(al_list, mal_list):
             })
     return diffs
 
-def resolve_al_id_from_mal(mal_id):
-    data = anilist_query(GQL_LOOKUP_BY_MAL, {"malId": mal_id})
+def resolve_al_id_from_mal(mal_id, token=None):
+    data = anilist_query(GQL_LOOKUP_BY_MAL, {"malId": mal_id}, token=token)
     return (data.get("data") or {}).get("Media", {}).get("id")
 
-def apply_diff_item(diff):
+def apply_diff_item(diff, al_token=None):
     mal_ok = al_ok = False
     if diff["action"] == "add_to_mal":
         mal_status = AL_TO_MAL.get(diff["al_status"])
@@ -428,14 +608,15 @@ def apply_diff_item(diff):
         if mal_status and diff.get("malId"):
             mal_ok = mal_update(diff["malId"], status=mal_status, progress=wp, score=ws)
         if diff.get("needs_al_update") and diff.get("alId"):
-            al_ok = al_update(diff["alId"], status=wst, progress=wp, score=ws)
+            al_ok = al_update(diff["alId"], status=wst, progress=wp, score=ws, token=al_token)
     elif diff["action"] == "only_on_mal":
-        al_id = diff.get("alId") or resolve_al_id_from_mal(diff["malId"])
+        al_id = diff.get("alId") or resolve_al_id_from_mal(diff["malId"], token=al_token)
         if al_id:
             al_status = MAL_TO_AL.get(diff["mal_status"], "PLANNING")
             al_ok = al_update(al_id, status=al_status,
                               progress=diff.get("mal_progress", 0),
-                              score=diff.get("mal_score", 0))
+                              score=diff.get("mal_score", 0),
+                              token=al_token)
     return {"mal_ok": mal_ok, "al_ok": al_ok}
 
 # ── Routes ────────────────────────────────────────────────────────────────────
@@ -594,6 +775,17 @@ def al_callback():
     token["expires_at"] = time.time() + token.get("expires_in", 3600)
     session["al_token"] = token
     session.modified = True
+    # Fetch the authenticated user's AniList username and store in session
+    try:
+        viewer_data = anilist_query(
+            "query { Viewer { name } }",
+            token=token
+        )
+        al_viewer = (viewer_data.get("data") or {}).get("Viewer", {}).get("name", "")
+        if al_viewer:
+            session["al_username"] = al_viewer
+    except Exception:
+        pass
     # Save to Supabase if MAL is also connected
     if session.get("mal_token"):
         username = session.get("al_username", ANILIST_USERNAME)
@@ -605,6 +797,7 @@ def al_callback():
 @app.route("/al/logout")
 def al_logout():
     session.pop("al_token", None)
+    session.pop("al_username", None)
     return redirect("/")
 
 # ── Sync endpoints ────────────────────────────────────────────────────────────
@@ -617,6 +810,8 @@ def sync_diff():
         al_list  = get_anilist_list(token=al_headers(), username=username)
         mal_list = get_mal_list()
         diffs    = compute_diff(al_list, mal_list)
+        # Save fetched AL list to Supabase
+        db_save_anime_list(username, al_list)
         return jsonify({"diffs": diffs, "al_count": len(al_list), "mal_count": len(mal_list)})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -625,12 +820,12 @@ def sync_diff():
 def sync_apply():
     if "mal_token" not in session:
         return jsonify({"error": "MAL not connected"}), 401
-    items = request.get_json().get("items", [])
+    items = (request.get_json(silent=True) or {}).get("items", [])
     results = []
     for item in items:
         if item.get("action") not in ("add_to_mal", "update", "only_on_mal"):
             continue
-        r = apply_diff_item(item)
+        r = apply_diff_item(item, al_token=al_headers())
         results.append({"malId": item["malId"], "title": item.get("title"), **r})
     return jsonify({"results": results})
 
@@ -646,9 +841,14 @@ def sync_auto():
         results  = []
         for diff in diffs:
             if diff["action"] in ("add_to_mal", "update", "only_on_mal") and diff.get("malId"):
-                r = apply_diff_item(diff)
-                results.append({"title": diff["title"], **r})
+                try:
+                    r = apply_diff_item(diff, al_token=al_headers())
+                    results.append({"title": diff["title"], **r})
+                except Exception as item_err:
+                    results.append({"title": diff.get("title", "?"), "error": str(item_err)})
                 time.sleep(0.3)
+        # Save post-sync AL list to Supabase
+        db_save_anime_list(username, al_list)
         return jsonify({"synced": len(results), "results": results})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -747,28 +947,156 @@ def cron_sync():
                         time.sleep(0.3)
                     # Also update AniList side if needed
                     if diff.get("needs_al_update") and diff.get("alId"):
-                        al_update(diff["alId"], status=wst, progress=wp, score=ws)
+                        al_update(diff["alId"], status=wst, progress=wp, score=ws, token=al_token)
                         time.sleep(0.3)
 
                 elif action == "only_on_mal" and diff.get("malId"):
-                    # Fix #3: sync MAL-only entries back to AniList
-                    al_id = diff.get("alId") or resolve_al_id_from_mal(diff["malId"])
+                    # sync MAL-only entries back to AniList
+                    al_id = diff.get("alId") or resolve_al_id_from_mal(diff["malId"], token=al_token)
                     if al_id:
                         al_status = MAL_TO_AL.get(diff["mal_status"], "PLANNING")
                         al_update(al_id, status=al_status,
                                   progress=diff.get("mal_progress", 0),
-                                  score=diff.get("mal_score", 0))
+                                  score=diff.get("mal_score", 0),
+                                  token=al_token)
                         synced += 1
                         time.sleep(0.3)
 
             total_synced += synced
             results.append({"username": username, "synced": synced})
+            # Save final synced list to Supabase
+            db_save_anime_list(username, al_list)
             print(f"[Cron] {username}: {synced} items synced")
         except Exception as e:
             print(f"[Cron] Error for {username}: {e}")
             results.append({"username": username, "error": str(e)})
 
     return jsonify({"synced_users": len(rows), "total_synced": total_synced, "results": results})
+
+# ── Supabase anime list API ───────────────────────────────────────────────────
+@app.route("/api/db/anime-list")
+def db_anime_list():
+    """Return the stored anime list for a user from Supabase.
+    Query params:
+      username  — defaults to session AL username or ANILIST_USERNAME
+      status    — optional AL status filter (CURRENT, COMPLETED, PAUSED, DROPPED, PLANNING)
+    """
+    if not DB_AVAILABLE or not DB_URL:
+        return jsonify({"error": "Database not configured"}), 503
+    username      = request.args.get("username", "").strip()
+    username      = username or session.get("al_username", ANILIST_USERNAME)
+    status_filter = request.args.get("status", "").strip().upper() or None
+    entries = db_load_anime_list(username, status_filter=status_filter)
+    return jsonify({"username": username, "count": len(entries), "entries": entries})
+
+@app.route("/api/db/stats")
+def db_stats():
+    """Return per-status counts for a user's stored anime list."""
+    if not DB_AVAILABLE or not DB_URL:
+        return jsonify({"error": "Database not configured"}), 503
+    username = request.args.get("username", "").strip()
+    username = username or session.get("al_username", ANILIST_USERNAME)
+    all_entries = db_load_anime_list(username)
+    stats = {}
+    for e in all_entries:
+        s = e.get("status", "UNKNOWN")
+        stats[s] = stats.get(s, 0) + 1
+    return jsonify({"username": username, "total": len(all_entries), "by_status": stats})
+
+# ── Anime search / add / edit / delete ───────────────────────────────────────
+@app.route("/api/anime/search")
+def anime_search():
+    """Search anime by title via AniList.
+    Query params: q (search string), page (default 1)
+    """
+    q = request.args.get("q", "").strip()
+    if not q:
+        return jsonify({"error": "Missing search query"}), 400
+    page = int(request.args.get("page", 1))
+    data = anilist_query(GQL_SEARCH, {"search": q, "page": page}, token=al_headers())
+    media = (data.get("data") or {}).get("Page", {}).get("media", [])
+    results = []
+    for m in media:
+        t = m["title"]
+        entry = m.get("mediaListEntry") or {}
+        results.append({
+            "alId":     m["id"],
+            "malId":    m.get("idMal"),
+            "title":    t.get("english") or t.get("romaji") or "Unknown",
+            "episodes": m.get("episodes"),
+            "status":   m.get("status"),
+            "cover":    (m.get("coverImage") or {}).get("medium"),
+            "listStatus":   entry.get("status"),
+            "listProgress": entry.get("progress", 0),
+            "listScore":    entry.get("score", 0),
+        })
+    return jsonify({"results": results})
+
+@app.route("/api/anime/add", methods=["POST"])
+def anime_add():
+    """Add an anime to both AniList and MAL lists.
+    Body: { alId, malId, status (AL key), progress, score }
+    """
+    if "al_token" not in session:
+        return jsonify({"error": "AniList not connected"}), 401
+    body     = request.get_json(silent=True) or {}
+    al_id    = body.get("alId")
+    mal_id   = body.get("malId")
+    status   = body.get("status", "PLANNING")
+    progress = int(body.get("progress", 0))
+    score    = float(body.get("score", 0))
+    if not al_id:
+        return jsonify({"error": "alId is required"}), 400
+    al_ok  = al_update(al_id, status=status, progress=progress, score=score, token=al_headers())
+    mal_ok = False
+    if mal_id and "mal_token" in session:
+        mal_status = AL_TO_MAL.get(status, "plan_to_watch")
+        mal_ok = mal_update(mal_id, status=mal_status, progress=progress, score=score)
+    return jsonify({"al_ok": al_ok, "mal_ok": mal_ok})
+
+@app.route("/api/anime/edit", methods=["POST"])
+def anime_edit():
+    """Edit an existing list entry on both AniList and MAL.
+    Body: { alId, malId, status (AL key), progress, score }
+    """
+    if "al_token" not in session:
+        return jsonify({"error": "AniList not connected"}), 401
+    body     = request.get_json(silent=True) or {}
+    al_id    = body.get("alId")
+    mal_id   = body.get("malId")
+    status   = body.get("status", "PLANNING")
+    progress = int(body.get("progress", 0))
+    score    = float(body.get("score", 0))
+    if not al_id:
+        return jsonify({"error": "alId is required"}), 400
+    al_ok  = al_update(al_id, status=status, progress=progress, score=score, token=al_headers())
+    mal_ok = False
+    if mal_id and "mal_token" in session:
+        mal_status = AL_TO_MAL.get(status, "plan_to_watch")
+        mal_ok = mal_update(mal_id, status=mal_status, progress=progress, score=score)
+    return jsonify({"al_ok": al_ok, "mal_ok": mal_ok})
+
+@app.route("/api/anime/delete", methods=["POST"])
+def anime_delete():
+    """Delete an anime from both AniList and MAL.
+    Body: { alId, malId }
+    """
+    if "al_token" not in session:
+        return jsonify({"error": "AniList not connected"}), 401
+    body   = request.get_json(silent=True) or {}
+    al_id  = body.get("alId")
+    mal_id = body.get("malId")
+    if not al_id:
+        return jsonify({"error": "alId is required"}), 400
+    al_ok  = al_delete(al_id, token=al_headers())
+    mal_ok = False
+    if mal_id and "mal_token" in session:
+        headers = mal_headers()
+        if headers:
+            r = requests.delete(f"{MAL_API}/anime/{mal_id}/my_list_status",
+                                headers=headers, timeout=10)
+            mal_ok = r.status_code == 200
+    return jsonify({"al_ok": al_ok, "mal_ok": mal_ok})
 
 # ── Vercel entry point ────────────────────────────────────────────────────────
 if __name__ == "__main__":
