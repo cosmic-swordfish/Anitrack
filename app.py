@@ -339,6 +339,8 @@ query($search: String, $page: Int) {
       coverImage { medium }
       mediaListEntry {
         status score(format: POINT_10) progress
+        startedAt { year month day }
+        completedAt { year month day }
       }
     }
   }
@@ -405,21 +407,26 @@ def refresh_al_token(token):
     session.pop("al_token", None); return None
 
 _AL_UPDATE_GQL = """
-mutation($mediaId: Int, $status: MediaListStatus, $progress: Int, $score: Float) {
-    SaveMediaListEntry(mediaId: $mediaId, status: $status, progress: $progress, score: $score) {
+mutation($mediaId: Int, $status: MediaListStatus, $progress: Int, $score: Float,
+         $startedAt: FuzzyDateInput, $completedAt: FuzzyDateInput) {
+    SaveMediaListEntry(mediaId: $mediaId, status: $status, progress: $progress, score: $score,
+                       startedAt: $startedAt, completedAt: $completedAt) {
         id
     }
 }"""
 
-def al_update(media_id, status=None, progress=None, score=None, token=None):
+def al_update(media_id, status=None, progress=None, score=None, token=None,
+              started_at=None, completed_at=None):
     token = token or al_headers()
     if not token: return False
     if status is None and progress is None and score is None:
         return False
     vars_ = {"mediaId": media_id}
-    if status   is not None: vars_["status"]   = status
-    if progress is not None: vars_["progress"] = progress
-    if score    is not None: vars_["score"]    = float(score)
+    if status       is not None: vars_["status"]      = status
+    if progress     is not None: vars_["progress"]    = progress
+    if score        is not None: vars_["score"]       = float(score)
+    if started_at   is not None: vars_["startedAt"]   = started_at
+    if completed_at is not None: vars_["completedAt"] = completed_at
     r = anilist_query(_AL_UPDATE_GQL, vars_, token=token)
     return "errors" not in r
 
@@ -1019,16 +1026,20 @@ def anime_search():
     for m in media:
         t = m["title"]
         entry = m.get("mediaListEntry") or {}
+        sa = entry.get("startedAt") or {}
+        ca = entry.get("completedAt") or {}
         results.append({
-            "alId":     m["id"],
-            "malId":    m.get("idMal"),
-            "title":    t.get("english") or t.get("romaji") or "Unknown",
-            "episodes": m.get("episodes"),
-            "status":   m.get("status"),
-            "cover":    (m.get("coverImage") or {}).get("medium"),
-            "listStatus":   entry.get("status"),
-            "listProgress": entry.get("progress", 0),
-            "listScore":    entry.get("score", 0),
+            "alId":          m["id"],
+            "malId":         m.get("idMal"),
+            "title":         t.get("english") or t.get("romaji") or "Unknown",
+            "episodes":      m.get("episodes"),
+            "status":        m.get("status"),
+            "cover":         (m.get("coverImage") or {}).get("medium"),
+            "listStatus":    entry.get("status"),
+            "listProgress":  entry.get("progress", 0),
+            "listScore":     entry.get("score", 0),
+            "startedAt":     sa if any(sa.values()) else None,
+            "completedAt":   ca if any(ca.values()) else None,
         })
     return jsonify({"results": results})
 
@@ -1045,9 +1056,12 @@ def anime_add():
     status   = body.get("status", "PLANNING")
     progress = int(body.get("progress", 0))
     score    = float(body.get("score", 0))
+    started_at   = body.get("startedAt")
+    completed_at = body.get("completedAt")
     if not al_id:
         return jsonify({"error": "alId is required"}), 400
-    al_ok  = al_update(al_id, status=status, progress=progress, score=score, token=al_headers())
+    al_ok  = al_update(al_id, status=status, progress=progress, score=score,
+                       token=al_headers(), started_at=started_at, completed_at=completed_at)
     mal_ok = False
     if mal_id and "mal_token" in session:
         mal_status = AL_TO_MAL.get(status, "plan_to_watch")
@@ -1057,7 +1071,7 @@ def anime_add():
 @app.route("/api/anime/edit", methods=["POST"])
 def anime_edit():
     """Edit an existing list entry on both AniList and MAL.
-    Body: { alId, malId, status (AL key), progress, score }
+    Body: { alId, malId, status (AL key), progress, score, startedAt, completedAt }
     """
     if "al_token" not in session:
         return jsonify({"error": "AniList not connected"}), 401
@@ -1067,9 +1081,12 @@ def anime_edit():
     status   = body.get("status", "PLANNING")
     progress = int(body.get("progress", 0))
     score    = float(body.get("score", 0))
+    started_at   = body.get("startedAt")
+    completed_at = body.get("completedAt")
     if not al_id:
         return jsonify({"error": "alId is required"}), 400
-    al_ok  = al_update(al_id, status=status, progress=progress, score=score, token=al_headers())
+    al_ok  = al_update(al_id, status=status, progress=progress, score=score,
+                       token=al_headers(), started_at=started_at, completed_at=completed_at)
     mal_ok = False
     if mal_id and "mal_token" in session:
         mal_status = AL_TO_MAL.get(status, "plan_to_watch")
