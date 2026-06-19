@@ -687,6 +687,7 @@
       <button class="btn btn-primary" onclick="loadDiff()">🔍 Check Differences</button>
       <button class="btn btn-success" id="btn-auto" onclick="autoSync()" disabled>⚡ Auto Sync All</button>
       <button class="btn btn-warn" id="btn-apply-sel" onclick="applySelected()" disabled>✓ Apply Selected</button>
+      <button class="btn" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15)" onclick="openSearchModal()">＋ Add Anime</button>
       <span class="sync-status" id="sync-status"></span>
     </div>
     {% if not al_connected and al_client_set %}
@@ -1785,6 +1786,182 @@ document.addEventListener('DOMContentLoaded', () => {
     localStorage.setItem('pwa-dismissed', '1');
   });
 })();
+</script>
+
+<!-- ── Search / Add Modal ─────────────────────────────────────────────── -->
+<div id="search-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);align-items:center;justify-content:center">
+  <div style="background:var(--card-bg,#1a1a2e);border:1px solid rgba(255,255,255,0.12);border-radius:16px;padding:24px;width:min(95vw,520px);max-height:85vh;display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <span style="font-size:1.1rem;font-weight:600">＋ Add Anime</span>
+      <button onclick="closeSearchModal()" style="background:none;border:none;color:inherit;font-size:1.4rem;cursor:pointer;opacity:.6">✕</button>
+    </div>
+    <div style="display:flex;gap:8px">
+      <input id="search-input" type="text" placeholder="Search anime title…"
+        style="flex:1;padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:inherit;font-size:.95rem"
+        oninput="debounceSearch()" onkeydown="if(event.key==='Enter')doSearch()">
+      <button onclick="doSearch()" class="btn btn-primary" style="padding:10px 16px">Search</button>
+    </div>
+    <div id="search-results" style="overflow-y:auto;display:flex;flex-direction:column;gap:10px;max-height:55vh"></div>
+  </div>
+</div>
+
+<!-- ── Edit Modal ─────────────────────────────────────────────────────── -->
+<div id="edit-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);align-items:center;justify-content:center">
+  <div style="background:var(--card-bg,#1a1a2e);border:1px solid rgba(255,255,255,0.12);border-radius:16px;padding:24px;width:min(95vw,420px);display:flex;flex-direction:column;gap:16px">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <span style="font-size:1.05rem;font-weight:600" id="edit-modal-title">Edit Entry</span>
+      <button onclick="closeEditModal()" style="background:none;border:none;color:inherit;font-size:1.4rem;cursor:pointer;opacity:.6">✕</button>
+    </div>
+    <input type="hidden" id="edit-al-id">
+    <input type="hidden" id="edit-mal-id">
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <label style="font-size:.85rem;opacity:.7">Status</label>
+      <select id="edit-status" style="padding:9px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:inherit;font-size:.95rem">
+        <option value="CURRENT">Watching</option>
+        <option value="COMPLETED">Completed</option>
+        <option value="PAUSED">On Hold</option>
+        <option value="DROPPED">Dropped</option>
+        <option value="PLANNING">Plan to Watch</option>
+      </select>
+    </div>
+    <div style="display:flex;gap:12px">
+      <div style="flex:1;display:flex;flex-direction:column;gap:8px">
+        <label style="font-size:.85rem;opacity:.7">Progress (episodes)</label>
+        <input id="edit-progress" type="number" min="0" value="0"
+          style="padding:9px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:inherit;font-size:.95rem">
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:8px">
+        <label style="font-size:.85rem;opacity:.7">Score (0–10)</label>
+        <input id="edit-score" type="number" min="0" max="10" step="0.5" value="0"
+          style="padding:9px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:inherit;font-size:.95rem">
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:4px">
+      <button id="edit-save-btn" onclick="saveEdit()" class="btn btn-success" style="flex:1">💾 Save</button>
+      <button id="edit-delete-btn" onclick="confirmDelete()" class="btn" style="flex:0 0 auto;background:rgba(220,50,50,0.15);border:1px solid rgba(220,50,50,0.3);color:#f87171">🗑 Delete</button>
+    </div>
+    <div id="edit-status-msg" style="font-size:.85rem;text-align:center;min-height:18px"></div>
+  </div>
+</div>
+
+<script>
+// ── Search / Add ────────────────────────────────────────────────────────────
+let _searchTimer = null;
+function openSearchModal() {
+  document.getElementById('search-modal').style.display = 'flex';
+  setTimeout(() => document.getElementById('search-input').focus(), 50);
+}
+function closeSearchModal() {
+  document.getElementById('search-modal').style.display = 'none';
+  document.getElementById('search-input').value = '';
+  document.getElementById('search-results').innerHTML = '';
+}
+function debounceSearch() {
+  clearTimeout(_searchTimer);
+  _searchTimer = setTimeout(doSearch, 500);
+}
+async function doSearch() {
+  const q = document.getElementById('search-input').value.trim();
+  if (!q) return;
+  const el = document.getElementById('search-results');
+  el.innerHTML = '<div style="text-align:center;opacity:.5;padding:16px">Searching…</div>';
+  try {
+    const res = await fetch(`/api/anime/search?q=${encodeURIComponent(q)}`);
+    const data = await res.json();
+    if (!data.results || !data.results.length) {
+      el.innerHTML = '<div style="text-align:center;opacity:.5;padding:16px">No results found</div>';
+      return;
+    }
+    el.innerHTML = data.results.map(r => {
+      const inList = r.listStatus;
+      const statusLabel = inList ? `<span style="font-size:.75rem;padding:2px 8px;border-radius:20px;background:rgba(2,169,255,0.15);color:#7dd3fc">${r.listStatus}</span>` : '';
+      const eps = r.episodes ? `${r.episodes} eps` : '?? eps';
+      return `<div style="display:flex;gap:12px;align-items:center;padding:10px;border-radius:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08)">
+        ${r.cover ? `<img src="${r.cover}" style="width:44px;height:60px;border-radius:6px;object-fit:cover;flex-shrink:0">` : '<div style="width:44px;height:60px;border-radius:6px;background:rgba(255,255,255,0.06);flex-shrink:0"></div>'}
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:500;font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.title}</div>
+          <div style="font-size:.78rem;opacity:.55;margin-top:2px">${eps} · ${r.status || ''}</div>
+          <div style="margin-top:4px">${statusLabel}</div>
+        </div>
+        <button onclick='openAddOrEdit(${JSON.stringify(r)})'
+          style="padding:7px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.07);color:inherit;cursor:pointer;white-space:nowrap;font-size:.85rem">
+          ${inList ? '✏ Edit' : '＋ Add'}
+        </button>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    el.innerHTML = `<div style="color:#f87171;padding:12px">Error: ${e.message}</div>`;
+  }
+}
+
+// ── Edit Modal ───────────────────────────────────────────────────────────────
+let _editIsNew = false;
+function openAddOrEdit(anime) {
+  _editIsNew = !anime.listStatus;
+  document.getElementById('edit-modal-title').textContent = _editIsNew ? `＋ Add: ${anime.title}` : `✏ Edit: ${anime.title}`;
+  document.getElementById('edit-al-id').value   = anime.alId  || '';
+  document.getElementById('edit-mal-id').value  = anime.malId || '';
+  document.getElementById('edit-status').value  = anime.listStatus  || 'PLANNING';
+  document.getElementById('edit-progress').value = anime.listProgress || 0;
+  document.getElementById('edit-score').value    = anime.listScore   || 0;
+  document.getElementById('edit-status-msg').textContent = '';
+  document.getElementById('edit-delete-btn').style.display = _editIsNew ? 'none' : '';
+  document.getElementById('edit-modal').style.display = 'flex';
+}
+function closeEditModal() {
+  document.getElementById('edit-modal').style.display = 'none';
+}
+async function saveEdit() {
+  const btn = document.getElementById('edit-save-btn');
+  const msg = document.getElementById('edit-status-msg');
+  btn.disabled = true; btn.textContent = 'Saving…';
+  const body = {
+    alId:     parseInt(document.getElementById('edit-al-id').value),
+    malId:    parseInt(document.getElementById('edit-mal-id').value) || null,
+    status:   document.getElementById('edit-status').value,
+    progress: parseInt(document.getElementById('edit-progress').value) || 0,
+    score:    parseFloat(document.getElementById('edit-score').value) || 0,
+  };
+  const endpoint = _editIsNew ? '/api/anime/add' : '/api/anime/edit';
+  try {
+    const res  = await fetch(endpoint, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    const data = await res.json();
+    if (data.al_ok || data.mal_ok) {
+      msg.style.color = '#4ade80';
+      msg.textContent = `✓ Saved — AL: ${data.al_ok?'✓':'✗'}  MAL: ${data.mal_ok?'✓':'✗'}`;
+      setTimeout(closeEditModal, 1200);
+    } else {
+      msg.style.color = '#f87171';
+      msg.textContent = 'Save failed — check you are logged in to AL and MAL';
+    }
+  } catch(e) {
+    msg.style.color = '#f87171'; msg.textContent = `Error: ${e.message}`;
+  }
+  btn.disabled = false; btn.textContent = '💾 Save';
+}
+async function confirmDelete() {
+  if (!confirm('Remove this anime from both AniList and MAL?')) return;
+  const btn = document.getElementById('edit-delete-btn');
+  const msg = document.getElementById('edit-status-msg');
+  btn.disabled = true; btn.textContent = 'Deleting…';
+  const body = {
+    alId:  parseInt(document.getElementById('edit-al-id').value),
+    malId: parseInt(document.getElementById('edit-mal-id').value) || null,
+  };
+  try {
+    const res  = await fetch('/api/anime/delete', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    const data = await res.json();
+    msg.style.color = '#4ade80';
+    msg.textContent = `Deleted — AL: ${data.al_ok?'✓':'✗'}  MAL: ${data.mal_ok?'✓':'✗'}`;
+    setTimeout(closeEditModal, 1200);
+  } catch(e) {
+    msg.style.color = '#f87171'; msg.textContent = `Error: ${e.message}`;
+  }
+  btn.disabled = false; btn.textContent = '🗑 Delete';
+}
+// Close modals on backdrop click
+document.getElementById('search-modal').addEventListener('click', e => { if(e.target===e.currentTarget) closeSearchModal(); });
+document.getElementById('edit-modal').addEventListener('click',   e => { if(e.target===e.currentTarget) closeEditModal(); });
 </script>
 
 </body>
