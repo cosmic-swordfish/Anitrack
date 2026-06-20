@@ -24,6 +24,7 @@
 
   /* ─────────────────── DARK THEME (default) ─────────────────── */
   :root {
+    --color-scheme: dark;
     --bg: #0a0c12;
     --bg-mesh: radial-gradient(ellipse 80% 60% at 20% 10%, rgba(2,169,255,0.06) 0%, transparent 60%),
                radial-gradient(ellipse 60% 50% at 80% 80%, rgba(192,132,252,0.05) 0%, transparent 55%),
@@ -95,6 +96,7 @@
 
   /* ─────────────────── LIGHT THEME ─────────────────── */
   [data-theme="light"] {
+    --color-scheme: light;
     --bg: #F5F5F7;
     --bg-mesh: radial-gradient(ellipse 80% 60% at 15% 5%, rgba(0,113,227,0.07) 0%, transparent 55%),
                radial-gradient(ellipse 60% 50% at 85% 85%, rgba(109,40,217,0.06) 0%, transparent 50%),
@@ -328,6 +330,16 @@
   .ep-btn:active:not(:disabled){transform:scale(0.9);}
   .ep-count{font-size:12px;font-family:monospace;color:var(--text);min-width:28px;text-align:center;}
   .ep-updating{opacity:.5;pointer-events:none;}
+  .edit-btn{
+    margin-left:auto;width:26px;height:26px;border-radius:7px;border:1px solid var(--border);
+    background:var(--glass-bg);color:var(--text);font-size:12px;
+    cursor:pointer;display:flex;align-items:center;justify-content:center;
+    transition:all .15s;line-height:1;opacity:.75;
+    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  }
+  .edit-btn:hover{background:rgba(2,169,255,0.15);border-color:var(--accent-border);color:var(--accent);opacity:1;}
+  .edit-btn:active{transform:scale(0.9);}
+  .date-input{color-scheme:var(--color-scheme);}
 
   /* ─── Header / Glass Nav ─── */
   header{
@@ -1011,6 +1023,8 @@ query($userName: String) {
     lists {
       entries {
         id mediaId status score progress updatedAt
+        startedAt { year month day }
+        completedAt { year month day }
         media {
           id idMal title { romaji english } status episodes
           coverImage { large color }
@@ -1022,6 +1036,12 @@ query($userName: String) {
     }
   }
 }`;
+
+// Safely embed a JS object as a single-quoted HTML attribute value
+// (escapes single quotes so titles like "I'm Standing Right Here" don't break onclick=' ... ')
+function attrJson(obj) {
+  return JSON.stringify(obj).replace(/'/g, "&#39;");
+}
 
 function fmtCountdown(secs) {
   if (secs <= 0) return "Now";
@@ -1061,7 +1081,13 @@ function buildCard(e) {
   }
   const entryId = e.id;
   const maxEp = m.episodes || null;
-  return `<div class="card" id="card-${entryId}"><div class="card-top-bar" style="background:${color}"></div><div class="cover">${cover?`<img src="${cover}" alt="${title}" loading="lazy">`:`<div class="cover-blank">📺</div>`}<div class="ep-badge" id="ep-badge-${entryId}">EP ${e.progress} / ${total}</div></div><div class="body"><a href="${m.siteUrl||'#'}" target="_blank" rel="noopener" class="anime-title" style="text-decoration:none;color:inherit">${title}</a><div class="prog-row"><span class="prog-label">Progress</span><span class="prog-val" id="ep-val-${entryId}">${e.progress} / ${total}</span></div>${scoreHtml}<div class="ep-controls"><button class="ep-btn" id="ep-dec-${entryId}" onclick="updateEp(${entryId},${e.progress},${maxEp},-1)" ${e.progress<=0?'disabled':''}>−</button><span class="ep-count" id="ep-cur-${entryId}">${e.progress}</span><button class="ep-btn" id="ep-inc-${entryId}" onclick="updateEp(${entryId},${e.progress},${maxEp},+1)" ${maxEp&&e.progress>=maxEp?'disabled':''}>+</button></div><div class="genres">${genres.map(g=>`<span class="genre">${g}</span>`).join("")}</div>${airHtml}</div></div>`;
+  const editPayload = {
+    alId: m.id, malId: m.idMal, title: title,
+    listStatus: e.status, listProgress: e.progress, listScore: e.score,
+    episodes: m.episodes, status: m.status,
+    startedAt: e.startedAt, completedAt: e.completedAt,
+  };
+  return `<div class="card" id="card-${entryId}"><div class="card-top-bar" style="background:${color}"></div><div class="cover">${cover?`<img src="${cover}" alt="${title}" loading="lazy">`:`<div class="cover-blank">📺</div>`}<div class="ep-badge" id="ep-badge-${entryId}">EP ${e.progress} / ${total}</div></div><div class="body"><a href="${m.siteUrl||'#'}" target="_blank" rel="noopener" class="anime-title" style="text-decoration:none;color:inherit">${title}</a><div class="prog-row"><span class="prog-label">Progress</span><span class="prog-val" id="ep-val-${entryId}">${e.progress} / ${total}</span></div>${scoreHtml}<div class="ep-controls"><button class="ep-btn" id="ep-dec-${entryId}" onclick="updateEp(${entryId},${e.progress},${maxEp},-1)" ${e.progress<=0?'disabled':''}>−</button><span class="ep-count" id="ep-cur-${entryId}">${e.progress}</span><button class="ep-btn" id="ep-inc-${entryId}" onclick="updateEp(${entryId},${e.progress},${maxEp},+1)" ${maxEp&&e.progress>=maxEp?'disabled':''}>+</button><button class="edit-btn" title="Edit" onclick='openAddOrEdit(${attrJson(editPayload)})'>✏</button></div><div class="genres">${genres.map(g=>`<span class="genre">${g}</span>`).join("")}</div>${airHtml}</div></div>`;
 }
 
 function buildDropRow(e) {
@@ -1789,15 +1815,15 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 
 <!-- ── Search / Add Modal ─────────────────────────────────────────────── -->
-<div id="search-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);align-items:center;justify-content:center">
-  <div style="background:var(--card-bg,#1a1a2e);border:1px solid rgba(255,255,255,0.12);border-radius:16px;padding:24px;width:min(95vw,520px);max-height:85vh;display:flex;flex-direction:column;gap:14px">
+<div id="search-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.55);backdrop-filter:blur(4px);align-items:center;justify-content:center">
+  <div style="background:var(--surface);border:1px solid var(--glass-border);border-radius:16px;padding:24px;width:min(95vw,520px);max-height:85vh;display:flex;flex-direction:column;gap:14px;box-shadow:var(--card-shadow);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%)">
     <div style="display:flex;align-items:center;justify-content:space-between">
-      <span style="font-size:1.1rem;font-weight:600">＋ Add Anime</span>
-      <button onclick="closeSearchModal()" style="background:none;border:none;color:inherit;font-size:1.4rem;cursor:pointer;opacity:.6">✕</button>
+      <span style="font-size:1.1rem;font-weight:600;color:var(--text-title)">＋ Add Anime</span>
+      <button onclick="closeSearchModal()" style="background:none;border:none;color:var(--text);font-size:1.4rem;cursor:pointer;opacity:.6">✕</button>
     </div>
     <div style="display:flex;gap:8px">
       <input id="search-input" type="text" placeholder="Search anime title…"
-        style="flex:1;padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:inherit;font-size:.95rem"
+        style="flex:1;padding:10px 14px;border-radius:10px;border:1px solid var(--border);background:var(--glass-bg);color:var(--text);font-size:.95rem"
         oninput="debounceSearch()" onkeydown="if(event.key==='Enter')doSearch()">
       <button onclick="doSearch()" class="btn btn-primary" style="padding:10px 16px">Search</button>
     </div>
@@ -1806,17 +1832,20 @@ document.addEventListener('DOMContentLoaded', () => {
 </div>
 
 <!-- ── Edit Modal ─────────────────────────────────────────────────────── -->
-<div id="edit-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);align-items:center;justify-content:center">
-  <div style="background:var(--card-bg,#1a1a2e);border:1px solid rgba(255,255,255,0.12);border-radius:16px;padding:24px;width:min(95vw,420px);display:flex;flex-direction:column;gap:16px">
+<div id="edit-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.55);backdrop-filter:blur(4px);align-items:center;justify-content:center">
+  <div style="background:var(--surface);border:1px solid var(--glass-border);border-radius:16px;padding:24px;width:min(95vw,420px);display:flex;flex-direction:column;gap:16px;box-shadow:var(--card-shadow);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%)">
     <div style="display:flex;align-items:center;justify-content:space-between">
-      <span style="font-size:1.05rem;font-weight:600" id="edit-modal-title">Edit Entry</span>
-      <button onclick="closeEditModal()" style="background:none;border:none;color:inherit;font-size:1.4rem;cursor:pointer;opacity:.6">✕</button>
+      <span style="font-size:1.05rem;font-weight:600;color:var(--text-title)" id="edit-modal-title">Edit Entry</span>
+      <button onclick="closeEditModal()" style="background:none;border:none;color:var(--text);font-size:1.4rem;cursor:pointer;opacity:.6">✕</button>
     </div>
     <input type="hidden" id="edit-al-id">
     <input type="hidden" id="edit-mal-id">
+    <input type="hidden" id="edit-title">
+    <input type="hidden" id="edit-episodes">
+    <input type="hidden" id="edit-media-status">
     <div style="display:flex;flex-direction:column;gap:8px">
-      <label style="font-size:.85rem;opacity:.7">Status</label>
-      <select id="edit-status" style="padding:9px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:inherit;font-size:.95rem">
+      <label style="font-size:.85rem;color:var(--text-sub)">Status</label>
+      <select id="edit-status" style="padding:9px 12px;border-radius:10px;border:1px solid var(--border);background:var(--glass-bg);color:var(--text);font-size:.95rem">
         <option value="CURRENT">Watching</option>
         <option value="COMPLETED">Completed</option>
         <option value="PAUSED">On Hold</option>
@@ -1826,14 +1855,26 @@ document.addEventListener('DOMContentLoaded', () => {
     </div>
     <div style="display:flex;gap:12px">
       <div style="flex:1;display:flex;flex-direction:column;gap:8px">
-        <label style="font-size:.85rem;opacity:.7">Progress (episodes)</label>
+        <label style="font-size:.85rem;color:var(--text-sub)">Progress (episodes)</label>
         <input id="edit-progress" type="number" min="0" value="0"
-          style="padding:9px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:inherit;font-size:.95rem">
+          style="padding:9px 12px;border-radius:10px;border:1px solid var(--border);background:var(--glass-bg);color:var(--text);font-size:.95rem">
       </div>
       <div style="flex:1;display:flex;flex-direction:column;gap:8px">
-        <label style="font-size:.85rem;opacity:.7">Score (0–10)</label>
+        <label style="font-size:.85rem;color:var(--text-sub)">Score (0–10)</label>
         <input id="edit-score" type="number" min="0" max="10" step="0.5" value="0"
-          style="padding:9px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:inherit;font-size:.95rem">
+          style="padding:9px 12px;border-radius:10px;border:1px solid var(--border);background:var(--glass-bg);color:var(--text);font-size:.95rem">
+      </div>
+    </div>
+    <div style="display:flex;gap:12px">
+      <div style="flex:1;display:flex;flex-direction:column;gap:8px">
+        <label style="font-size:.85rem;color:var(--text-sub)">Date Started</label>
+        <input id="edit-started-at" type="date" class="date-input"
+          style="padding:9px 12px;border-radius:10px;border:1px solid var(--border);background:var(--glass-bg);color:var(--text);font-size:.95rem">
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:8px">
+        <label style="font-size:.85rem;color:var(--text-sub)">Date Completed</label>
+        <input id="edit-completed-at" type="date" class="date-input"
+          style="padding:9px 12px;border-radius:10px;border:1px solid var(--border);background:var(--glass-bg);color:var(--text);font-size:.95rem">
       </div>
     </div>
     <div style="display:flex;gap:10px;margin-top:4px">
@@ -1864,27 +1905,27 @@ async function doSearch() {
   const q = document.getElementById('search-input').value.trim();
   if (!q) return;
   const el = document.getElementById('search-results');
-  el.innerHTML = '<div style="text-align:center;opacity:.5;padding:16px">Searching…</div>';
+  el.innerHTML = '<div style="text-align:center;color:var(--text-sub);padding:16px">Searching…</div>';
   try {
     const res = await fetch(`/api/anime/search?q=${encodeURIComponent(q)}`);
     const data = await res.json();
     if (!data.results || !data.results.length) {
-      el.innerHTML = '<div style="text-align:center;opacity:.5;padding:16px">No results found</div>';
+      el.innerHTML = '<div style="text-align:center;color:var(--text-sub);padding:16px">No results found</div>';
       return;
     }
     el.innerHTML = data.results.map(r => {
       const inList = r.listStatus;
-      const statusLabel = inList ? `<span style="font-size:.75rem;padding:2px 8px;border-radius:20px;background:rgba(2,169,255,0.15);color:#7dd3fc">${r.listStatus}</span>` : '';
+      const statusLabel = inList ? `<span style="font-size:.75rem;padding:2px 8px;border-radius:20px;background:var(--accent-bg);color:var(--accent)">${r.listStatus}</span>` : '';
       const eps = r.episodes ? `${r.episodes} eps` : '?? eps';
-      return `<div style="display:flex;gap:12px;align-items:center;padding:10px;border-radius:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08)">
-        ${r.cover ? `<img src="${r.cover}" style="width:44px;height:60px;border-radius:6px;object-fit:cover;flex-shrink:0">` : '<div style="width:44px;height:60px;border-radius:6px;background:rgba(255,255,255,0.06);flex-shrink:0"></div>'}
+      return `<div style="display:flex;gap:12px;align-items:center;padding:10px;border-radius:10px;background:var(--glass-bg);border:1px solid var(--border)">
+        ${r.cover ? `<img src="${r.cover}" style="width:44px;height:60px;border-radius:6px;object-fit:cover;flex-shrink:0">` : '<div style="width:44px;height:60px;border-radius:6px;background:var(--glass-bg);flex-shrink:0"></div>'}
         <div style="flex:1;min-width:0">
-          <div style="font-weight:500;font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.title}</div>
-          <div style="font-size:.78rem;opacity:.55;margin-top:2px">${eps} · ${r.status || ''}</div>
+          <div style="font-weight:500;font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text-title)">${r.title}</div>
+          <div style="font-size:.78rem;color:var(--text-sub);margin-top:2px">${eps} · ${r.status || ''}</div>
           <div style="margin-top:4px">${statusLabel}</div>
         </div>
-        <button onclick='openAddOrEdit(${JSON.stringify(r)})'
-          style="padding:7px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.07);color:inherit;cursor:pointer;white-space:nowrap;font-size:.85rem">
+        <button onclick='openAddOrEdit(${attrJson(r)})'
+          style="padding:7px 12px;border-radius:8px;border:1px solid var(--border);background:var(--glass-bg);color:var(--text);cursor:pointer;white-space:nowrap;font-size:.85rem">
           ${inList ? '✏ Edit' : '＋ Add'}
         </button>
       </div>`;
@@ -1896,14 +1937,35 @@ async function doSearch() {
 
 // ── Edit Modal ───────────────────────────────────────────────────────────────
 let _editIsNew = false;
+
+// Convert an AniList FuzzyDate {year,month,day} into a value usable by <input type="date">
+function fuzzyDateToInputValue(d) {
+  if (!d || !d.year || !d.month || !d.day) return '';
+  const mm = String(d.month).padStart(2, '0');
+  const dd = String(d.day).padStart(2, '0');
+  return `${d.year}-${mm}-${dd}`;
+}
+// Convert an <input type="date"> value ('YYYY-MM-DD') back into an AniList FuzzyDateInput
+function inputValueToFuzzyDate(v) {
+  if (!v) return null;
+  const [y, m, d] = v.split('-').map(Number);
+  if (!y || !m || !d) return null;
+  return { year: y, month: m, day: d };
+}
+
 function openAddOrEdit(anime) {
   _editIsNew = !anime.listStatus;
   document.getElementById('edit-modal-title').textContent = _editIsNew ? `＋ Add: ${anime.title}` : `✏ Edit: ${anime.title}`;
   document.getElementById('edit-al-id').value   = anime.alId  || '';
   document.getElementById('edit-mal-id').value  = anime.malId || '';
+  document.getElementById('edit-title').value   = anime.title || '';
+  document.getElementById('edit-episodes').value = anime.episodes || '';
+  document.getElementById('edit-media-status').value = anime.status || '';
   document.getElementById('edit-status').value  = anime.listStatus  || 'PLANNING';
   document.getElementById('edit-progress').value = anime.listProgress || 0;
   document.getElementById('edit-score').value    = anime.listScore   || 0;
+  document.getElementById('edit-started-at').value   = fuzzyDateToInputValue(anime.startedAt);
+  document.getElementById('edit-completed-at').value = fuzzyDateToInputValue(anime.completedAt);
   document.getElementById('edit-status-msg').textContent = '';
   document.getElementById('edit-delete-btn').style.display = _editIsNew ? 'none' : '';
   document.getElementById('edit-modal').style.display = 'flex';
@@ -1916,11 +1978,16 @@ async function saveEdit() {
   const msg = document.getElementById('edit-status-msg');
   btn.disabled = true; btn.textContent = 'Saving…';
   const body = {
-    alId:     parseInt(document.getElementById('edit-al-id').value),
-    malId:    parseInt(document.getElementById('edit-mal-id').value) || null,
-    status:   document.getElementById('edit-status').value,
-    progress: parseInt(document.getElementById('edit-progress').value) || 0,
-    score:    parseFloat(document.getElementById('edit-score').value) || 0,
+    alId:        parseInt(document.getElementById('edit-al-id').value),
+    malId:       parseInt(document.getElementById('edit-mal-id').value) || null,
+    title:       document.getElementById('edit-title').value || 'Unknown',
+    episodes:    parseInt(document.getElementById('edit-episodes').value) || null,
+    mediaStatus: document.getElementById('edit-media-status').value || null,
+    status:      document.getElementById('edit-status').value,
+    progress:    parseInt(document.getElementById('edit-progress').value) || 0,
+    score:       parseFloat(document.getElementById('edit-score').value) || 0,
+    startedAt:   inputValueToFuzzyDate(document.getElementById('edit-started-at').value),
+    completedAt: inputValueToFuzzyDate(document.getElementById('edit-completed-at').value),
   };
   const endpoint = _editIsNew ? '/api/anime/add' : '/api/anime/edit';
   try {
@@ -1929,7 +1996,7 @@ async function saveEdit() {
     if (data.al_ok || data.mal_ok) {
       msg.style.color = '#4ade80';
       msg.textContent = `✓ Saved — AL: ${data.al_ok?'✓':'✗'}  MAL: ${data.mal_ok?'✓':'✗'}`;
-      setTimeout(closeEditModal, 1200);
+      setTimeout(() => { closeEditModal(); loadList(); }, 1200);
     } else {
       msg.style.color = '#f87171';
       msg.textContent = 'Save failed — check you are logged in to AL and MAL';
