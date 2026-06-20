@@ -8,7 +8,7 @@ Track and sync your anime list between **AniList** and **MyAnimeList (MAL)**. An
 
 Anyone can visit the site and enter their own AniList username in Settings to view and sync their own list. The default username shown is the one set in the `ANILIST_USERNAME` environment variable.
 
-Built with Python + Flask. Deployable on Vercel. Optionally backed by **Supabase / PostgreSQL** for persistent token storage across serverless restarts.
+Built with Python + Flask. Deployable on Vercel. Optionally backed by **Supabase / PostgreSQL** for persistent token storage and anime list backup across serverless restarts.
 
 ---
 
@@ -16,6 +16,8 @@ Built with Python + Flask. Deployable on Vercel. Optionally backed by **Supabase
 
 - View any AniList anime list (watching + planned) with airing countdowns
 - Update episode progress directly from the card with `+` / `−` buttons
+- **Edit any entry in place** — ✏️ button on every card opens a modal to change status, progress, score, and **Date Started / Date Completed**
+- Search and add new anime to your list, or edit existing entries, from the same modal
 - Sort and filter by: Default, Last Updated, Airing Soon, A→Z, Score, Progress, Episodes Left
 - Connect MAL via OAuth 2.0 PKCE
 - Connect AniList via OAuth 2.0 for two-way sync and episode updates
@@ -24,7 +26,8 @@ Built with Python + Flask. Deployable on Vercel. Optionally backed by **Supabase
 - Auto-sync everything at once, or apply changes one by one
 - **Per-user username** — visitors can set their own AniList username in Settings
 - **Persistent token storage** — optional Postgres/Supabase DB keeps OAuth tokens across serverless restarts
-- Dark / light theme toggle
+- **Persistent list storage** — synced anime entries (including start/completion dates) are mirrored into Supabase for backup/history
+- Dark / light theme toggle — all modals and controls follow the active theme
 - Smooth animated pill navbar with icon animations
 - Haptic feedback on all interactive elements (mobile)
 - Full keyboard navigation on the bottom navbar (Tab / Arrow keys / Enter)
@@ -45,6 +48,21 @@ Built with Python + Flask. Deployable on Vercel. Optionally backed by **Supabase
 
 When only MAL is connected, changes are pushed to MAL only (one-way).  
 When both accounts are connected, the winning value is written to both platforms (two-way).
+
+---
+
+## Editing entries
+
+Every card in **Watching** and **Plan to Watch** has a small ✏️ button next to the episode `+`/`−` controls. Clicking it (or tapping **✏ Edit** / **＋ Add** on a search result) opens a modal where you can set:
+
+- Status (Watching / Completed / On Hold / Dropped / Plan to Watch)
+- Progress (episodes watched)
+- Score (0–10)
+- **Date Started** and **Date Completed**
+
+Saving writes the change to AniList (and MAL, if connected) immediately, then refreshes the list. If a database is configured, the same entry — including its dates — is also upserted into the `anime_list` table in Supabase right away, so the dates aren't only visible on AniList but also backed up in your own database.
+
+The modal and search results use the app's theme variables (`--glass-bg`, `--border`, `--accent`, etc.), so they automatically match whichever theme (dark/light) is active — no separate styling needed per theme.
 
 ---
 
@@ -76,7 +94,7 @@ anitrack/
 - Python 3.9+
 - A [MyAnimeList API app](https://myanimelist.net/apiconfig) (free) — required for sync
 - A [AniList API app](https://anilist.co/settings/developer) (free, optional) — required for two-way sync and episode updates
-- A [Supabase](https://supabase.com) project (free, optional) — required for persistent token storage on serverless deployments
+- A [Supabase](https://supabase.com) project (free, optional) — required for persistent token storage and anime list backup on serverless deployments
 
 ---
 
@@ -147,9 +165,11 @@ Open http://localhost:5000 — the default username from `.env` loads automatica
 
 The database is **optional**. Without it, OAuth tokens are stored only in the session cookie and will be lost when the server restarts (common on serverless platforms like Vercel).
 
-With a database connected, tokens are persisted in a `user_tokens` table and survive restarts — users stay logged in to MAL and AniList across deployments.
+With a database connected, tokens are persisted in a `user_tokens` table and survive restarts — users stay logged in to MAL and AniList across deployments. Your synced anime list (including watch dates) is also mirrored into an `anime_list` table for backup/history.
 
 ### What gets stored
+
+**`user_tokens`**
 
 | Column       | Type        | Description                        |
 |--------------|-------------|------------------------------------|
@@ -158,7 +178,27 @@ With a database connected, tokens are persisted in a `user_tokens` table and sur
 | `mal_token`  | JSONB       | MAL OAuth token (access + refresh) |
 | `updated_at` | TIMESTAMPTZ | Last updated timestamp             |
 
-The table is created automatically on first run if it doesn't exist (`CREATE TABLE IF NOT EXISTS`).
+**`anime_list`**
+
+| Column         | Type         | Description                                  |
+|----------------|--------------|-----------------------------------------------|
+| `username`     | TEXT         | AniList username                              |
+| `al_id`        | INT          | AniList media ID                              |
+| `mal_id`       | INT          | MyAnimeList media ID                          |
+| `title`        | TEXT         | Anime title                                   |
+| `status`       | TEXT         | List status (CURRENT, COMPLETED, etc.)        |
+| `progress`     | INT          | Episodes watched                              |
+| `score`        | NUMERIC(4,1) | Your score (0–10)                             |
+| `episodes`     | INT          | Total episode count                           |
+| `media_status` | TEXT         | Airing status of the anime itself             |
+| `started_at`   | DATE         | Date you started watching                     |
+| `completed_at` | DATE         | Date you finished watching                     |
+| `updated_at`   | TIMESTAMPTZ  | Last updated timestamp                        |
+| `synced_at`    | TIMESTAMPTZ  | Last time this row was synced from AniList    |
+
+Both tables are created automatically on first run if they don't exist (`CREATE TABLE IF NOT EXISTS`). If you're upgrading from an older version of AniTrack, the app also runs `ALTER TABLE anime_list ADD COLUMN IF NOT EXISTS started_at/completed_at` automatically on startup, so existing rows pick up the new columns (as `NULL`) without any manual migration.
+
+`anime_list` is refreshed whenever a sync runs (`/api/sync/diff`, `/api/sync/auto`, the cron job) and also immediately whenever you save an edit from the ✏️ modal — so Date Started / Date Completed land in Supabase right away rather than waiting for the next scheduled sync.
 
 ### Setting up Supabase (free tier)
 
@@ -180,6 +220,12 @@ Run the app locally and connect MAL or AniList. You should see in the terminal:
 [DB] Tokens saved for your_username
 ```
 
+After a sync runs, you should also see:
+
+```
+[DB] anime_list: saved N entries for your_username
+```
+
 If you see `[DB] Table init error` or `[DB] Save error`, the `DATABASE_URL` is wrong or unreachable.
 
 **Option 2 — Check via Python**
@@ -190,22 +236,25 @@ conn = psycopg2.connect(os.environ["DATABASE_URL"], sslmode="require")
 cur = conn.cursor()
 cur.execute("SELECT username, updated_at FROM user_tokens;")
 print(cur.fetchall())
+cur.execute("SELECT title, status, started_at, completed_at FROM anime_list LIMIT 5;")
+print(cur.fetchall())
 cur.close(); conn.close()
 ```
 
 **Option 3 — Check via Supabase dashboard**
 
-Go to your Supabase project → **Table Editor** → `user_tokens`. You should see a row for each user who has connected MAL or AniList.
+Go to your Supabase project → **Table Editor** → `user_tokens` or `anime_list`. You should see a row for each user who has connected MAL or AniList, and a row per anime (with `started_at`/`completed_at` filled in for anything you've edited or that AniList already had dates for).
 
 **Option 4 — psql (command line)**
 
 ```bash
 psql "$DATABASE_URL" -c "SELECT username, updated_at FROM user_tokens;"
+psql "$DATABASE_URL" -c "SELECT title, started_at, completed_at FROM anime_list ORDER BY synced_at DESC LIMIT 10;"
 ```
 
 ### Without a database
 
-If `DATABASE_URL` is not set or `psycopg2` is not installed, the app falls back silently — all functions become no-ops and tokens are session-only. No errors, no crashes.
+If `DATABASE_URL` is not set or `psycopg2` is not installed, the app falls back silently — all functions become no-ops, tokens are session-only, and the anime list is not mirrored to a database (it still works fully against AniList/MAL directly). No errors, no crashes.
 
 ---
 
@@ -224,7 +273,7 @@ If `DATABASE_URL` is not set or `psycopg2` is not installed, the app falls back 
 | `AL_CLIENT_ID`      | ⬜       | From anilist.co/settings/developer                  |
 | `AL_CLIENT_SECRET`  | ⬜       | From anilist.co/settings/developer                  |
 | `AL_REDIRECT_URI`   | ⬜       | `https://yourdomain.com/al/callback`                |
-| `DATABASE_URL`      | ⬜       | Supabase/Postgres URI — for persistent token storage |
+| `DATABASE_URL`      | ⬜       | Supabase/Postgres URI — for persistent token + list storage |
 
 After adding env vars, redeploy from the Vercel dashboard (don't use cached build).
 
@@ -259,6 +308,9 @@ Connect your AniList account via **Settings → Connect AniList**. Two-way sync 
 
 **Episode `+`/`−` buttons do nothing**  
 AniList OAuth must be connected (Settings → Connect AniList). Episode updates go through the AniList API and require an access token.
+
+**Date Started / Date Completed not saving**  
+Make sure AniList is connected — dates are written via the same AniList API call as status/progress/score, so it needs `al_token` in session. If you're also expecting the dates in Supabase, confirm `DATABASE_URL` is set; otherwise the dates are saved to AniList/MAL but not mirrored to a database.
 
 **Oneko not appearing**  
 Enable it in **Settings → Oneko** and move your cursor around the screen. Does not work on touch-only devices.
