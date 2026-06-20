@@ -48,12 +48,17 @@ try:
                     score       NUMERIC(4,1) DEFAULT 0,
                     episodes    INT,
                     media_status TEXT,
+                    started_at   DATE,
+                    completed_at DATE,
                     updated_at  TIMESTAMPTZ DEFAULT now(),
                     synced_at   TIMESTAMPTZ DEFAULT now(),
                     UNIQUE (username, al_id),
                     UNIQUE (username, mal_id)
                 )
             """)
+            # Backfill columns for tables created before started_at/completed_at existed.
+            cur.execute("ALTER TABLE anime_list ADD COLUMN IF NOT EXISTS started_at DATE")
+            cur.execute("ALTER TABLE anime_list ADD COLUMN IF NOT EXISTS completed_at DATE")
             cur.execute("""
                 CREATE INDEX IF NOT EXISTS idx_anime_list_username
                 ON anime_list (username)
@@ -101,6 +106,21 @@ try:
         except Exception as e:
             print(f"[DB] Delete error: {e}")
 
+    def _fuzzy_date_to_sql(d):
+        """Convert an AniList FuzzyDate dict {year, month, day} (or an
+        already-formatted 'YYYY-MM-DD' string) into a SQL date string.
+        Returns None if the date is missing/incomplete.
+        """
+        if not d:
+            return None
+        if isinstance(d, str):
+            return d or None
+        if isinstance(d, dict):
+            y, m, day = d.get("year"), d.get("month"), d.get("day")
+            if y and m and day:
+                return f"{int(y):04d}-{int(m):02d}-{int(day):02d}"
+        return None
+
     def db_save_anime_list(username, entries):
         """Upsert a list of anime entries for a user into Supabase.
         entries: list of dicts from _parse_entry() (AL format) or mal entries.
@@ -118,13 +138,15 @@ try:
                 score       = e.get("score", 0)
                 episodes    = e.get("episodes")
                 media_status = e.get("mediaStatus")
+                started_at   = _fuzzy_date_to_sql(e.get("startedAt"))
+                completed_at = _fuzzy_date_to_sql(e.get("completedAt"))
 
                 # Build the conflict target: prefer alId, fallback to malId
                 if al_id:
                     cur.execute("""
                         INSERT INTO anime_list
-                            (username, al_id, mal_id, title, status, progress, score, episodes, media_status, updated_at, synced_at)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, now(), now())
+                            (username, al_id, mal_id, title, status, progress, score, episodes, media_status, started_at, completed_at, updated_at, synced_at)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, now(), now())
                         ON CONFLICT (username, al_id) DO UPDATE SET
                             mal_id       = EXCLUDED.mal_id,
                             title        = EXCLUDED.title,
@@ -133,14 +155,16 @@ try:
                             score        = EXCLUDED.score,
                             episodes     = EXCLUDED.episodes,
                             media_status = EXCLUDED.media_status,
+                            started_at   = EXCLUDED.started_at,
+                            completed_at = EXCLUDED.completed_at,
                             updated_at   = EXCLUDED.updated_at,
                             synced_at    = now()
-                    """, (username, al_id, mal_id, title, status, progress, score, episodes, media_status))
+                    """, (username, al_id, mal_id, title, status, progress, score, episodes, media_status, started_at, completed_at))
                 elif mal_id:
                     cur.execute("""
                         INSERT INTO anime_list
-                            (username, al_id, mal_id, title, status, progress, score, episodes, media_status, updated_at, synced_at)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, now(), now())
+                            (username, al_id, mal_id, title, status, progress, score, episodes, media_status, started_at, completed_at, updated_at, synced_at)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, now(), now())
                         ON CONFLICT (username, mal_id) DO UPDATE SET
                             al_id        = EXCLUDED.al_id,
                             title        = EXCLUDED.title,
@@ -149,9 +173,11 @@ try:
                             score        = EXCLUDED.score,
                             episodes     = EXCLUDED.episodes,
                             media_status = EXCLUDED.media_status,
+                            started_at   = EXCLUDED.started_at,
+                            completed_at = EXCLUDED.completed_at,
                             updated_at   = EXCLUDED.updated_at,
                             synced_at    = now()
-                    """, (username, al_id, mal_id, title, status, progress, score, episodes, media_status))
+                    """, (username, al_id, mal_id, title, status, progress, score, episodes, media_status, started_at, completed_at))
             conn.commit(); cur.close(); conn.close()
             print(f"[DB] anime_list: saved {len(entries)} entries for {username}")
         except Exception as e:
@@ -316,6 +342,8 @@ query($username: String, $page: Int) {
     pageInfo { hasNextPage }
     mediaList(userName: $username, type: ANIME) {
       mediaId status score(format: POINT_10) progress updatedAt
+      startedAt { year month day }
+      completedAt { year month day }
       media {
         id idMal title { romaji english } status episodes
         nextAiringEpisode { airingAt episode timeUntilAiring }
@@ -369,6 +397,8 @@ def _parse_entry(e):
         "mediaStatus": e["media"]["status"],
         "episodes":    e["media"]["episodes"],
         "nextAiring":  e["media"].get("nextAiringEpisode"),
+        "startedAt":   e.get("startedAt"),
+        "completedAt": e.get("completedAt"),
     }
 
 def get_anilist_list(token=None, username=None):
@@ -1066,6 +1096,14 @@ def anime_add():
     if mal_id and "mal_token" in session:
         mal_status = AL_TO_MAL.get(status, "plan_to_watch")
         mal_ok = mal_update(mal_id, status=mal_status, progress=progress, score=score)
+    if al_ok:
+        username = session.get("al_username", ANILIST_USERNAME)
+        db_save_anime_list(username, [{
+            "alId": al_id, "malId": mal_id, "title": body.get("title", "Unknown"),
+            "status": status, "progress": progress, "score": score,
+            "episodes": body.get("episodes"), "mediaStatus": body.get("mediaStatus"),
+            "startedAt": started_at, "completedAt": completed_at,
+        }])
     return jsonify({"al_ok": al_ok, "mal_ok": mal_ok})
 
 @app.route("/api/anime/edit", methods=["POST"])
@@ -1091,6 +1129,14 @@ def anime_edit():
     if mal_id and "mal_token" in session:
         mal_status = AL_TO_MAL.get(status, "plan_to_watch")
         mal_ok = mal_update(mal_id, status=mal_status, progress=progress, score=score)
+    if al_ok:
+        username = session.get("al_username", ANILIST_USERNAME)
+        db_save_anime_list(username, [{
+            "alId": al_id, "malId": mal_id, "title": body.get("title", "Unknown"),
+            "status": status, "progress": progress, "score": score,
+            "episodes": body.get("episodes"), "mediaStatus": body.get("mediaStatus"),
+            "startedAt": started_at, "completedAt": completed_at,
+        }])
     return jsonify({"al_ok": al_ok, "mal_ok": mal_ok})
 
 @app.route("/api/anime/delete", methods=["POST"])
