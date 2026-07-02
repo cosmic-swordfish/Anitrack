@@ -340,6 +340,9 @@ def anilist_query(query, variables=None, token=None):
         headers["Authorization"] = f"Bearer {token.get('access_token', '')}"
     r = _http.post(ANILIST_API, json={"query": query, "variables": variables or {}},
                     headers=headers, timeout=15)
+    if r.status_code == 429:
+        retry_after = r.headers.get("Retry-After", "a few seconds")
+        raise RuntimeError(f"AniList rate limit hit, retry after {retry_after}s")
     return r.json()
 
 GQL_LIST = """
@@ -409,10 +412,11 @@ def _parse_entry(e):
 
 def get_anilist_list(token=None, username=None):
     """Fetch every page of the user's AniList. Page 1 tells us how many pages
-    exist in total (pageInfo.lastPage), so instead of walking pages one at a
-    time we fetch the rest concurrently. anilist_query() only touches the
-    token passed to it (never Flask's session), so it's safe to run in
-    worker threads."""
+    exist in total (pageInfo.lastPage). AniList enforces a burst limiter on
+    top of its normal rate limit, so we only run 2 requests at a time with a
+    small stagger between submissions rather than firing every page at once.
+    anilist_query() only touches the token passed to it (never Flask's
+    session), so it's safe to run in worker threads."""
     username = username or ANILIST_USERNAME
 
     first = anilist_query(GQL_LIST, {"username": username, "page": 1}, token=token)
@@ -421,11 +425,11 @@ def get_anilist_list(token=None, username=None):
     last_page = first_page.get("pageInfo", {}).get("lastPage", 1) or 1
 
     if last_page > 1:
-        with ThreadPoolExecutor(max_workers=min(last_page - 1, 6)) as ex:
-            futures = [
-                ex.submit(anilist_query, GQL_LIST, {"username": username, "page": p}, token)
-                for p in range(2, last_page + 1)
-            ]
+        with ThreadPoolExecutor(max_workers=2) as ex:
+            futures = []
+            for p in range(2, last_page + 1):
+                futures.append(ex.submit(anilist_query, GQL_LIST, {"username": username, "page": p}, token))
+                time.sleep(0.15)
             for f in futures:
                 page_data = f.result().get("data", {}).get("Page", {})
                 entries += [_parse_entry(e) for e in page_data.get("mediaList", [])]
@@ -887,6 +891,8 @@ def sync_diff():
         return jsonify({"diffs": diffs, "al_count": len(al_list), "mal_count": len(mal_list)})
     except Exception as e:
         print(f"[sync_diff] {username}: {e}")
+        if "rate limit" in str(e).lower():
+            return jsonify({"error": "AniList rate limit hit — wait a moment and try again."}), 429
         return jsonify({"error": "Sync failed. Please try again."}), 500
 
 @app.route("/api/sync/apply", methods=["POST"])
@@ -924,6 +930,8 @@ def sync_auto():
         return jsonify({"synced": len(results), "results": results})
     except Exception as e:
         print(f"[sync_auto] {username}: {e}")
+        if "rate limit" in str(e).lower():
+            return jsonify({"error": "AniList rate limit hit — wait a moment and try again."}), 429
         return jsonify({"error": "Auto sync failed. Please try again."}), 500
 
 # ── Cron auto-sync (called by Vercel Cron every 2 hours) ─────────────────────
