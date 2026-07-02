@@ -1,4 +1,5 @@
 import os, time, secrets, requests, hmac, hashlib, base64, json
+from concurrent.futures import ThreadPoolExecutor
 from urllib.parse import urlencode, quote
 from flask import Flask, redirect, request, session, jsonify, render_template, make_response
 
@@ -327,13 +328,18 @@ def get_oauth_cookie(name: str):
     except Exception:
         return None
 
+# ── Shared HTTP session (connection pooling — avoids re-doing TLS handshakes
+#    on every single AniList/MAL request within a function invocation) ────────
+_http = requests.Session()
+_http.mount("https://", requests.adapters.HTTPAdapter(pool_connections=10, pool_maxsize=10))
+
 # ── AniList helpers ───────────────────────────────────────────────────────────
 def anilist_query(query, variables=None, token=None):
     headers = {"Content-Type": "application/json"}
     if token:
         headers["Authorization"] = f"Bearer {token.get('access_token', '')}"
-    r = requests.post(ANILIST_API, json={"query": query, "variables": variables or {}},
-                      headers=headers, timeout=15)
+    r = _http.post(ANILIST_API, json={"query": query, "variables": variables or {}},
+                    headers=headers, timeout=15)
     return r.json()
 
 GQL_LIST = """
@@ -508,11 +514,11 @@ def get_mal_list():
     if not headers: return []
     items, offset = [], 0
     while True:
-        r = requests.get(f"{MAL_API}/users/@me/animelist",
-                         headers=headers,
-                         params={"fields": "list_status{status,score,num_episodes_watched,updated_at}",
-                                 "limit": 1000, "offset": offset},
-                         timeout=15)
+        r = _http.get(f"{MAL_API}/users/@me/animelist",
+                      headers=headers,
+                      params={"fields": "list_status{status,score,num_episodes_watched,updated_at}",
+                              "limit": 1000, "offset": offset},
+                      timeout=15)
         if r.status_code != 200: break
         data = r.json()
         for item in data.get("data", []):
@@ -537,6 +543,15 @@ def get_mal_list():
         offset += 1000
     return items
 
+def get_both_lists(al_token, username):
+    """Fetch the AniList and MAL lists concurrently instead of sequentially —
+    they're independent network calls to different APIs, so there's no reason
+    to make the user wait for both round trips back-to-back."""
+    with ThreadPoolExecutor(max_workers=2) as ex:
+        al_future  = ex.submit(get_anilist_list, al_token, username)
+        mal_future = ex.submit(get_mal_list)
+        return al_future.result(), mal_future.result()
+
 def mal_update(mal_id, status=None, score=None, progress=None):
     headers = mal_headers()
     if not headers: return False
@@ -545,8 +560,8 @@ def mal_update(mal_id, status=None, score=None, progress=None):
     if score is not None:    payload["score"] = score
     if progress is not None: payload["num_watched_episodes"] = progress
     if not payload: return False
-    r = requests.patch(f"{MAL_API}/anime/{mal_id}/my_list_status",
-                       headers=headers, data=payload, timeout=10)
+    r = _http.patch(f"{MAL_API}/anime/{mal_id}/my_list_status",
+                    headers=headers, data=payload, timeout=10)
     return r.status_code == 200
 
 # ── Sync logic ────────────────────────────────────────────────────────────────
@@ -844,8 +859,7 @@ def sync_diff():
         return jsonify({"error": "MAL not connected"}), 401
     username = request.args.get("username", ANILIST_USERNAME).strip() or ANILIST_USERNAME
     try:
-        al_list  = get_anilist_list(token=al_headers(), username=username)
-        mal_list = get_mal_list()
+        al_list, mal_list = get_both_lists(al_headers(), username)
         diffs    = compute_diff(al_list, mal_list)
         # Save fetched AL list to Supabase
         db_save_anime_list(username, al_list)
@@ -872,8 +886,7 @@ def sync_auto():
         return jsonify({"error": "MAL not connected"}), 401
     username = request.args.get("username", ANILIST_USERNAME).strip() or ANILIST_USERNAME
     try:
-        al_list  = get_anilist_list(token=al_headers(), username=username)
-        mal_list = get_mal_list()
+        al_list, mal_list = get_both_lists(al_headers(), username)
         diffs    = compute_diff(al_list, mal_list)
         results  = []
         for diff in diffs:
@@ -931,38 +944,45 @@ def cron_sync():
                 except Exception as te:
                     print(f"[Cron] MAL token refresh failed for {username}: {te}")
 
-            al_list = get_anilist_list(token=al_token, username=username)
+            # ── Fetch AniList + MAL lists concurrently (independent network
+            #    calls — no reason to wait for one before starting the other) ──
+            def _fetch_mal_items():
+                mal_headers_cron = {"Authorization": f"Bearer {mal_token.get('access_token', '')}"}
+                items, offset = [], 0
+                while True:
+                    r = _http.get(f"{MAL_API}/users/@me/animelist",
+                                  headers=mal_headers_cron,
+                                  params={"fields": "list_status{status,score,num_episodes_watched,updated_at}",
+                                          "limit": 1000, "offset": offset},
+                                  timeout=15)
+                    if r.status_code != 200: break
+                    data = r.json()
+                    for item in data.get("data", []):
+                        ls = item["list_status"]
+                        raw_updated = ls.get("updated_at", "")
+                        try:
+                            import datetime
+                            updated_at = int(datetime.datetime.fromisoformat(
+                                raw_updated.replace("Z", "+00:00")).timestamp()) if raw_updated else 0
+                        except Exception:
+                            updated_at = 0
+                        items.append({
+                            "malId":     item["node"]["id"],
+                            "title":     item["node"]["title"],
+                            "status":    ls.get("status", ""),
+                            "progress":  ls.get("num_episodes_watched", 0),
+                            "score":     ls.get("score", 0),
+                            "updatedAt": updated_at,
+                        })
+                    if not data.get("paging", {}).get("next"): break
+                    offset += 1000
+                return items
 
-            # ── Fetch MAL list with updated_at ────────────────────────────────
-            mal_headers_cron = {"Authorization": f"Bearer {mal_token.get('access_token', '')}"}
-            mal_items, offset = [], 0
-            while True:
-                r = requests.get(f"{MAL_API}/users/@me/animelist",
-                                 headers=mal_headers_cron,
-                                 params={"fields": "list_status{status,score,num_episodes_watched,updated_at}",
-                                         "limit": 1000, "offset": offset},
-                                 timeout=15)
-                if r.status_code != 200: break
-                data = r.json()
-                for item in data.get("data", []):
-                    ls = item["list_status"]
-                    raw_updated = ls.get("updated_at", "")
-                    try:
-                        import datetime
-                        updated_at = int(datetime.datetime.fromisoformat(
-                            raw_updated.replace("Z", "+00:00")).timestamp()) if raw_updated else 0
-                    except Exception:
-                        updated_at = 0
-                    mal_items.append({
-                        "malId":     item["node"]["id"],
-                        "title":     item["node"]["title"],
-                        "status":    ls.get("status", ""),
-                        "progress":  ls.get("num_episodes_watched", 0),
-                        "score":     ls.get("score", 0),
-                        "updatedAt": updated_at,
-                    })
-                if not data.get("paging", {}).get("next"): break
-                offset += 1000
+            with ThreadPoolExecutor(max_workers=2) as ex:
+                al_future  = ex.submit(get_anilist_list, al_token, username)
+                mal_future = ex.submit(_fetch_mal_items)
+                al_list    = al_future.result()
+                mal_items  = mal_future.result()
 
             diffs = compute_diff(al_list, mal_items)
             synced = 0
