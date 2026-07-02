@@ -345,7 +345,7 @@ def anilist_query(query, variables=None, token=None):
 GQL_LIST = """
 query($username: String, $page: Int) {
   Page(page: $page, perPage: 50) {
-    pageInfo { hasNextPage }
+    pageInfo { hasNextPage lastPage }
     mediaList(userName: $username, type: ANIME) {
       mediaId status score(format: POINT_10) progress updatedAt
       startedAt { year month day }
@@ -408,15 +408,28 @@ def _parse_entry(e):
     }
 
 def get_anilist_list(token=None, username=None):
+    """Fetch every page of the user's AniList. Page 1 tells us how many pages
+    exist in total (pageInfo.lastPage), so instead of walking pages one at a
+    time we fetch the rest concurrently. anilist_query() only touches the
+    token passed to it (never Flask's session), so it's safe to run in
+    worker threads."""
     username = username or ANILIST_USERNAME
-    entries, page = [], 1
-    while True:
-        data = anilist_query(GQL_LIST, {"username": username, "page": page}, token=token)
-        page_data = data.get("data", {}).get("Page", {})
-        entries += [_parse_entry(e) for e in page_data.get("mediaList", [])]
-        if not page_data.get("pageInfo", {}).get("hasNextPage"):
-            break
-        page += 1
+
+    first = anilist_query(GQL_LIST, {"username": username, "page": 1}, token=token)
+    first_page = first.get("data", {}).get("Page", {})
+    entries = [_parse_entry(e) for e in first_page.get("mediaList", [])]
+    last_page = first_page.get("pageInfo", {}).get("lastPage", 1) or 1
+
+    if last_page > 1:
+        with ThreadPoolExecutor(max_workers=min(last_page - 1, 6)) as ex:
+            futures = [
+                ex.submit(anilist_query, GQL_LIST, {"username": username, "page": p}, token)
+                for p in range(2, last_page + 1)
+            ]
+            for f in futures:
+                page_data = f.result().get("data", {}).get("Page", {})
+                entries += [_parse_entry(e) for e in page_data.get("mediaList", [])]
+
     return entries
 
 def al_headers():
