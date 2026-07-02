@@ -511,6 +511,9 @@ def refresh_mal_token(token):
 
 def get_mal_list():
     headers = mal_headers()
+    return get_mal_list_with_headers(headers)
+
+def get_mal_list_with_headers(headers):
     if not headers: return []
     items, offset = [], 0
     while True:
@@ -546,10 +549,15 @@ def get_mal_list():
 def get_both_lists(al_token, username):
     """Fetch the AniList and MAL lists concurrently instead of sequentially —
     they're independent network calls to different APIs, so there's no reason
-    to make the user wait for both round trips back-to-back."""
+    to make the user wait for both round trips back-to-back.
+
+    mal_headers() touches Flask's `session`, which is only valid on the
+    request thread, so it must be resolved here (not inside the worker)
+    before we hand off to the pool."""
+    mal_hdrs = mal_headers()
     with ThreadPoolExecutor(max_workers=2) as ex:
         al_future  = ex.submit(get_anilist_list, al_token, username)
-        mal_future = ex.submit(get_mal_list)
+        mal_future = ex.submit(get_mal_list_with_headers, mal_hdrs)
         return al_future.result(), mal_future.result()
 
 def mal_update(mal_id, status=None, score=None, progress=None):
@@ -865,7 +873,8 @@ def sync_diff():
         db_save_anime_list(username, al_list)
         return jsonify({"diffs": diffs, "al_count": len(al_list), "mal_count": len(mal_list)})
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        print(f"[sync_diff] {username}: {e}")
+        return jsonify({"error": "Sync failed. Please try again."}), 500
 
 @app.route("/api/sync/apply", methods=["POST"])
 def sync_apply():
@@ -901,7 +910,8 @@ def sync_auto():
         db_save_anime_list(username, al_list)
         return jsonify({"synced": len(results), "results": results})
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        print(f"[sync_auto] {username}: {e}")
+        return jsonify({"error": "Auto sync failed. Please try again."}), 500
 
 # ── Cron auto-sync (called by Vercel Cron every 2 hours) ─────────────────────
 @app.route("/api/cron/sync", methods=["GET", "POST"])
