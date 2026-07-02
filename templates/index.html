@@ -1180,34 +1180,68 @@ function applyFilter() {
   document.getElementById(target).innerHTML = sorted.map(buildCard).join('') || emptyMsg('Nothing here');
 }
 
+const LIST_CACHE_KEY = "anitrack-list-cache-v1";
+
+function renderEntries(entries) {
+  _allEntries = entries;
+  const watching = entries.filter(e=>e.status==="CURRENT");
+  const planned  = entries.filter(e=>e.status==="PLANNING");
+  const airing   = watching.filter(e=>e.media?.nextAiringEpisode);
+  applyFilter();
+  document.getElementById("view-planned").innerHTML = planned.map(buildCard).join("") || emptyMsg("Nothing planned");
+  document.getElementById("total-watching").textContent = watching.length;
+  document.getElementById("total-planned").textContent  = planned.length;
+  document.getElementById("total-airing").textContent   = airing.length;
+  document.getElementById("stats").style.display = "";
+}
+
 async function loadList() {
   const spinner = document.getElementById("spinner");
   const errBox  = document.getElementById("cal-error");
   const content = document.getElementById("cal-content");
-  const statsEl = document.getElementById("stats");
-  spinner.style.display = "flex"; errBox.style.display = "none"; content.style.display = "none";
+  errBox.style.display = "none";
+
+  // Stale-while-revalidate: paint the last cached list instantly (if any)
+  // so the page doesn't sit on a blank spinner every time, then refresh
+  // silently in the background.
+  let hadCache = false;
+  try {
+    const cached = localStorage.getItem(LIST_CACHE_KEY);
+    if (cached) {
+      const { username, entries } = JSON.parse(cached);
+      if (username === ANILIST_USERNAME && Array.isArray(entries)) {
+        renderEntries(entries);
+        content.style.display = "";
+        spinner.style.display = "none";
+        hadCache = true;
+      }
+    }
+  } catch (e) { /* corrupt cache, ignore */ }
+
+  if (!hadCache) { spinner.style.display = "flex"; content.style.display = "none"; }
+
   try {
     const res  = await fetch("https://graphql.anilist.co", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({query:GQL_USER_LIST,variables:{userName:ANILIST_USERNAME}}) });
     const json = await res.json();
     if (json.error)  throw new Error(json.error);
     if (json.errors) throw new Error(json.errors[0]?.message || "AniList error");
     const entries = (json.data?.MediaListCollection?.lists || []).flatMap(l => l.entries);
-    _allEntries = entries;
-    const watching = entries.filter(e=>e.status==="CURRENT");
-    const planned  = entries.filter(e=>e.status==="PLANNING");
-    const airing   = watching.filter(e=>e.media?.nextAiringEpisode);
-    // Render watching via active filter
-    applyFilter();
-    // Pre-render planned (hidden)
-    document.getElementById("view-planned").innerHTML = planned.map(buildCard).join("") || emptyMsg("Nothing planned");
-    // Stats bar
-    document.getElementById("total-watching").textContent = watching.length;
-    document.getElementById("total-planned").textContent  = planned.length;
-    document.getElementById("total-airing").textContent   = airing.length;
-    statsEl.style.display = "";
+    renderEntries(entries);
+    try {
+      localStorage.setItem(LIST_CACHE_KEY, JSON.stringify({ username: ANILIST_USERNAME, entries }));
+    } catch (e) { /* storage full/unavailable, ignore */ }
     spinner.style.display = "none"; content.style.display = "";
   } catch (err) {
-    spinner.style.display = "none"; errBox.style.display = ""; errBox.textContent = "⚠ Failed to load list: " + err.message;
+    spinner.style.display = "none";
+    // If we already painted a cached list, keep showing it and just warn
+    // instead of wiping the screen with an error.
+    if (hadCache) {
+      errBox.style.display = ""; content.style.display = "";
+      errBox.textContent = "⚠ Couldn't refresh (showing last saved list): " + err.message;
+    } else {
+      errBox.style.display = ""; content.style.display = "none";
+      errBox.textContent = "⚠ Failed to load list: " + err.message;
+    }
   }
 }
 function emptyMsg(msg) { return `<div style="color:var(--text-muted);font-family:monospace;font-size:12px;padding:12px 4px">${msg}</div>`; }
@@ -1299,7 +1333,7 @@ function nekoSetSprite(name,f){const s=spriteSets[name][f%spriteSets[name].lengt
 function nekoResetIdle(){idleAnimation=null;idleAnimFrame=0;}
 function nekoIdle(){idleTime++;if(idleTime>10&&Math.floor(Math.random()*200)===0&&!idleAnimation){const opts=["sleeping","scratchSelf"];if(nekoPosX<32)opts.push("scratchWallW");if(nekoPosY<32)opts.push("scratchWallN");if(nekoPosX>window.innerWidth-32)opts.push("scratchWallE");if(nekoPosY>window.innerHeight-32)opts.push("scratchWallS");idleAnimation=opts[Math.floor(Math.random()*opts.length)];}switch(idleAnimation){case"sleeping":if(idleAnimFrame<8){nekoSetSprite("tired",0);break;}nekoSetSprite("sleeping",Math.floor(idleAnimFrame/4));if(idleAnimFrame>192)nekoResetIdle();break;case"scratchWallN":case"scratchWallS":case"scratchWallE":case"scratchWallW":case"scratchSelf":nekoSetSprite(idleAnimation,idleAnimFrame);if(idleAnimFrame>9)nekoResetIdle();break;default:nekoSetSprite("idle",0);return;}idleAnimFrame++;}
 let lastNekoTs;
-function nekoAnimLoop(ts){if(!nekoEl||!nekoEl.isConnected)return;if(!lastNekoTs)lastNekoTs=ts;if(ts-lastNekoTs>100){lastNekoTs=ts;frameCount++;const dx=nekoPosX-mousePosX,dy=nekoPosY-mousePosY,dist=Math.sqrt(dx*dx+dy*dy);if(dist<NEKO_SPEED||dist<48){nekoIdle();}else{idleAnimation=null;idleAnimFrame=0;if(idleTime>1){nekoSetSprite("alert",0);idleTime=Math.min(idleTime,7)-1;}else{let dir=dy/dist>0.5?"S":"";dir+=dy/dist<-0.5?"N":"";dir+=dx/dist>0.5?"W":"";dir+=dx/dist<-0.5?"E":"";nekoSetSprite(dir,frameCount);nekoPosX-=(dx/dist)*NEKO_SPEED;nekoPosY-=(dy/dist)*NEKO_SPEED;nekoPosX=Math.min(Math.max(16,nekoPosX),window.innerWidth-16);nekoPosY=Math.min(Math.max(16,nekoPosY),window.innerHeight-16);nekoEl.style.left=`${nekoPosX-16}px`;nekoEl.style.top=`${nekoPosY-16}px`;}}}nekoAnimFrame=requestAnimationFrame(nekoAnimLoop);}
+function nekoAnimLoop(ts){if(!nekoEl||!nekoEl.isConnected)return;if(!lastNekoTs)lastNekoTs=ts;if(ts-lastNekoTs>100){lastNekoTs=ts;frameCount++;const dx=nekoPosX-mousePosX,dy=nekoPosY-mousePosY,dist=Math.sqrt(dx*dx+dy*dy);if(dist<NEKO_SPEED||dist<48){nekoIdle();}else{idleAnimation=null;idleAnimFrame=0;if(idleTime>1){nekoSetSprite("alert",0);idleTime=Math.min(idleTime,7)-1;}else{let dir=dy/dist>0.5?"N":"";dir+=dy/dist<-0.5?"S":"";dir+=dx/dist>0.5?"W":"";dir+=dx/dist<-0.5?"E":"";nekoSetSprite(dir,frameCount);nekoPosX-=(dx/dist)*NEKO_SPEED;nekoPosY-=(dy/dist)*NEKO_SPEED;nekoPosX=Math.min(Math.max(16,nekoPosX),window.innerWidth-16);nekoPosY=Math.min(Math.max(16,nekoPosY),window.innerHeight-16);nekoEl.style.left=`${nekoPosX-16}px`;nekoEl.style.top=`${nekoPosY-16}px`;}}}nekoAnimFrame=requestAnimationFrame(nekoAnimLoop);}
 function startOneko(){
   if(nekoRunning)return;
   // reset all animation state so restarts are clean
