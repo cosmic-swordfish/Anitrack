@@ -65,6 +65,13 @@
     --diff-sel-bg: rgba(2,169,255,0.05);
     --diff-sel-border: rgba(2,169,255,0.30);
     --diff-change-bg: rgba(255,255,255,0.04);
+    --sync-panel: #0d0f16;
+    --sync-row: #10131b;
+    --sync-row-hover: #141824;
+    --sync-row-selected: #141a26;
+    --sync-border: rgba(255,255,255,0.08);
+    --sync-btn-bg: #141824;
+    --sync-btn-hover: #1a2030;
     --empty-color: rgba(255,255,255,0.24);
     --error-bg: rgba(255,60,60,0.08);
     --error-border: rgba(255,60,60,0.22);
@@ -136,6 +143,13 @@
     --diff-sel-bg: rgba(0,113,227,0.06);
     --diff-sel-border: rgba(0,113,227,0.28);
     --diff-change-bg: rgba(0,0,0,0.04);
+    --sync-panel: #f4f5f7;
+    --sync-row: #ffffff;
+    --sync-row-hover: #f0f2f5;
+    --sync-row-selected: #eaf1fc;
+    --sync-border: rgba(0,0,0,0.08);
+    --sync-btn-bg: #ffffff;
+    --sync-btn-hover: #f0f2f5;
     --empty-color: rgba(0,0,0,0.28);
     --error-bg: rgba(220,38,38,0.07);
     --error-border: rgba(220,38,38,0.18);
@@ -443,8 +457,7 @@
   .no-sched{text-align:center;font-size:10px;color:var(--no-sched-color);font-family:monospace;padding:7px;margin-top:auto}
   .not-yet{background:var(--not-yet-bg);border:var(--not-yet-border);color:var(--not-yet-color);padding:8px 12px;border-radius:8px;font-size:11px;font-family:monospace;text-align:center;margin-top:auto}
 
-  /* ─── Sync page ─── */
-  .sync-toolbar{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;align-items:center}
+  /* ─── Shared buttons (used by Search/Edit modals) ─── */
   .btn{padding:8px 18px;border-radius:9px;font-size:12px;font-family:monospace;cursor:pointer;border:1px solid;transition:all .2s;font-weight:600;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
   .btn-primary{background:var(--accent-bg);border-color:var(--accent-border);color:var(--accent)}
   .btn-primary:hover{background:rgba(2,169,255,0.2);border-color:var(--accent)}
@@ -453,35 +466,61 @@
   .btn-warn{background:var(--yellow-bg);border-color:var(--yellow-border);color:var(--yellow)}
   .btn-warn:hover{background:rgba(200,130,0,0.12)}
   .btn:disabled{opacity:.4;cursor:not-allowed}
-  .sync-status{font-size:12px;font-family:monospace;color:var(--text-dim);padding:6px 0}
 
-  .diff-list{display:flex;flex-direction:column;gap:10px}
-  .diff-card{background:var(--diff-card-bg);border:1px solid var(--border);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:14px;animation:ci .3s ease both;backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);box-shadow:var(--card-shadow);transition:background 0.25s,border-color 0.25s}
-  .diff-card.selected{border-color:var(--diff-sel-border);background:var(--diff-sel-bg)}
-  .diff-check{width:18px;height:18px;cursor:pointer;flex-shrink:0;accent-color:var(--accent)}
+  /* ─── Sync page — flat "diff review" style (deliberately not glass) ─── */
+  .sync-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:2px}
+  .sync-head h2{font-size:15px;font-weight:700;color:var(--text-title);letter-spacing:.2px}
+  .sync-accounts{display:flex;gap:12px;font-size:10px;font-family:monospace;color:var(--text-dim)}
+  .sync-accounts span{display:inline-flex;align-items:center;gap:5px}
+  .sync-dot{width:6px;height:6px;border-radius:50%;display:inline-block;flex-shrink:0}
+  .sync-dot.al{background:var(--al-color)}
+  .sync-dot.mal{background:var(--mal-color)}
+  .sync-stats{font-size:12px;font-family:monospace;color:var(--text-dim);margin:5px 0 16px}
+  .sync-stats b{color:var(--text-title);font-weight:700}
+
+  .sync-toolbar{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap;align-items:center}
+  .sbtn{padding:9px 15px;border-radius:8px;font-size:11.5px;font-family:monospace;font-weight:700;letter-spacing:.2px;cursor:pointer;border:1px solid var(--sync-border);background:var(--sync-btn-bg);color:var(--text);transition:transform .12s,border-color .15s,background .15s,opacity .15s}
+  .sbtn:hover{border-color:var(--accent-border);background:var(--sync-btn-hover)}
+  .sbtn:active{transform:scale(.96)}
+  .sbtn:disabled{opacity:.35;cursor:not-allowed;transform:none}
+  .sbtn-primary{background:var(--accent);border-color:var(--accent);color:#04121c}
+  .sbtn-primary:hover{background:#33bcff;border-color:#33bcff}
+
+  .diff-list{display:flex;flex-direction:column;border:1px solid var(--sync-border);border-radius:12px;overflow:hidden;background:var(--sync-panel)}
+  .diff-card{position:relative;background:var(--sync-row);border:none;border-bottom:1px solid var(--sync-border);padding:13px 14px 13px 19px;display:flex;align-items:center;gap:12px;animation:ci .25s ease both;transition:background .15s}
+  .diff-list .diff-card:last-child{border-bottom:none}
+  .diff-card:hover{background:var(--sync-row-hover)}
+  .diff-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:rgba(255,255,255,.15)}
+  .diff-card.selected{background:var(--sync-row-selected)}
+  .diff-card[data-type="missing"]::before{background:#ff8080}
+  .diff-card[data-type="outdated"]::before{background:var(--yellow)}
+  .diff-card[data-type="malonly"]::before{background:var(--purple)}
+  .diff-check{width:16px;height:16px;cursor:pointer;flex-shrink:0;accent-color:var(--accent)}
   .diff-info{flex:1;min-width:0}
-  .diff-title{font-weight:700;font-size:14px;color:var(--text-title);margin-bottom:4px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
-  .diff-label{display:inline-block;font-size:9px;font-family:monospace;padding:2px 7px;border-radius:3px;margin-bottom:6px;font-weight:700;text-transform:uppercase}
-  .label-missing{background:rgba(255,100,100,.12);color:#ff8080;border:1px solid rgba(255,100,100,.2)}
-  .label-outdated{background:var(--yellow-bg);color:var(--yellow);border:1px solid var(--yellow-border)}
-  .label-malonly{background:var(--purple-bg);color:var(--purple);border:1px solid rgba(192,132,252,.2)}
-  .diff-changes{font-size:11px;font-family:monospace;color:var(--text-dim);display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
+  .diff-title{font-weight:600;font-size:13.5px;color:var(--text-title);margin-bottom:5px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+  .diff-meta{display:flex;flex-wrap:wrap;align-items:center;gap:7px}
+  .diff-chip{display:inline-block;font-size:9px;font-family:monospace;font-weight:700;letter-spacing:.3px;text-transform:uppercase;padding:2px 6px;border-radius:4px}
+  .chip-missing{color:#ff8080;background:rgba(255,100,100,.1)}
+  .chip-outdated{color:var(--yellow);background:var(--yellow-bg)}
+  .chip-malonly{color:var(--purple);background:var(--purple-bg)}
+  .diff-route{font-size:9px;font-family:monospace;color:var(--text-muted)}
+  .diff-changes{font-size:11px;font-family:monospace;color:var(--text-dim);display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;width:100%}
   .diff-change{background:var(--diff-change-bg);padding:2px 8px;border-radius:4px}
-  .diff-targets{display:flex;gap:5px;font-size:9px;font-family:monospace}
-  .target-badge{padding:2px 7px;border-radius:3px;font-weight:700}
-  .target-mal{background:rgba(46,81,162,0.15);color:#6b8dd6;border:1px solid rgba(46,81,162,0.3)}
-  .target-al{background:rgba(2,169,255,0.1);color:#02a9ff;border:1px solid rgba(2,169,255,0.25)}
   .diff-action{flex-shrink:0}
-  .apply-btn{padding:6px 14px;border-radius:6px;font-size:11px;font-family:monospace;cursor:pointer;border:1px solid var(--accent-border);background:var(--accent-bg);color:var(--accent);transition:all .2s;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
-  .apply-btn:hover{background:rgba(2,169,255,.18)}
-  .apply-btn.done{border-color:var(--green-border);background:var(--green-bg);color:var(--green);cursor:default}
-  .apply-btn.err{border-color:rgba(255,100,100,.3);background:rgba(255,100,100,.08);color:#ff8080;cursor:default}
+  .apply-btn{padding:6px 13px;border-radius:7px;font-size:11px;font-family:monospace;font-weight:700;cursor:pointer;border:1px solid var(--sync-border);background:transparent;color:var(--text);transition:all .15s}
+  .apply-btn:hover{border-color:var(--accent);color:var(--accent)}
+  .apply-btn.done{border-color:var(--green-border);color:var(--green)}
+  .apply-btn.err{border-color:rgba(255,100,100,.3);color:#ff8080}
 
-  .empty-sync{text-align:center;padding:60px 20px;color:var(--empty-color);font-size:13px;font-family:monospace}
-  .empty-sync .icon{font-size:40px;margin-bottom:12px}
+  .empty-sync{text-align:center;padding:56px 20px;color:var(--empty-color);font-size:13px;font-family:monospace;border:1px dashed var(--sync-border);border-radius:12px}
+  .empty-sync .icon{font-size:36px;margin-bottom:10px}
   .spinner-wrap{display:flex;flex-direction:column;align-items:center;gap:12px;padding:70px 0;color:var(--text-dim);font-size:13px}
   .spinner{width:34px;height:34px;border-radius:50%;border:2px solid var(--spinner-border);border-top-color:var(--accent);animation:spin .9s linear infinite}
   .error-box{background:var(--error-bg);border:1px solid var(--error-border);color:var(--error-color);padding:14px 18px;border-radius:10px;font-size:13px;margin-bottom:16px}
+
+  .sync-fab{position:fixed;right:18px;bottom:calc(104px + env(safe-area-inset-bottom));width:52px;height:52px;border-radius:50%;background:var(--accent);color:#04121c;border:none;font-size:24px;font-weight:600;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 8px 22px rgba(2,169,255,.35);z-index:40;transition:transform .15s,box-shadow .15s}
+  .sync-fab:hover{transform:translateY(-2px);box-shadow:0 10px 28px rgba(2,169,255,.45)}
+  .sync-fab:active{transform:scale(.92)}
 
   /* ─── Collapsible sections ─── */
   .ani-section{margin-bottom:6px;border-radius:18px;overflow:hidden;border:1px solid var(--border);transition:border-color 0.2s;backdrop-filter:blur(16px) saturate(160%);-webkit-backdrop-filter:blur(16px) saturate(160%);box-shadow:0 2px 20px rgba(0,0,0,0.18),inset 0 1px 0 rgba(255,255,255,0.045)}
@@ -593,7 +632,11 @@
     header{padding:max(14px, env(safe-area-inset-top)) 16px 12px}
     main{padding:16px 16px 110px}
     .filter-row{padding:0 16px 10px 16px;margin:0 -16px 4px -16px;}
-    .sync-toolbar{flex-direction:column;align-items:stretch}
+    .sync-toolbar{flex-wrap:wrap}
+    .sbtn{flex:1 1 auto;text-align:center}
+    .diff-card{flex-wrap:wrap}
+    .diff-action{width:100%}
+    .apply-btn{width:100%}
     .btn{text-align:center}
     .grid{grid-template-columns:1fr}
     .settings-container{max-width:100%}
@@ -695,12 +738,19 @@
     {% if not mal_connected %}
     <div class="error-box">Connect your MyAnimeList account above to use sync.</div>
     {% else %}
+    <div class="sync-head">
+      <h2>Sync</h2>
+      <div class="sync-accounts">
+        <span><i class="sync-dot al"></i>AniList</span>
+        <span><i class="sync-dot mal"></i>MAL</span>
+      </div>
+    </div>
+    <div class="sync-stats" id="sync-status">Tap Check Differences to compare your lists.</div>
+
     <div class="sync-toolbar">
-      <button class="btn btn-primary" onclick="loadDiff()">🔍 Check Differences</button>
-      <button class="btn btn-success" id="btn-auto" onclick="autoSync()" disabled>⚡ Auto Sync All</button>
-      <button class="btn btn-warn" id="btn-apply-sel" onclick="applySelected()" disabled>✓ Apply Selected</button>
-      <button class="btn" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15)" onclick="openSearchModal()">＋ Add Anime</button>
-      <span class="sync-status" id="sync-status"></span>
+      <button class="sbtn sbtn-primary" onclick="loadDiff()">Check Differences</button>
+      <button class="sbtn" id="btn-auto" onclick="autoSync()" disabled>Auto Sync All</button>
+      <button class="sbtn" id="btn-apply-sel" onclick="applySelected()" disabled>Apply Selected</button>
     </div>
     {% if not al_connected and al_client_set %}
     <div class="notif-bar" style="background:rgba(2,169,255,0.07);border:1px solid rgba(2,169,255,0.2);color:var(--accent);margin-bottom:12px">
@@ -713,6 +763,8 @@
       <span id="sync-spinner-label">Loading...</span>
     </div>
     <div id="diff-list" class="diff-list"></div>
+
+    <button class="sync-fab" onclick="openSearchModal()" aria-label="Add anime" title="Add anime">＋</button>
     {% endif %}
   </div>
 
@@ -1249,15 +1301,18 @@ function emptyMsg(msg) { return `<div style="color:var(--text-muted);font-family
 // ── Sync page ─────────────────────────────────────────────────────────────────
 let diffData = [];
 function setSyncSpinner(show, label) { const sp=document.getElementById("sync-spinner"); sp.style.display=show?"flex":"none"; if(label) document.getElementById("sync-spinner-label").textContent=label; }
-function setSyncStatus(msg) { document.getElementById("sync-status").textContent=msg; }
+function setSyncStatus(msg) { document.getElementById("sync-status").innerHTML=msg; }
 function setSyncError(msg) { const el=document.getElementById("sync-error"); if(msg){el.style.display="";el.textContent="⚠ "+msg;}else{el.style.display="none";} }
 function buildDiffCard(d,idx) {
-  const labelClass = d.action==="add_to_mal"?"label-missing":d.action==="only_on_mal"?"label-malonly":"label-outdated";
+  const type = d.action==="add_to_mal" ? "missing" : d.action==="only_on_mal" ? "malonly" : "outdated";
   const changesHtml = (d.changes||[]).map(c=>`<span class="diff-change">${c}</span>`).join("");
-  const targetsHtml = `<div class="diff-targets">${d.action!=="only_on_mal"?`<span class="target-badge target-mal">MAL</span>`:""} ${d.needs_al_update?`<span class="target-badge target-al">AL</span>`:""}</div>`;
+  const routes = [];
+  if (d.action !== "only_on_mal") routes.push("MAL");
+  if (d.needs_al_update || d.action === "only_on_mal") routes.push("AL");
+  const routeHtml = routes.length ? `<span class="diff-route">→ ${routes.join(" · ")}</span>` : "";
   const actionable = d.action==="add_to_mal"||d.action==="update";
-  const checkHtml = actionable?`<input type="checkbox" class="diff-check" data-idx="${idx}" checked onchange="onDiffCheck()">`:`<div style="width:18px"></div>`;
-  return `<div class="diff-card selected" id="diff-card-${idx}" data-idx="${idx}">${checkHtml}<div class="diff-info"><div class="diff-title">${d.title||"Unknown"}</div><span class="diff-label ${labelClass}">${d.label}</span>${changesHtml?`<div class="diff-changes">${changesHtml}</div>`:""} ${targetsHtml}</div>${actionable?`<div class="diff-action"><button class="apply-btn" id="apply-btn-${idx}" onclick="applySingle(${idx})">Apply</button></div>`:""}</div>`;
+  const checkHtml = actionable?`<input type="checkbox" class="diff-check" data-idx="${idx}" checked onchange="onDiffCheck()">`:`<div style="width:16px"></div>`;
+  return `<div class="diff-card selected" id="diff-card-${idx}" data-idx="${idx}" data-type="${type}">${checkHtml}<div class="diff-info"><div class="diff-title">${d.title||"Unknown"}</div><div class="diff-meta"><span class="diff-chip chip-${type}">${d.label}</span>${routeHtml}</div>${changesHtml?`<div class="diff-changes">${changesHtml}</div>`:""}</div>${actionable?`<div class="diff-action"><button class="apply-btn" id="apply-btn-${idx}" onclick="applySingle(${idx})">Apply</button></div>`:""}</div>`;
 }
 function renderDiffs(diffs) {
   const list = document.getElementById("diff-list");
@@ -1282,7 +1337,7 @@ async function loadDiff() {
     const res=await fetch(`/api/sync/diff?username=${encodeURIComponent(ANILIST_USERNAME)}`); const json=await res.json();
     if(json.error) throw new Error(json.error);
     diffData=json.diffs||[];
-    setSyncStatus(`AL: ${json.al_count} · MAL: ${json.mal_count} · ${diffData.length} difference${diffData.length!==1?"s":""}`);
+    setSyncStatus(`<b>${json.al_count}</b> AniList · <b>${json.mal_count}</b> MAL · <b>${diffData.length}</b> difference${diffData.length!==1?"s":""}`);
     renderDiffs(diffData);
   } catch(err){setSyncError(err.message);}
   finally{setSyncSpinner(false);}
