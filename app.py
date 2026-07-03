@@ -1,4 +1,4 @@
-import os, time, secrets, requests, hmac, hashlib, base64, json
+import os, time, secrets, requests, hmac, hashlib, base64, json, threading
 from concurrent.futures import ThreadPoolExecutor
 from urllib.parse import urlencode, quote
 from flask import Flask, redirect, request, session, jsonify, render_template, make_response
@@ -334,16 +334,56 @@ _http = requests.Session()
 _http.mount("https://", requests.adapters.HTTPAdapter(pool_connections=10, pool_maxsize=10))
 
 # ── AniList helpers ───────────────────────────────────────────────────────────
+# AniList's API has been running in a degraded state, capped at 30 req/min
+# (vs. the usual 90) — see https://docs.anilist.co/guide/rate-limiting.
+# Rather than sleeping a fixed amount before every single call (safe but slow
+# for small lists), we read the X-RateLimit-Remaining / X-RateLimit-Reset
+# headers AniList sends back on every response and only pause once the
+# budget is actually about to run out — so short lists fetch at full speed
+# and long ones throttle themselves right before they'd get a 429.
+ANILIST_REQUEST_DELAY = 2.1  # fallback pacing if rate-limit headers are ever absent
+ANILIST_MAX_RETRIES = 2
+_al_rate_lock = threading.Lock()
+_al_rate_state = {"remaining": None, "reset": 0}
+
+def _al_throttle():
+    with _al_rate_lock:
+        remaining, reset = _al_rate_state["remaining"], _al_rate_state["reset"]
+    if remaining is None:
+        return  # no data yet (first call) — just go
+    if remaining <= 1:
+        wait = reset - time.time()
+        if wait > 0:
+            time.sleep(wait + 0.5)
+
+def _al_record_rate_headers(headers):
+    try:
+        remaining = int(headers.get("X-RateLimit-Remaining"))
+        reset = int(headers.get("X-RateLimit-Reset"))
+    except (TypeError, ValueError):
+        return
+    with _al_rate_lock:
+        _al_rate_state["remaining"], _al_rate_state["reset"] = remaining, reset
+
 def anilist_query(query, variables=None, token=None):
     headers = {"Content-Type": "application/json"}
     if token:
         headers["Authorization"] = f"Bearer {token.get('access_token', '')}"
-    r = _http.post(ANILIST_API, json={"query": query, "variables": variables or {}},
-                    headers=headers, timeout=15)
-    if r.status_code == 429:
-        retry_after = r.headers.get("Retry-After", "a few seconds")
-        raise RuntimeError(f"AniList rate limit hit, retry after {retry_after}s")
-    return r.json()
+    for attempt in range(ANILIST_MAX_RETRIES + 1):
+        _al_throttle()
+        r = _http.post(ANILIST_API, json={"query": query, "variables": variables or {}},
+                        headers=headers, timeout=15)
+        _al_record_rate_headers(r.headers)
+        if r.status_code == 429:
+            try:
+                wait = float(r.headers.get("Retry-After", ANILIST_REQUEST_DELAY))
+            except ValueError:
+                wait = ANILIST_REQUEST_DELAY
+            if attempt < ANILIST_MAX_RETRIES:
+                time.sleep(min(wait, 30) + 0.5)
+                continue
+            raise RuntimeError(f"AniList rate limit hit, retry after {wait:.0f}s")
+        return r.json()
 
 GQL_LIST = """
 query($username: String, $page: Int) {
@@ -412,11 +452,13 @@ def _parse_entry(e):
 
 def get_anilist_list(token=None, username=None):
     """Fetch every page of the user's AniList. Page 1 tells us how many pages
-    exist in total (pageInfo.lastPage). AniList enforces a burst limiter on
-    top of its normal rate limit, so we only run 2 requests at a time with a
-    small stagger between submissions rather than firing every page at once.
-    anilist_query() only touches the token passed to it (never Flask's
-    session), so it's safe to run in worker threads."""
+    exist in total (pageInfo.lastPage). Remaining pages are fetched with a
+    small thread pool — safe to run concurrently because anilist_query()'s
+    adaptive throttle (_al_throttle/_al_record_rate_headers) is shared via a
+    lock across all threads, so the pool self-paces against AniList's real
+    rate-limit budget instead of firing blindly. anilist_query() only
+    touches the token passed to it (never Flask's session), so it's safe to
+    call from a worker thread (e.g. get_both_lists's AL/MAL split)."""
     username = username or ANILIST_USERNAME
 
     first = anilist_query(GQL_LIST, {"username": username, "page": 1}, token=token)
@@ -426,10 +468,8 @@ def get_anilist_list(token=None, username=None):
 
     if last_page > 1:
         with ThreadPoolExecutor(max_workers=2) as ex:
-            futures = []
-            for p in range(2, last_page + 1):
-                futures.append(ex.submit(anilist_query, GQL_LIST, {"username": username, "page": p}, token))
-                time.sleep(0.15)
+            futures = [ex.submit(anilist_query, GQL_LIST, {"username": username, "page": p}, token)
+                       for p in range(2, last_page + 1)]
             for f in futures:
                 page_data = f.result().get("data", {}).get("Page", {})
                 entries += [_parse_entry(e) for e in page_data.get("mediaList", [])]
@@ -636,7 +676,6 @@ def compute_diff(al_list, mal_list):
         else:
             changes = []
             win_progress, win_score, win_status = resolve_fields(al, mal)
-            mal_al_status = MAL_TO_AL.get(mal["status"], "PLANNING")
             if al_mal_status and al_mal_status != mal["status"]:
                 changes.append(f"status: AL={al['status']} MAL={mal['status']} → {win_status}")
             if al["progress"] != mal["progress"]:
@@ -975,10 +1014,16 @@ def cron_sync():
                 except Exception as te:
                     print(f"[Cron] MAL token refresh failed for {username}: {te}")
 
+            # mal_headers() relies on Flask's `session`, which isn't valid here
+            # (this route runs outside a normal request/session context per-user),
+            # so headers are built directly from the stored mal_token instead.
+            # Built once up-front so both the fetch below and the later
+            # patch-back-to-MAL calls share the same headers.
+            mal_headers_cron = {"Authorization": f"Bearer {mal_token.get('access_token', '')}"}
+
             # ── Fetch AniList + MAL lists concurrently (independent network
             #    calls — no reason to wait for one before starting the other) ──
             def _fetch_mal_items():
-                mal_headers_cron = {"Authorization": f"Bearer {mal_token.get('access_token', '')}"}
                 items, offset = [], 0
                 while True:
                     r = _http.get(f"{MAL_API}/users/@me/animelist",
