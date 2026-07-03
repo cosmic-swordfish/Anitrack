@@ -385,17 +385,18 @@ def anilist_query(query, variables=None, token=None):
             raise RuntimeError(f"AniList rate limit hit, retry after {wait:.0f}s")
         return r.json()
 
-GQL_LIST = """
-query($username: String, $page: Int) {
-  Page(page: $page, perPage: 50) {
-    pageInfo { hasNextPage lastPage }
-    mediaList(userName: $username, type: ANIME) {
-      mediaId status score(format: POINT_10) progress updatedAt
-      startedAt { year month day }
-      completedAt { year month day }
-      media {
-        id idMal title { romaji english } status episodes
-        nextAiringEpisode { airingAt episode timeUntilAiring }
+GQL_LIST_COLLECTION = """
+query($username: String) {
+  MediaListCollection(userName: $username, type: ANIME) {
+    lists {
+      entries {
+        mediaId status score(format: POINT_10) progress updatedAt
+        startedAt { year month day }
+        completedAt { year month day }
+        media {
+          id idMal title { romaji english } status episodes
+          nextAiringEpisode { airingAt episode timeUntilAiring }
+        }
       }
     }
   }
@@ -451,29 +452,19 @@ def _parse_entry(e):
     }
 
 def get_anilist_list(token=None, username=None):
-    """Fetch every page of the user's AniList. Page 1 tells us how many pages
-    exist in total (pageInfo.lastPage). Remaining pages are fetched with a
-    small thread pool — safe to run concurrently because anilist_query()'s
-    adaptive throttle (_al_throttle/_al_record_rate_headers) is shared via a
-    lock across all threads, so the pool self-paces against AniList's real
-    rate-limit budget instead of firing blindly. anilist_query() only
-    touches the token passed to it (never Flask's session), so it's safe to
-    call from a worker thread (e.g. get_both_lists's AL/MAL split)."""
+    """Fetch the user's entire AniList in ONE request via MediaListCollection,
+    instead of paginating through Page(mediaList) 50 entries at a time. This
+    is the AniList-recommended query for "give me this user's whole list" —
+    it returns every status group (watching/completed/etc.) in a single
+    round trip, which is both far faster and much easier on the rate limit
+    than N page requests. (Covers up to 11,000 entries — AniList's own cap
+    for "give me everything" queries; well beyond any real list size.)"""
     username = username or ANILIST_USERNAME
-
-    first = anilist_query(GQL_LIST, {"username": username, "page": 1}, token=token)
-    first_page = first.get("data", {}).get("Page", {})
-    entries = [_parse_entry(e) for e in first_page.get("mediaList", [])]
-    last_page = first_page.get("pageInfo", {}).get("lastPage", 1) or 1
-
-    if last_page > 1:
-        with ThreadPoolExecutor(max_workers=2) as ex:
-            futures = [ex.submit(anilist_query, GQL_LIST, {"username": username, "page": p}, token)
-                       for p in range(2, last_page + 1)]
-            for f in futures:
-                page_data = f.result().get("data", {}).get("Page", {})
-                entries += [_parse_entry(e) for e in page_data.get("mediaList", [])]
-
+    data = anilist_query(GQL_LIST_COLLECTION, {"username": username}, token=token)
+    collection = data.get("data", {}).get("MediaListCollection") or {}
+    entries = []
+    for group in collection.get("lists", []):
+        entries += [_parse_entry(e) for e in group.get("entries", [])]
     return entries
 
 def al_headers():
