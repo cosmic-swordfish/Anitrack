@@ -1,1253 +1,2123 @@
-import os, time, secrets, requests, hmac, hashlib, base64, json, threading
-from concurrent.futures import ThreadPoolExecutor
-from urllib.parse import urlencode, quote
-from flask import Flask, redirect, request, session, jsonify, render_template, make_response
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AniTrack – {{ anilist_username }}</title>
+<link rel="icon" type="image/png" href="/static/favicon.png"/>
+<link rel="manifest" href="/static/manifest.json"/>
+<meta name="theme-color" content="#ffffff" id="theme-color-meta"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+<meta name="apple-mobile-web-app-title" content="AniTrack"/>
+<link rel="apple-touch-icon" href="/static/logo-512.png"/>
+<script>
+  if ('serviceWorker' in navigator)
+    navigator.serviceWorker.register('/service-worker.js');
+</script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @keyframes ci{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+  @keyframes slideUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 
-# Load .env only in local development
-try:
-    from dotenv import load_dotenv
-    load_dotenv()
-except ImportError:
-    pass
+  /* ─────────────────── DARK THEME (default) ─────────────────── */
+  :root {
+    --color-scheme: dark;
+    --bg: #0a0c12;
+    --bg-mesh: radial-gradient(ellipse 80% 60% at 20% 10%, rgba(2,169,255,0.06) 0%, transparent 60%),
+               radial-gradient(ellipse 60% 50% at 80% 80%, rgba(192,132,252,0.05) 0%, transparent 55%),
+               #0a0c12;
+    --surface: rgba(255,255,255,0.08);
+    --surface-hover: rgba(24,27,42,0.72);
+    --header-bg: rgba(8,10,18,0.75);
+    --glass-bg: rgba(255,255,255,0.04);
+    --glass-border: rgba(255,255,255,0.09);
+    --border: rgba(255,255,255,0.11);
+    --border-lo: rgba(255,255,255,0.055);
+    --text: #e4e4e8;
+    --text-title: #f0f0f4;
+    --text-sub: rgba(255,255,255,0.38);
+    --text-muted: rgba(255,255,255,0.24);
+    --text-dim: rgba(255,255,255,0.42);
+    --accent: #02A9FF;
+    --accent-bg: rgba(2,169,255,0.11);
+    --accent-border: rgba(2,169,255,0.30);
+    --purple: #c084fc;
+    --purple-bg: rgba(192,132,252,0.11);
+    --green: #00e87a;
+    --green-bg: rgba(0,232,122,0.07);
+    --green-border: rgba(0,232,122,0.2);
+    --yellow: rgba(255,200,80,0.8);
+    --yellow-bg: rgba(255,170,0,0.07);
+    --yellow-border: rgba(255,170,0,0.2);
+    --al-color: #02a9ff;
+    --mal-color: #2e51a2;
+    --tab-active-bg: rgba(2,169,255,0.11);
+    --tab-hover-bg: rgba(255,255,255,0.05);
+    --pill-bg: rgba(255,255,255,0.05);
+    --pill-border: rgba(255,255,255,0.1);
+    --air-box-bg: rgba(255,255,255,0.04);
+    --genre-bg: rgba(255,255,255,0.055);
+    --genre-color: rgba(255,255,255,0.34);
+    --diff-card-bg: rgba(12,14,22,0.9);
+    --diff-sel-bg: rgba(2,169,255,0.05);
+    --diff-sel-border: rgba(2,169,255,0.30);
+    --diff-change-bg: rgba(255,255,255,0.04);
+    --sync-panel: #0d0f16;
+    --sync-row: #10131b;
+    --sync-row-hover: #141824;
+    --sync-row-selected: #141a26;
+    --sync-border: rgba(255,255,255,0.08);
+    --sync-btn-bg: #141824;
+    --sync-btn-hover: #1a2030;
+    --empty-color: rgba(255,255,255,0.24);
+    --error-bg: rgba(255,60,60,0.08);
+    --error-border: rgba(255,60,60,0.22);
+    --error-color: #ff7070;
+    --success-bg: rgba(0,200,100,0.08);
+    --success-border: rgba(0,200,100,0.22);
+    --success-color: #00cc66;
+    --spinner-border: rgba(255,255,255,0.08);
+    --divider: rgba(255,255,255,0.06);
+    --card-shadow:
+    0 12px 60px rgba(0,0,0,0.45),
+    inset 0 1px 0 rgba(255,255,255,0.12), inset 0 1px 0 rgba(255,255,255,0.055);
+    --card-hover-shadow: 0 18px 56px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.1);
+    --glass: blur(40px) saturate(260%);
+    --not-yet-bg: rgba(255,170,0,0.06);
+    --not-yet-border: 1px solid rgba(255,170,0,0.15);
+    --not-yet-color: rgba(255,200,80,0.7);
+    --cover-blank-bg: #111420;
+    --ep-badge-bg: rgba(0,0,0,0.88);
+    --no-sched-color: rgba(255,255,255,0.2);
+    --logo-color: rgba(255,255,255,0.88);
+    --settings-row-bg: rgba(255,255,255,0.03);
+    --settings-row-border: rgba(255,255,255,0.065);
+    --settings-label: rgba(255,255,255,0.5);
+    --settings-section-label: rgba(255,255,255,0.25);
+    --switch-track-off: rgba(255,255,255,0.12);
+    --switch-thumb: #ffffff;
+  }
 
-# ── Supabase / Postgres token store ───────────────────────────────────────────
-try:
-    import psycopg2, psycopg2.extras
-    DB_URL = os.environ.get("DATABASE_URL", "")
+  /* ─────────────────── LIGHT THEME ─────────────────── */
+  [data-theme="light"] {
+    --color-scheme: light;
+    --bg: #F5F5F7;
+    --bg-mesh: radial-gradient(ellipse 80% 60% at 15% 5%, rgba(0,113,227,0.07) 0%, transparent 55%),
+               radial-gradient(ellipse 60% 50% at 85% 85%, rgba(109,40,217,0.06) 0%, transparent 50%),
+               radial-gradient(ellipse 50% 40% at 50% 50%, rgba(255,200,230,0.15) 0%, transparent 60%),
+               #F5F5F7;
+    --surface: rgba(255,255,255,0.52);
+    --surface-hover: rgba(255,255,255,0.72);
+    --header-bg: rgba(245,245,247,0.72);
+    --glass-bg: rgba(255,255,255,0.45);
+    --glass-border: rgba(255,255,255,0.75);
+    --border: rgba(0,0,0,0.08);
+    --border-lo: rgba(0,0,0,0.05);
+    --text: #1d1d1f;
+    --text-title: #000000;
+    --text-sub: rgba(0,0,0,0.45);
+    --text-muted: rgba(0,0,0,0.3);
+    --text-dim: rgba(0,0,0,0.55);
+    --accent: #0071e3;
+    --accent-bg: rgba(0,113,227,0.08);
+    --accent-border: rgba(0,113,227,0.24);
+    --purple: #6d28d9;
+    --purple-bg: rgba(109,40,217,0.08);
+    --green: #059669;
+    --green-bg: rgba(5,150,105,0.08);
+    --green-border: rgba(5,150,105,0.22);
+    --yellow: rgba(130,80,0,0.85);
+    --yellow-bg: rgba(200,130,0,0.07);
+    --yellow-border: rgba(180,110,0,0.2);
+    --tab-active-bg: rgba(0,113,227,0.09);
+    --tab-hover-bg: rgba(0,0,0,0.04);
+    --pill-bg: rgba(0,0,0,0.05);
+    --pill-border: rgba(0,0,0,0.1);
+    --air-box-bg: rgba(255,255,255,0.6);
+    --genre-bg: rgba(0,0,0,0.05);
+    --genre-color: rgba(0,0,0,0.45);
+    --diff-card-bg: rgba(255,255,255,0.65);
+    --diff-sel-bg: rgba(0,113,227,0.06);
+    --diff-sel-border: rgba(0,113,227,0.28);
+    --diff-change-bg: rgba(0,0,0,0.04);
+    --sync-panel: #f4f5f7;
+    --sync-row: #ffffff;
+    --sync-row-hover: #f0f2f5;
+    --sync-row-selected: #eaf1fc;
+    --sync-border: rgba(0,0,0,0.08);
+    --sync-btn-bg: #ffffff;
+    --sync-btn-hover: #f0f2f5;
+    --empty-color: rgba(0,0,0,0.28);
+    --error-bg: rgba(220,38,38,0.07);
+    --error-border: rgba(220,38,38,0.18);
+    --error-color: #b91c1c;
+    --success-bg: rgba(5,150,105,0.07);
+    --success-border: rgba(5,150,105,0.2);
+    --success-color: #047857;
+    --spinner-border: rgba(0,0,0,0.08);
+    --divider: rgba(0,0,0,0.07);
+    --card-shadow: 0 8px 32px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.9);
+    --card-hover-shadow: 0 22px 60px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.98);
+    --glass: blur(24px) saturate(210%);
+    --not-yet-bg: rgba(200,130,0,0.06);
+    --not-yet-border: 1px solid rgba(180,110,0,0.16);
+    --not-yet-color: rgba(130,80,0,0.8);
+    --cover-blank-bg: rgba(0,0,0,0.07);
+    --ep-badge-bg: rgba(0,0,0,0.55);
+    --no-sched-color: rgba(0,0,0,0.28);
+    --logo-color: #1d1d1f;
+    --settings-row-bg: rgba(255,255,255,0.55);
+    --settings-row-border: rgba(0,0,0,0.07);
+    --settings-label: rgba(0,0,0,0.55);
+    --settings-section-label: rgba(0,0,0,0.3);
+    --switch-track-off: rgba(0,0,0,0.15);
+    --switch-thumb: #ffffff;
+  }
 
-    if not DB_URL:
-        print("[DB] DATABASE_URL is not set — token persistence disabled. "
-              "Add DATABASE_URL to your .env or Vercel env vars to enable it.")
+  body{
+    background: var(--bg-mesh);
+    background-attachment: fixed;
+    color:var(--text);
+    font-family:'SF Pro Display',-apple-system,'Helvetica Neue',system-ui,sans-serif;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    transition:background 0.4s ease,color 0.25s ease
+  }
+  main{flex:1;padding-bottom:110px}
 
-    def _get_db():
-        if not DB_URL:
-            raise RuntimeError("DATABASE_URL is not set")
-        return psycopg2.connect(DB_URL, sslmode="require")
+  /* ─── Floating Icon Pill Navbar ─── */
+  .anitrack-navbar-wrap{
+    position:fixed;bottom:max(24px, env(safe-area-inset-bottom));
+    left:50%;transform:translateX(-50%);
+    z-index:300;width:calc(100% - 64px);max-width:320px;
+    transition:transform 0.35s cubic-bezier(0.32,0,0.67,0), opacity 0.35s ease;
+  }
+  .anitrack-navbar-wrap.nav-hidden{
+    transform:translateX(-50%) translateY(calc(100% + 32px));
+    opacity:0;
+    pointer-events:none;
+  }
+  .anitrack-navbar{
+    height:68px;border-radius:34px;
+    border:1px solid rgba(255,255,255,0.13);
+    display:flex;align-items:center;justify-content:space-evenly;
+    padding:0 10px;position:relative;overflow:hidden;
+  }
+  .anitrack-navbar::before{
+    content:'';position:absolute;inset:0;
+    background:rgba(255,255,255,0.10);
+    backdrop-filter:blur(40px) saturate(2);
+    -webkit-backdrop-filter:blur(40px) saturate(2);
+    border-radius:34px;transition:background 0.3s;
+  }
+  .anitrack-navbar.no-blur::before{
+    backdrop-filter:none !important;
+    -webkit-backdrop-filter:none !important;
+    background:rgba(28,30,40,0.96) !important;
+  }
+  [data-theme="light"] .anitrack-navbar::before{
+    background:rgba(210,215,235,0.55);
+  }
+  [data-theme="light"] .anitrack-navbar.no-blur::before{
+    background:rgba(210,215,235,0.97) !important;
+  }
 
-    def _ensure_tables():
-        if not DB_URL:
-            return
-        try:
-            conn = _get_db(); cur = conn.cursor()
-            cur.execute("""
-                CREATE TABLE IF NOT EXISTS user_tokens (
-                    username   TEXT PRIMARY KEY,
-                    al_token   JSONB,
-                    mal_token  JSONB,
-                    updated_at TIMESTAMPTZ DEFAULT now()
-                )
-            """)
-            cur.execute("""
-                CREATE TABLE IF NOT EXISTS anime_list (
-                    id          BIGSERIAL PRIMARY KEY,
-                    username    TEXT NOT NULL,
-                    al_id       INT,
-                    mal_id      INT,
-                    title       TEXT NOT NULL,
-                    status      TEXT,
-                    progress    INT DEFAULT 0,
-                    score       NUMERIC(4,1) DEFAULT 0,
-                    episodes    INT,
-                    media_status TEXT,
-                    started_at   DATE,
-                    completed_at DATE,
-                    updated_at  TIMESTAMPTZ DEFAULT now(),
-                    synced_at   TIMESTAMPTZ DEFAULT now(),
-                    UNIQUE (username, al_id),
-                    UNIQUE (username, mal_id)
-                )
-            """)
-            # Backfill columns for tables created before started_at/completed_at existed.
-            cur.execute("ALTER TABLE anime_list ADD COLUMN IF NOT EXISTS started_at DATE")
-            cur.execute("ALTER TABLE anime_list ADD COLUMN IF NOT EXISTS completed_at DATE")
-            cur.execute("""
-                CREATE INDEX IF NOT EXISTS idx_anime_list_username
-                ON anime_list (username)
-            """)
-            conn.commit(); cur.close(); conn.close()
-            print("[DB] Connected — user_tokens + anime_list tables ready.")
-        except Exception as e:
-            print(f"[DB] Table init error: {e}")
-            print("[DB] Check that DATABASE_URL is correct and the database is reachable.")
+  .anav-item{
+    position:relative;z-index:1;
+    display:flex;align-items:center;justify-content:center;
+    height:48px;border-radius:24px;
+    cursor:pointer;border:none;background:transparent;
+    outline:none;
+    transition:background 300ms ease,box-shadow 300ms ease;
+    -webkit-tap-highlight-color:transparent;
+    will-change:width;
+    /* width driven by JS RAF animation */
+  }
 
-    _ensure_tables()
+  /* Top-edge indicator bar */
+  .anav-indicator{
+    position:absolute;top:0;height:2px;width:30px;
+    background:#FFFFFF;border-radius:0 0 2px 2px;
+    box-shadow:0 0 8px rgba(255,255,255,0.5);
+    transition:left 300ms cubic-bezier(0.25,0.46,0.45,0.94);
+    z-index:2;pointer-events:none;
+  }
 
-    def db_save_tokens(username, al_token, mal_token):
-        if not DB_URL: return
-        try:
-            conn = _get_db(); cur = conn.cursor()
-            cur.execute("""
-                INSERT INTO user_tokens (username, al_token, mal_token, updated_at)
-                VALUES (%s, %s, %s, now())
-                ON CONFLICT (username) DO UPDATE
-                SET al_token=EXCLUDED.al_token, mal_token=EXCLUDED.mal_token, updated_at=now()
-            """, (username, json.dumps(al_token), json.dumps(mal_token)))
-            conn.commit(); cur.close(); conn.close()
-            print(f"[DB] Tokens saved for {username}")
-        except Exception as e:
-            print(f"[DB] Save error: {e}")
+  .anav-item svg{
+    width:22px;height:22px;flex-shrink:0;
+    fill:none;stroke:#C3CBD8;
+    stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;
+    transition:stroke 0.25s ease,transform 300ms cubic-bezier(0.34,1.56,0.64,1),filter 300ms ease;
+    position:relative;z-index:1;
+  }
+  [data-theme="light"] .anav-item svg{ stroke:rgba(0,0,0,0.35); }
+  .anav-item.active svg{
+    stroke:#FFFFFF;
+    transform:scale(1.1);
+    filter:none;
+  }
+  [data-theme="dark"] .anav-item.active svg{ stroke:#FFFFFF; }
 
-    def db_load_all_tokens():
-        if not DB_URL: return []
-        try:
-            conn = _get_db()
-            cur  = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-            cur.execute("SELECT username, al_token, mal_token FROM user_tokens")
-            rows = cur.fetchall(); cur.close(); conn.close()
-            return rows
-        except Exception as e:
-            print(f"[DB] Load error: {e}"); return []
+  .anav-item.active{
+    background:rgba(255,255,255,0.22);
+    box-shadow:none;
+  }
+  [data-theme="light"] .anav-item.active{
+    background:rgba(0,0,0,0.12);
+  }
 
-    def db_delete_tokens(username):
-        if not DB_URL: return
-        try:
-            conn = _get_db(); cur = conn.cursor()
-            cur.execute("DELETE FROM user_tokens WHERE username=%s", (username,))
-            conn.commit(); cur.close(); conn.close()
-        except Exception as e:
-            print(f"[DB] Delete error: {e}")
+  .anav-item:active{ transform:scale(0.88); }
 
-    def _fuzzy_date_to_sql(d):
-        """Convert an AniList FuzzyDate dict {year, month, day} (or an
-        already-formatted 'YYYY-MM-DD' string) into a SQL date string.
-        Returns None if the date is missing/incomplete.
-        """
-        if not d:
-            return None
-        if isinstance(d, str):
-            return d or None
-        if isinstance(d, dict):
-            y, m, day = d.get("year"), d.get("month"), d.get("day")
-            if y and m and day:
-                return f"{int(y):04d}-{int(m):02d}-{int(day):02d}"
-        return None
+  /* Tap ripple */
+  .anav-item::after{
+    content:'';position:absolute;inset:0;border-radius:26px;
+    background:radial-gradient(circle,rgba(255,255,255,0.12) 0%,transparent 70%);
+    opacity:0;transform:scale(0.5);
+    transition:opacity 0.15s,transform 0.3s;pointer-events:none;
+  }
+  .anav-item:active::after{opacity:1;transform:scale(1);}
 
-    def db_save_anime_list(username, entries):
-        """Upsert a list of anime entries for a user into Supabase.
-        entries: list of dicts from _parse_entry() (AL format) or mal entries.
-        Each entry must have at least: alId or malId, title, status, progress, score.
-        """
-        if not DB_URL or not entries: return
-        try:
-            conn = _get_db(); cur = conn.cursor()
-            for e in entries:
-                al_id       = e.get("alId")
-                mal_id      = e.get("malId")
-                title       = e.get("title", "Unknown")
-                status      = e.get("status", "")
-                progress    = e.get("progress", 0)
-                score       = e.get("score", 0)
-                episodes    = e.get("episodes")
-                media_status = e.get("mediaStatus")
-                started_at   = _fuzzy_date_to_sql(e.get("startedAt"))
-                completed_at = _fuzzy_date_to_sql(e.get("completedAt"))
+  /* ── Icon click animations ─────────────────────────── */
 
-                # Build the conflict target: prefer alId, fallback to malId
-                if al_id:
-                    cur.execute("""
-                        INSERT INTO anime_list
-                            (username, al_id, mal_id, title, status, progress, score, episodes, media_status, started_at, completed_at, updated_at, synced_at)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, now(), now())
-                        ON CONFLICT (username, al_id) DO UPDATE SET
-                            mal_id       = EXCLUDED.mal_id,
-                            title        = EXCLUDED.title,
-                            status       = EXCLUDED.status,
-                            progress     = EXCLUDED.progress,
-                            score        = EXCLUDED.score,
-                            episodes     = EXCLUDED.episodes,
-                            media_status = EXCLUDED.media_status,
-                            started_at   = EXCLUDED.started_at,
-                            completed_at = EXCLUDED.completed_at,
-                            updated_at   = EXCLUDED.updated_at,
-                            synced_at    = now()
-                    """, (username, al_id, mal_id, title, status, progress, score, episodes, media_status, started_at, completed_at))
-                elif mal_id:
-                    cur.execute("""
-                        INSERT INTO anime_list
-                            (username, al_id, mal_id, title, status, progress, score, episodes, media_status, started_at, completed_at, updated_at, synced_at)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, now(), now())
-                        ON CONFLICT (username, mal_id) DO UPDATE SET
-                            al_id        = EXCLUDED.al_id,
-                            title        = EXCLUDED.title,
-                            status       = EXCLUDED.status,
-                            progress     = EXCLUDED.progress,
-                            score        = EXCLUDED.score,
-                            episodes     = EXCLUDED.episodes,
-                            media_status = EXCLUDED.media_status,
-                            started_at   = EXCLUDED.started_at,
-                            completed_at = EXCLUDED.completed_at,
-                            updated_at   = EXCLUDED.updated_at,
-                            synced_at    = now()
-                    """, (username, al_id, mal_id, title, status, progress, score, episodes, media_status, started_at, completed_at))
-            conn.commit(); cur.close(); conn.close()
-            print(f"[DB] anime_list: saved {len(entries)} entries for {username}")
-        except Exception as e:
-            print(f"[DB] anime_list save error: {e}")
+  /* Sync: full 360° spin */
+  @keyframes anav-spin{
+    0%  { transform: rotate(0deg)   scale(1.1); }
+    60% { transform: rotate(300deg) scale(1.15); }
+    100%{ transform: rotate(360deg) scale(1.1); }
+  }
+  #anav-sync-btn.icon-anim svg{
+    animation: anav-spin 650ms cubic-bezier(0.22,1,0.36,1) both;
+  }
 
-    def db_load_anime_list(username, status_filter=None):
-        """Load stored anime list for a user. Optionally filter by status."""
-        if not DB_URL: return []
-        try:
-            conn = _get_db()
-            cur  = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-            if status_filter:
-                cur.execute(
-                    "SELECT * FROM anime_list WHERE username=%s AND status=%s ORDER BY title",
-                    (username, status_filter)
-                )
-            else:
-                cur.execute(
-                    "SELECT * FROM anime_list WHERE username=%s ORDER BY title",
-                    (username,)
-                )
-            rows = cur.fetchall(); cur.close(); conn.close()
-            return [dict(r) for r in rows]
-        except Exception as e:
-            print(f"[DB] anime_list load error: {e}"); return []
+  /* Settings: jolt-rotate ±25° */
+  @keyframes anav-jolt{
+    0%  { transform: rotate(0deg)   scale(1.1); }
+    25% { transform: rotate(28deg)  scale(1.15); }
+    55% { transform: rotate(-18deg) scale(1.12); }
+    78% { transform: rotate(12deg)  scale(1.1); }
+    100%{ transform: rotate(0deg)   scale(1.1); }
+  }
+  #anav-settings-btn.icon-anim svg{
+    animation: anav-jolt 650ms cubic-bezier(0.34,1.56,0.64,1) both;
+  }
 
-    def db_delete_anime_list(username):
-        """Delete all anime entries for a user (e.g. on logout)."""
-        if not DB_URL: return
-        try:
-            conn = _get_db(); cur = conn.cursor()
-            cur.execute("DELETE FROM anime_list WHERE username=%s", (username,))
-            conn.commit(); cur.close(); conn.close()
-        except Exception as e:
-            print(f"[DB] anime_list delete error: {e}")
+  /* Grid (Planned): tiles pop in staggered */
+  @keyframes anav-pop{
+    0%  { transform: scale(1.1); }
+    40% { transform: scale(1.28); }
+    70% { transform: scale(1.0);  }
+    100%{ transform: scale(1.1); }
+  }
+  #anav-planned.icon-anim svg rect:nth-child(1){ animation: anav-pop 500ms 0ms   cubic-bezier(0.34,1.56,0.64,1) both; }
+  #anav-planned.icon-anim svg rect:nth-child(2){ animation: anav-pop 500ms 70ms  cubic-bezier(0.34,1.56,0.64,1) both; }
+  #anav-planned.icon-anim svg rect:nth-child(3){ animation: anav-pop 500ms 140ms cubic-bezier(0.34,1.56,0.64,1) both; }
+  #anav-planned.icon-anim svg rect:nth-child(4){ animation: anav-pop 500ms 210ms cubic-bezier(0.34,1.56,0.64,1) both; }
 
-    DB_AVAILABLE = True
+  /* Eye (Watching): scale pulse + blink */
+  @keyframes anav-blink{
+    0%  { transform: scale(1.1); }
+    18% { transform: scaleY(0.15) scaleX(1.1); }
+    36% { transform: scale(1.18); }
+    60% { transform: scale(1.05); }
+    100%{ transform: scale(1.1); }
+  }
+  #anav-watching.icon-anim svg{
+    animation: anav-blink 650ms cubic-bezier(0.34,1.56,0.64,1) both;
+  }
 
-    # ── Owner-only guard ──────────────────────────────────────────────────────
-    # Set OWNER_USERNAME in your .env / Vercel env vars to your AniList username.
-    # When set, only that username's data is ever written to the database.
-    # Visitors can still use the site (sync, view diffs) but nothing is persisted.
-    OWNER_USERNAME = os.environ.get("OWNER_USERNAME", "").strip().lower()
 
-    def _is_owner(username):
-        if not OWNER_USERNAME:
-            return True  # not set → no restriction (backwards-compatible)
-        return username.strip().lower() == OWNER_USERNAME
+  /* ─── Episode update buttons ─── */
+  .ep-controls{display:flex;align-items:center;gap:6px;margin-top:6px}
+  .ep-btn{
+    width:26px;height:26px;border-radius:7px;border:1px solid var(--border);
+    background:var(--glass-bg);color:var(--text);font-size:14px;font-weight:700;
+    cursor:pointer;display:flex;align-items:center;justify-content:center;
+    transition:all .15s;line-height:1;
+    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  }
+  .ep-btn:hover:not(:disabled){background:rgba(2,169,255,0.15);border-color:var(--accent-border);color:var(--accent);}
+  .ep-btn:disabled{opacity:.3;cursor:not-allowed;}
+  .ep-btn:active:not(:disabled){transform:scale(0.9);}
+  .ep-count{font-size:12px;font-family:monospace;color:var(--text);min-width:28px;text-align:center;}
+  .ep-updating{opacity:.5;pointer-events:none;}
+  .edit-btn{
+    margin-left:auto;width:26px;height:26px;border-radius:7px;border:1px solid var(--border);
+    background:var(--glass-bg);color:var(--text);font-size:12px;
+    cursor:pointer;display:flex;align-items:center;justify-content:center;
+    transition:all .15s;line-height:1;opacity:.75;
+    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  }
+  .edit-btn:hover{background:rgba(2,169,255,0.15);border-color:var(--accent-border);color:var(--accent);opacity:1;}
+  .edit-btn:active{transform:scale(0.9);}
+  .date-input{color-scheme:var(--color-scheme);}
 
-    # Wrap save functions with the owner check
-    _db_save_tokens_inner    = db_save_tokens
-    _db_save_anime_list_inner = db_save_anime_list
+  /* ─── Header / Glass Nav ─── */
+  header{
+    padding:max(18px, env(safe-area-inset-top)) 22px 14px;
+    background:var(--header-bg);
+    border-bottom:1px solid var(--border);
+    position:sticky;top:0;z-index:100;
+    backdrop-filter:var(--glass);
+    -webkit-backdrop-filter:var(--glass);
+    transition:background 0.4s ease,border-color 0.25s ease;
+    box-shadow:0 1px 0 rgba(255,255,255,0.04),0 8px 40px rgba(0,0,0,0.25)
+  }
 
-    def db_save_tokens(username, al_token, mal_token):
-        if not _is_owner(username):
-            print(f"[DB] Skipped token save for non-owner: {username}")
-            return
-        _db_save_tokens_inner(username, al_token, mal_token)
+  .header-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:10px}
+  .logo{display:flex;align-items:center;gap:7px;font-weight:800;font-size:13px;letter-spacing:.22em;color:var(--logo-color);flex-shrink:0}
+  .logo-icon{color:var(--accent);font-size:17px}
+  .header-right{display:flex;flex-direction:column;align-items:flex-end;gap:5px}
+  .user-pill{display:flex;align-items:center;gap:6px;background:var(--pill-bg);border:1px solid var(--pill-border);padding:4px 12px;border-radius:20px;font-size:11px;color:var(--text-sub)}
+  .dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 5px var(--green);display:inline-block}
+  .dot-mal{background:#2e51a2;box-shadow:0 0 5px #2e51a2}
+  .dot-al{background:#02a9ff;box-shadow:0 0 5px #02a9ff}
+  .dot-disconnected{background:#ff4444;box-shadow:0 0 5px #ff4444}
+  .pill-sep{opacity:.4}
 
-    def db_save_anime_list(username, entries):
-        if not _is_owner(username):
-            print(f"[DB] Skipped anime_list save for non-owner: {username}")
-            return
-        _db_save_anime_list_inner(username, entries)
+  /* ─── Nav tabs ─── */
+  .nav-tabs{display:flex;gap:4px}
+  .tab{padding:6px 14px;border-radius:9px;font-size:12px;font-family:monospace;cursor:pointer;border:1px solid var(--border);background:var(--glass-bg);color:var(--text-sub);transition:all .2s;letter-spacing:.02em;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+  .tab.active{background:var(--tab-active-bg);border-color:var(--accent-border);color:var(--accent);box-shadow:0 0 12px rgba(2,169,255,0.15)}
+  .tab:hover:not(.active){background:var(--tab-hover-bg);color:var(--text)}
 
-except ImportError:
-    DB_AVAILABLE = False
-    DB_URL = ""
-    print("[DB] psycopg2 not installed — token persistence disabled. "
-          "Run: pip install psycopg2-binary")
-    def db_save_tokens(u, a, m): pass
-    def db_load_all_tokens(): return []
-    def db_delete_tokens(u): pass
-    def db_save_anime_list(u, e): pass
-    def db_load_anime_list(u, status_filter=None): return []
-    def db_delete_anime_list(u): pass
+  /* ─── Connection bars ─── */
+  .conn-bars{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+  .conn-bar{display:flex;align-items:center;gap:10px;padding:9px 14px;border-radius:10px;font-size:12px;font-family:monospace;flex-wrap:wrap;transition:all 0.3s}
+  .conn-bar.disconnected{background:var(--yellow-bg);border:1px solid var(--yellow-border);color:var(--yellow)}
+  .conn-bar a{color:inherit;font-weight:700;text-decoration:none;padding:3px 10px;border-radius:5px;border:1px solid currentColor;opacity:.8;transition:opacity .2s;margin-left:auto}
+  .conn-bar a:hover{opacity:1}
 
-app = Flask(__name__)
+  .notif-bar{display:flex;align-items:center;gap:8px;padding:9px 14px;border-radius:9px;font-size:12px;font-family:monospace;margin-top:8px;animation:fadeIn 0.3s ease}
+  .notif-bar.error{background:var(--error-bg);border:1px solid var(--error-border);color:var(--error-color)}
+  .notif-bar.success{background:var(--success-bg);border:1px solid var(--success-border);color:var(--success-color)}
 
-# ── HTTPS flag (needed before secret key check) ───────────────────────────────
-IS_HTTPS = os.environ.get("HTTPS", "false").lower() == "true"
+  .stats{font-size:12px;color:var(--text-sub)}
+  .stats b{color:var(--accent)}
 
-# ── Secret key ────────────────────────────────────────────────────────────────
-_secret = os.environ.get("SECRET_KEY", "")
-if not _secret:
-    if IS_HTTPS:
-        raise RuntimeError(
-            "SECRET_KEY env var must be set in production. "
-            "Generate one with: python -c \"import secrets; print(secrets.token_hex(32))\""
-        )
-    _secret = secrets.token_hex(32)
-    print("=" * 70)
-    print("WARNING: SECRET_KEY env var is not set.")
-    print(f"Add to your .env:  SECRET_KEY={_secret}")
-    print("=" * 70)
+  /* ─── Pages ─── */
+  main{padding:22px 26px 110px}
+  .page{display:none}.page.active{display:block;animation:slideUp 0.3s ease both}
 
-app.secret_key = _secret
-app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
-app.config["SESSION_COOKIE_HTTPONLY"] = True
-app.config["SESSION_COOKIE_SECURE"] = IS_HTTPS
+  /* ─── Filter Pills ─── */
+  .filter-row{
+    display:flex;align-items:center;gap:8px;
+    overflow-x:auto;padding:0 26px 10px 26px;margin:0 -26px 4px -26px;
+    -webkit-overflow-scrolling:touch;scrollbar-width:none;
+  }
+  .filter-row::-webkit-scrollbar{display:none}
+  .filter-pill{
+    flex-shrink:0;
+    padding:7px 16px;border-radius:100px;
+    font-size:12px;font-weight:600;letter-spacing:.02em;
+    border:1.5px solid var(--border);
+    background:var(--glass-bg);color:var(--text-sub);
+    cursor:pointer;transition:all .2s;white-space:nowrap;
+    backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  }
+  .filter-pill:hover{background:var(--surface);color:var(--text)}
+  .filter-pill.active{
+    background:var(--accent-bg);border-color:var(--accent-border);
+    color:var(--accent);
+  }
+  [data-theme="light"] .filter-pill.active{
+    background:rgba(0,113,227,0.09);border-color:rgba(0,113,227,0.3);color:#0071e3;
+  }
 
-# ── Config ────────────────────────────────────────────────────────────────────
-ANILIST_USERNAME    = os.environ.get("ANILIST_USERNAME", "cosmicswordfish")
-MAL_CLIENT_ID       = os.environ.get("MAL_CLIENT_ID", "")
-MAL_CLIENT_SECRET   = os.environ.get("MAL_CLIENT_SECRET", "")
-MAL_REDIRECT_URI    = os.environ.get("MAL_REDIRECT_URI", "http://localhost:5000/mal/callback")
-AL_CLIENT_ID        = os.environ.get("AL_CLIENT_ID", "")
-AL_CLIENT_SECRET    = os.environ.get("AL_CLIENT_SECRET", "")
-AL_REDIRECT_URI     = os.environ.get("AL_REDIRECT_URI", "http://localhost:5000/al/callback")
-CRON_SECRET         = os.environ.get("CRON_SECRET", "")
+  /* ─── Grid & Cards ─── */
+  .grid{display:grid;grid-template-columns:1fr;gap:12px}
+  .card{
+    border-radius:18px;overflow:hidden;
+    background:var(--surface);border:1px solid var(--glass-border);
+    display:flex;animation:ci .4s ease both;
+    transition:transform .45s cubic-bezier(.22,1,.36,1),box-shadow .45s ease,background 0.35s;
+    position:relative;box-shadow:var(--card-shadow);
+  }
+  .card:hover{transform:translateY(-4px) scale(1.01);box-shadow:var(--card-hover-shadow)}
+  .card-top-bar{position:absolute;top:0;left:0;right:0;height:2px}
+  .cover{flex-shrink:0;width:110px;position:relative}
+  .cover img{width:110px;height:160px;object-fit:cover;display:block}
+  .cover-blank{width:110px;height:160px;background:var(--cover-blank-bg);display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:22px}
+  .ep-badge{position:absolute;bottom:5px;left:50%;transform:translateX(-50%);background:var(--ep-badge-bg);font-size:9px;font-family:monospace;padding:2px 6px;border-radius:3px;white-space:nowrap;color:#fff}
+  .body{flex:1;padding:12px 14px;display:flex;flex-direction:column;gap:6px;min-width:0}
+  .anime-title{font-weight:700;font-size:14px;color:var(--text-title);line-height:1.35;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+  .prog-row{display:flex;align-items:center;gap:6px;font-size:10px;font-family:monospace}
+  .prog-label{color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em}
+  .prog-val{font-weight:700;font-family:monospace}
+  .genres{display:flex;flex-wrap:wrap;gap:4px}
+  .genre{font-size:9px;color:var(--genre-color);background:var(--genre-bg);padding:2px 6px;border-radius:3px;font-family:monospace}
+  .air-box{display:flex;justify-content:space-between;align-items:center;background:var(--air-box-bg);border-radius:8px;padding:7px 9px;margin-top:auto}
+  .air-label{font-size:8px;color:var(--text-muted);font-family:monospace;text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px}
+  .air-date{font-size:10px;color:var(--text-dim);font-family:monospace}
+  .countdown{font-size:17px;font-weight:700;text-align:right}
+  .countdown-sub{font-size:8px;color:var(--text-muted);font-family:monospace;text-transform:uppercase}
+  .no-sched{text-align:center;font-size:10px;color:var(--no-sched-color);font-family:monospace;padding:7px;margin-top:auto}
+  .not-yet{background:var(--not-yet-bg);border:var(--not-yet-border);color:var(--not-yet-color);padding:8px 12px;border-radius:8px;font-size:11px;font-family:monospace;text-align:center;margin-top:auto}
 
-ANILIST_API   = "https://graphql.anilist.co"
-MAL_AUTH_URL  = "https://myanimelist.net/v1/oauth2/authorize"
-MAL_TOKEN_URL = "https://myanimelist.net/v1/oauth2/token"
-MAL_API       = "https://api.myanimelist.net/v2"
-AL_AUTH_URL   = "https://anilist.co/api/v2/oauth/authorize"
-AL_TOKEN_URL  = "https://anilist.co/api/v2/oauth/token"
+  /* ─── Shared buttons (used by Search/Edit modals) ─── */
+  .btn{padding:8px 18px;border-radius:9px;font-size:12px;font-family:monospace;cursor:pointer;border:1px solid;transition:all .2s;font-weight:600;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+  .btn-primary{background:var(--accent-bg);border-color:var(--accent-border);color:var(--accent)}
+  .btn-primary:hover{background:rgba(2,169,255,0.2);border-color:var(--accent)}
+  .btn-success{background:var(--green-bg);border-color:var(--green-border);color:var(--green)}
+  .btn-success:hover{background:rgba(0,200,100,0.14)}
+  .btn-warn{background:var(--yellow-bg);border-color:var(--yellow-border);color:var(--yellow)}
+  .btn-warn:hover{background:rgba(200,130,0,0.12)}
+  .btn:disabled{opacity:.4;cursor:not-allowed}
 
-AL_TO_MAL = {
-    "CURRENT":   "watching",
-    "COMPLETED": "completed",
-    "PAUSED":    "on_hold",
-    "DROPPED":   "dropped",
-    "PLANNING":  "plan_to_watch",
+  /* ─── Sync page — flat "diff review" style (deliberately not glass) ─── */
+  .sync-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:2px}
+  .sync-head h2{font-size:15px;font-weight:700;color:var(--text-title);letter-spacing:.2px}
+  .sync-accounts{display:flex;gap:12px;font-size:10px;font-family:monospace;color:var(--text-dim)}
+  .sync-accounts span{display:inline-flex;align-items:center;gap:5px}
+  .sync-dot{width:6px;height:6px;border-radius:50%;display:inline-block;flex-shrink:0}
+  .sync-dot.al{background:var(--al-color)}
+  .sync-dot.mal{background:var(--mal-color)}
+  .sync-stats{font-size:12px;font-family:monospace;color:var(--text-dim);margin:5px 0 16px}
+  .sync-stats b{color:var(--text-title);font-weight:700}
+
+  .sync-toolbar{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap;align-items:center}
+  .sbtn{padding:9px 15px;border-radius:8px;font-size:11.5px;font-family:monospace;font-weight:700;letter-spacing:.2px;cursor:pointer;border:1px solid var(--sync-border);background:var(--sync-btn-bg);color:var(--text);transition:transform .12s,border-color .15s,background .15s,opacity .15s}
+  .sbtn:hover{border-color:var(--accent-border);background:var(--sync-btn-hover)}
+  .sbtn:active{transform:scale(.96)}
+  .sbtn:disabled{opacity:.35;cursor:not-allowed;transform:none}
+  .sbtn-primary{background:var(--accent);border-color:var(--accent);color:#04121c}
+  .sbtn-primary:hover{background:#33bcff;border-color:#33bcff}
+
+  .diff-list{display:flex;flex-direction:column;border:1px solid var(--sync-border);border-radius:12px;overflow:hidden;background:var(--sync-panel)}
+  .diff-card{position:relative;background:var(--sync-row);border:none;border-bottom:1px solid var(--sync-border);padding:13px 14px 13px 19px;display:flex;align-items:center;gap:12px;animation:ci .25s ease both;transition:background .15s}
+  .diff-list .diff-card:last-child{border-bottom:none}
+  .diff-card:hover{background:var(--sync-row-hover)}
+  .diff-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:rgba(255,255,255,.15)}
+  .diff-card.selected{background:var(--sync-row-selected)}
+  .diff-card[data-type="missing"]::before{background:#ff8080}
+  .diff-card[data-type="outdated"]::before{background:var(--yellow)}
+  .diff-card[data-type="malonly"]::before{background:var(--purple)}
+  .diff-check{width:16px;height:16px;cursor:pointer;flex-shrink:0;accent-color:var(--accent)}
+  .diff-info{flex:1;min-width:0}
+  .diff-title{font-weight:600;font-size:13.5px;color:var(--text-title);margin-bottom:5px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+  .diff-meta{display:flex;flex-wrap:wrap;align-items:center;gap:7px}
+  .diff-chip{display:inline-block;font-size:9px;font-family:monospace;font-weight:700;letter-spacing:.3px;text-transform:uppercase;padding:2px 6px;border-radius:4px}
+  .chip-missing{color:#ff8080;background:rgba(255,100,100,.1)}
+  .chip-outdated{color:var(--yellow);background:var(--yellow-bg)}
+  .chip-malonly{color:var(--purple);background:var(--purple-bg)}
+  .diff-route{font-size:9px;font-family:monospace;color:var(--text-muted)}
+  .diff-changes{font-size:11px;font-family:monospace;color:var(--text-dim);display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;width:100%}
+  .diff-change{background:var(--diff-change-bg);padding:2px 8px;border-radius:4px}
+  .diff-action{flex-shrink:0}
+  .apply-btn{padding:6px 13px;border-radius:7px;font-size:11px;font-family:monospace;font-weight:700;cursor:pointer;border:1px solid var(--sync-border);background:transparent;color:var(--text);transition:all .15s}
+  .apply-btn:hover{border-color:var(--accent);color:var(--accent)}
+  .apply-btn.done{border-color:var(--green-border);color:var(--green)}
+  .apply-btn.err{border-color:rgba(255,100,100,.3);color:#ff8080}
+
+  .empty-sync{text-align:center;padding:56px 20px;color:var(--empty-color);font-size:13px;font-family:monospace;border:1px dashed var(--sync-border);border-radius:12px}
+  .empty-sync .icon{font-size:36px;margin-bottom:10px}
+  .spinner-wrap{display:flex;flex-direction:column;align-items:center;gap:12px;padding:70px 0;color:var(--text-dim);font-size:13px}
+  .spinner{width:34px;height:34px;border-radius:50%;border:2px solid var(--spinner-border);border-top-color:var(--accent);animation:spin .9s linear infinite}
+  .error-box{background:var(--error-bg);border:1px solid var(--error-border);color:var(--error-color);padding:14px 18px;border-radius:10px;font-size:13px;margin-bottom:16px}
+
+  .sync-fab{position:fixed;right:18px;bottom:calc(104px + env(safe-area-inset-bottom));width:52px;height:52px;border-radius:50%;background:var(--accent);color:#04121c;border:none;font-size:24px;font-weight:600;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 8px 22px rgba(2,169,255,.35);z-index:40;transition:transform .15s,box-shadow .15s}
+  .sync-fab:hover{transform:translateY(-2px);box-shadow:0 10px 28px rgba(2,169,255,.45)}
+  .sync-fab:active{transform:scale(.92)}
+
+  /* ─── Collapsible sections ─── */
+  .ani-section{margin-bottom:6px;border-radius:18px;overflow:hidden;border:1px solid var(--border);transition:border-color 0.2s;backdrop-filter:blur(16px) saturate(160%);-webkit-backdrop-filter:blur(16px) saturate(160%);box-shadow:0 2px 20px rgba(0,0,0,0.18),inset 0 1px 0 rgba(255,255,255,0.045)}
+  .ani-section.open{border-color:var(--glass-border)}
+  [data-theme="light"] .ani-section-header{background:rgba(255,255,255,0.5)}
+  [data-theme="light"] .ani-section-header:hover{background:rgba(255,255,255,0.7)}
+  [data-theme="light"] .ani-section-body{background:rgba(255,255,255,0.28)}
+  .ani-section-header{display:flex;align-items:center;gap:10px;padding:13px 16px;cursor:pointer;background:transparent;user-select:none;transition:background .2s}
+  .ani-section-header:hover{background:rgba(255,255,255,0.04)}
+  [data-theme="dark"] .ani-section-header{background:rgba(12,14,22,0.45)}
+  [data-theme="dark"] .ani-section-header:hover{background:rgba(18,22,36,0.6)}
+  .ani-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+  .ani-section-label{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase}
+  .ani-section-badge{font-size:10px;padding:2px 8px;border-radius:10px;font-weight:700;font-family:monospace}
+  .ani-chevron{margin-left:auto;font-size:10px;color:var(--text-muted);transition:transform .25s}
+  .ani-section.open .ani-chevron{transform:rotate(180deg)}
+  .ani-section-body{display:none;padding:0 12px 12px;background:rgba(6,8,14,0.35)}
+  .ani-section.open .ani-section-body{display:block}
+  .ani-section-body .grid{padding-top:12px}
+
+  /* Dropped compact rows */
+  .ani-drop-body{padding:4px 12px 10px !important}
+  .drop-row{display:flex;align-items:center;gap:10px;padding:9px 4px;border-bottom:1px solid var(--divider);opacity:.5;transition:opacity .2s}
+  .drop-row:hover{opacity:.75}
+  .drop-row:last-child{border-bottom:none}
+  .drop-thumb{width:30px;height:44px;border-radius:4px;flex-shrink:0;background:#111420;display:flex;align-items:center;justify-content:center;font-size:13px;color:rgba(255,255,255,0.1);overflow:hidden}
+  .drop-thumb img{width:100%;height:100%;object-fit:cover}
+  .drop-title{font-size:12px;font-weight:600;color:var(--text-sub);flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+  .drop-ep{font-size:10px;font-family:monospace;color:var(--text-muted);flex-shrink:0}
+
+  /* ──────────────────────────────────────
+     SETTINGS PAGE
+  ────────────────────────────────────── */
+  footer{border-top:1px solid var(--border);padding:18px 24px;text-align:center;font-size:12px;color:var(--text-sub);display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap}
+  footer a{color:var(--text-sub);text-decoration:none;opacity:.7}
+  footer a:hover{opacity:1}
+  .footer-sep{opacity:.35}
+  .settings-container{max-width:480px;margin:0 auto}
+  .settings-section-title{
+    font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--settings-section-label);
+    padding:0 4px 8px;margin-top:28px;margin-bottom:4px;
+  }
+  .settings-section-title:first-child{margin-top:0}
+  .settings-group{
+    border-radius:16px;overflow:hidden;
+    border:1px solid var(--glass-border);
+    background:var(--glass-bg);
+    backdrop-filter:var(--glass);
+    -webkit-backdrop-filter:var(--glass);
+    box-shadow:var(--card-shadow);
+  }
+  .settings-row{
+    display:flex;align-items:center;
+    padding:15px 18px;
+    border-bottom:1px solid var(--settings-row-border);
+    background:var(--settings-row-bg);
+    transition:background 0.2s;
+    gap:14px;
+  }
+  .settings-row a{backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+  .settings-row:last-child{border-bottom:none}
+  .settings-row:hover{background:var(--surface-hover)}
+  .settings-icon{font-size:17px;flex-shrink:0;width:24px;text-align:center}
+  .settings-icon svg{
+    width:20px;height:20px;
+    fill:none;stroke:var(--text-sub);
+    stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;
+    display:block;margin:0 auto;
+    transition:stroke 0.25s ease;
+  }
+  .settings-label-wrap{flex:1;min-width:0}
+  .settings-label{font-size:14px;font-weight:500;color:var(--text);line-height:1.3}
+  .settings-sublabel{font-size:11px;color:var(--text-sub);margin-top:2px;line-height:1.4}
+
+  /* ─── iOS-style toggle switch ─── */
+  .ios-switch{
+    position:relative;flex-shrink:0;
+    width:51px;height:31px;
+    cursor:pointer;
+  }
+  .ios-switch input{opacity:0;width:0;height:0;position:absolute}
+  .ios-track{
+    position:absolute;inset:0;border-radius:31px;
+    background:var(--switch-track-off);
+    transition:background 0.28s cubic-bezier(.4,0,.2,1);
+    box-shadow:inset 0 0 0 1px rgba(0,0,0,0.12);
+  }
+  .ios-switch input:checked + .ios-track{background:#34c759}
+  [data-theme="light"] .ios-switch input:checked + .ios-track{background:#34c759}
+  .ios-thumb{
+    position:absolute;
+    top:2px;left:2px;
+    width:27px;height:27px;border-radius:50%;
+    background:var(--switch-thumb);
+    box-shadow:0 2px 8px rgba(0,0,0,0.32),0 1px 2px rgba(0,0,0,0.2);
+    transition:transform 0.28s cubic-bezier(.4,0,.2,1),box-shadow 0.2s;
+  }
+  .ios-switch input:checked ~ .ios-thumb{transform:translateX(20px)}
+  .ios-switch:active .ios-thumb{transform:scaleX(1.12)}
+  .ios-switch input:checked:active ~ .ios-thumb{transform:translateX(20px) scaleX(1.12)}
+
+  /* ── Toggle fix: ensure switches render cleanly without WebGL ── */
+  .ios-switch { cursor: pointer; display: inline-flex; align-items: center; }
+  .ios-track { transition: background 0.28s; }
+  .ios-thumb { transition: transform 0.28s cubic-bezier(.4,0,.2,1); }
+
+  @media(max-width:600px){
+    header{padding:max(14px, env(safe-area-inset-top)) 16px 12px}
+    main{padding:16px 16px 110px}
+    .filter-row{padding:0 16px 10px 16px;margin:0 -16px 4px -16px;}
+    .sync-toolbar{flex-wrap:wrap}
+    .sbtn{flex:1 1 auto;text-align:center}
+    .diff-card{flex-wrap:wrap}
+    .diff-action{width:100%}
+    .apply-btn{width:100%}
+    .btn{text-align:center}
+    .grid{grid-template-columns:1fr}
+    .settings-container{max-width:100%}
+  }
+  /* ── PWA Install Banner ── */
+  .pwa-banner{
+    position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(120px);
+    width:calc(100% - 32px);max-width:420px;
+    display:flex;align-items:center;gap:12px;
+    padding:14px 14px 14px 16px;border-radius:20px;
+    background:var(--surface);border:1px solid var(--glass-border);
+    box-shadow:0 8px 32px rgba(0,0,0,0.18);
+    z-index:9999;opacity:0;
+    transition:transform .4s cubic-bezier(.22,1,.36,1), opacity .4s ease;
+    backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  }
+  .pwa-banner.show{transform:translateX(-50%) translateY(0);opacity:1}
+  .pwa-icon{width:42px;height:42px;border-radius:12px;flex-shrink:0}
+  .pwa-text{flex:1;min-width:0}
+  .pwa-title{font-size:13px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pwa-sub{font-size:11px;color:var(--text-sub);margin-top:2px}
+  .pwa-install{
+    flex-shrink:0;padding:8px 16px;border-radius:100px;
+    background:var(--accent);color:#fff;border:none;
+    font-size:12px;font-weight:700;cursor:pointer;
+    transition:opacity .2s;
+  }
+  .pwa-install:hover{opacity:0.85}
+  .pwa-close{
+    flex-shrink:0;background:none;border:none;
+    color:var(--text-sub);font-size:14px;cursor:pointer;
+    padding:4px 6px;line-height:1;
+  }
+  [data-theme="light"] .pwa-install{background:#0071e3}
+</style>
+
+
+
+
+</head>
+<body>
+
+<header>
+  <div class="header-top">
+    <a class="logo" href="/" style="text-decoration:none;cursor:pointer;" title="Home" onclick="hap(8)"><img src="/static/anitrack-logo-transparent-512.png" alt="AniTrack" style="height:52px;width:auto;display:block;"></a>
+    <div class="header-right">
+      <div class="user-pill">
+        <span class="dot"></span> {{ anilist_username }}
+        <span class="pill-sep">·</span><span class="dot {% if al_connected %}dot-al{% else %}dot-disconnected{% endif %}"></span> AL
+        <span class="pill-sep">·</span><span class="dot {% if mal_connected %}dot-mal{% else %}dot-disconnected{% endif %}"></span> MAL
+      </div>
+      <div class="stats" id="stats">
+        <b id="total-watching">0</b> watching · <b id="total-planned">0</b> planned · <b id="total-airing">0</b> airing soon
+      </div>
+    </div>
+  </div>
+
+
+
+  {% if mal_error %}<div class="notif-bar error">⚠ MAL error: {{ mal_error }}</div>{% endif %}
+  {% if mal_success %}<div class="notif-bar success" id="mal-success-banner">✓ MyAnimeList connected!</div>{% endif %}
+  {% if al_error %}<div class="notif-bar error">⚠ AniList error: {{ al_error }}</div>{% endif %}
+  {% if al_success %}<div class="notif-bar success" id="al-success-banner">✓ AniList connected!</div>{% endif %}
+
+
+</header>
+
+<main>
+  <!-- ── Anime List Page ── -->
+  <div class="page active" id="page-list">
+    <div id="spinner" class="spinner-wrap">
+      <div class="spinner"></div>
+      <span>Fetching your list…</span>
+    </div>
+    <div id="cal-error" class="error-box" style="display:none"></div>
+    <div id="cal-content" style="display:none">
+
+      <!-- Filter pills -->
+      <div class="filter-row" id="filter-row">
+        <button class="filter-pill active" data-sort="default"  onclick="setFilter(this,'default')">✦ Default</button>
+        <button class="filter-pill"        data-sort="updated"  onclick="setFilter(this,'updated')">🕒 Last Updated</button>
+        <button class="filter-pill"        data-sort="airing"   onclick="setFilter(this,'airing')">📡 Airing Soon</button>
+        <button class="filter-pill"        data-sort="title"    onclick="setFilter(this,'title')">A → Z</button>
+        <button class="filter-pill"        data-sort="score"    onclick="setFilter(this,'score')">★ Score</button>
+        <button class="filter-pill"        data-sort="progress" onclick="setFilter(this,'progress')">▶ Progress</button>
+        <button class="filter-pill"        data-sort="eps-left" onclick="setFilter(this,'eps-left')">⏳ Eps Left</button>
+      </div>
+
+      <!-- Watching tab: airing + finished merged -->
+      <div id="view-watching" class="grid"></div>
+      <!-- Planned tab: planned/upcoming -->
+      <div id="view-planned" class="grid" style="display:none"></div>
+
+    </div>
+  </div>
+
+  <!-- ── Sync Page ── -->
+  <div class="page" id="page-sync">
+    {% if not mal_connected %}
+    <div class="error-box">Connect your MyAnimeList account above to use sync.</div>
+    {% else %}
+    <div class="sync-head">
+      <h2>Sync</h2>
+      <div class="sync-accounts">
+        <span><i class="sync-dot al"></i>AniList</span>
+        <span><i class="sync-dot mal"></i>MAL</span>
+      </div>
+    </div>
+    <div class="sync-stats" id="sync-status">Tap Check Differences to compare your lists.</div>
+
+    <div class="sync-toolbar">
+      <button class="sbtn sbtn-primary" onclick="loadDiff()">Check Differences</button>
+      <button class="sbtn" id="btn-auto" onclick="autoSync()">Auto Sync All</button>
+      <button class="sbtn" id="btn-apply-sel" onclick="applySelected()" disabled>Apply Selected</button>
+    </div>
+    {% if not al_connected and al_client_set %}
+    <div class="notif-bar" style="background:rgba(2,169,255,0.07);border:1px solid rgba(2,169,255,0.2);color:var(--accent);margin-bottom:12px">
+      ℹ Connect AniList above for full two-way sync. Currently syncing to MAL only.
+    </div>
+    {% endif %}
+    <div id="sync-error" class="error-box" style="display:none"></div>
+    <div id="sync-spinner" class="spinner-wrap" style="display:none">
+      <div class="spinner"></div>
+      <span id="sync-spinner-label">Loading...</span>
+    </div>
+    <div id="diff-list" class="diff-list"></div>
+
+    <button class="sync-fab" onclick="openSearchModal()" aria-label="Add anime" title="Add anime">＋</button>
+    {% endif %}
+  </div>
+
+  <!-- ── Settings Page ── -->
+  <div class="page" id="page-settings">
+    <div class="settings-container">
+
+      <!-- Appearance -->
+      <div class="settings-section-title">Appearance</div>
+      <div class="settings-group">
+        <!-- Mode toggle -->
+        <div class="settings-row">
+          <span class="settings-icon" id="mode-icon">
+            <svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          </span>
+          <div class="settings-label-wrap">
+            <div class="settings-label" id="mode-label">Dark Mode</div>
+            <div class="settings-sublabel">Switch between light &amp; dark</div>
+          </div>
+          <label class="ios-switch" title="Toggle theme">
+            <input type="checkbox" id="switch-theme" onchange="onThemeSwitch(this)">
+            <div class="ios-track"></div>
+            <div class="ios-thumb"></div>
+          </label>
+        </div>
+        <!-- Oneko toggle -->
+        <div class="settings-row">
+          <span class="settings-icon" id="oneko-icon">
+            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="10" x2="9.01" y2="10"/><line x1="15" y1="10" x2="15.01" y2="10"/><path d="M7 7 L5 3"/><path d="M17 7 L19 3"/></svg>
+          </span>
+          <div class="settings-label-wrap">
+            <div class="settings-label">Oneko</div>
+            <div class="settings-sublabel">Pixel cat that follows your cursor</div>
+          </div>
+          <label class="ios-switch" title="Toggle Oneko">
+            <input type="checkbox" id="switch-oneko" onchange="onOnekoSwitch(this)">
+            <div class="ios-track"></div>
+            <div class="ios-thumb"></div>
+          </label>
+        </div>
+        <!-- Navbar Blur toggle -->
+        <div class="settings-row">
+          <span class="settings-icon" id="blur-icon">
+            <svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+          </span>
+          <div class="settings-label-wrap">
+            <div class="settings-label">Navbar Blur</div>
+            <div class="settings-sublabel">Glass blur effect on bottom navigation</div>
+          </div>
+          <label class="ios-switch" title="Toggle navbar blur">
+            <input type="checkbox" id="switch-navbar-blur" checked onchange="onNavBlurSwitch(this)">
+            <div class="ios-track"></div>
+            <div class="ios-thumb"></div>
+          </label>
+        </div>
+
+      </div>
+
+      <!-- AniList Username -->
+      <div class="settings-section-title">AniList Username</div>
+      <div class="settings-group">
+        <div class="settings-row" style="flex-direction:column;align-items:stretch;gap:10px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <span class="settings-icon">⬡</span>
+            <div class="settings-label-wrap">
+              <div class="settings-label">Viewing list for</div>
+              <div class="settings-sublabel" id="current-username-label">{{ anilist_username }}</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;padding:0 4px">
+            <input
+              id="username-input"
+              type="text"
+              placeholder="Enter AniList username…"
+              autocomplete="off"
+              autocorrect="off"
+              autocapitalize="off"
+              spellcheck="false"
+              style="
+                flex:1;padding:9px 14px;border-radius:10px;
+                border:1px solid var(--border);
+                background:var(--glass-bg);
+                color:var(--text);
+                font-size:13px;font-family:monospace;
+                outline:none;
+                transition:border-color 0.2s;
+              "
+              onfocus="this.style.borderColor='var(--accent-border)'"
+              onblur="this.style.borderColor='var(--border)'"
+              onkeydown="if(event.key==='Enter') saveUsername()"
+            />
+            <button
+              onclick="saveUsername()"
+              style="
+                padding:9px 18px;border-radius:10px;
+                background:var(--accent);color:#fff;
+                border:none;font-size:13px;font-weight:700;
+                cursor:pointer;white-space:nowrap;
+                transition:opacity 0.2s;
+              "
+              onmouseover="this.style.opacity='0.85'"
+              onmouseout="this.style.opacity='1'"
+            >Save</button>
+          </div>
+          <div id="username-feedback" style="display:none;font-size:11px;font-family:monospace;padding:0 4px"></div>
+        </div>
+      </div>
+
+      <!-- About -->
+      <div class="settings-section-title">Accounts</div>
+      <div class="settings-group">
+        {% if al_connected %}
+        <div class="settings-row">
+          <span class="settings-icon">⬡</span>
+          <div class="settings-label-wrap">
+            <div class="settings-label">AniList</div>
+            <div class="settings-sublabel">Connected as {{ anilist_username }}</div>
+          </div>
+          <a href="/al/logout" style="font-size:12px;font-family:monospace;padding:5px 12px;border-radius:7px;border:1px solid var(--error-border);color:var(--error-color);background:var(--error-bg);text-decoration:none;white-space:nowrap">Disconnect</a>
+        </div>
+        {% else %}
+        <div class="settings-row">
+          <span class="settings-icon">⬡</span>
+          <div class="settings-label-wrap">
+            <div class="settings-label">AniList</div>
+            <div class="settings-sublabel">Not connected</div>
+          </div>
+          <a href="/al/login" style="font-size:12px;font-family:monospace;padding:5px 12px;border-radius:7px;border:1px solid var(--accent-border);color:var(--accent);background:var(--accent-bg);text-decoration:none;white-space:nowrap">Connect</a>
+        </div>
+        {% endif %}
+        {% if mal_connected %}
+        <div class="settings-row">
+          <span class="settings-icon" style="color:#2e51a2">M</span>
+          <div class="settings-label-wrap">
+            <div class="settings-label">MyAnimeList</div>
+            <div class="settings-sublabel">Connected</div>
+          </div>
+          <a href="/mal/logout" style="font-size:12px;font-family:monospace;padding:5px 12px;border-radius:7px;border:1px solid var(--error-border);color:var(--error-color);background:var(--error-bg);text-decoration:none;white-space:nowrap">Disconnect</a>
+        </div>
+        {% else %}
+        <div class="settings-row">
+          <span class="settings-icon" style="color:#2e51a2">M</span>
+          <div class="settings-label-wrap">
+            <div class="settings-label">MyAnimeList</div>
+            <div class="settings-sublabel">Not connected</div>
+          </div>
+          <a href="/mal/login" style="font-size:12px;font-family:monospace;padding:5px 12px;border-radius:7px;border:1px solid var(--accent-border);color:var(--accent);background:var(--accent-bg);text-decoration:none;white-space:nowrap">Connect</a>
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="settings-section-title">About</div>
+      <div class="settings-group">
+        <div class="settings-row">
+          <span class="settings-icon">⬡</span>
+          <div class="settings-label-wrap">
+            <div class="settings-label">AniTrack</div>
+            <div class="settings-sublabel">{{ anilist_username }} · AL + MAL tracker</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</main>
+
+<footer>
+  <span>© AniTrack</span>
+  <span class="footer-sep">·</span>
+  <span>Built with <a href="https://anilist.co" target="_blank" rel="noopener">AniList</a> &amp; <a href="https://myanimelist.net" target="_blank" rel="noopener">MyAnimeList</a></span>
+</footer>
+
+<!-- ── Bottom Navbar ── -->
+<div class="anitrack-navbar-wrap" id="anitrack-navbar-wrap">
+  <nav class="anitrack-navbar" id="anitrack-navbar">
+    <div class="anav-indicator" id="anav-indicator"></div>
+
+    <!-- Watching -->
+    <button class="anav-item active" id="anav-watching" aria-label="Watching">
+      <svg viewBox="0 0 24 24"><path d="M3 12s3-7 9-7 9 7 9 7-3 7-9 7-9-7-9-7z"/><circle cx="12" cy="12" r="3"/></svg>
+    </button>
+
+    <!-- Planned -->
+    <button class="anav-item" id="anav-planned" aria-label="Planned">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+    </button>
+
+    <!-- Sync -->
+    <button class="anav-item" id="anav-sync-btn" aria-label="Sync">
+      <svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
+    </button>
+
+    <!-- Settings -->
+    <button class="anav-item" id="anav-settings-btn" aria-label="Settings">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </button>
+
+  </nav>
+</div>
+
+<script>
+const AL_CONNECTED = {{ 'true' if al_connected else 'false' }};
+const _DEFAULT_USERNAME = "{{ anilist_username }}";
+let ANILIST_USERNAME = localStorage.getItem('anitrack-username') || _DEFAULT_USERNAME;
+
+// ── Haptic helper ─────────────────────────────────────────────────────────────
+function hap(ms) { try { navigator.vibrate && navigator.vibrate(ms ?? 8); } catch(e) {} }
+
+// ── Auto-dismiss success banners ─────────────────────────────────────────────
+["mal-success-banner","al-success-banner"].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) {
+    hap(15);
+    setTimeout(() => {
+      el.style.transition = "opacity 0.4s ease";
+      el.style.opacity = "0";
+      setTimeout(() => el.remove(), 500);
+    }, 1800);
+  }
+});
+// Strip ?mal_success / ?al_success from URL so refresh doesn't re-show banner
+if (location.search.includes("al_success") || location.search.includes("mal_success")) {
+  history.replaceState(null, "", location.pathname);
 }
-MAL_TO_AL = {v: k for k, v in AL_TO_MAL.items()}
 
-# ── PKCE / OAuth cookie helpers ───────────────────────────────────────────────
-def _sign(value: str) -> str:
-    return hmac.new(_secret.encode(), value.encode(), hashlib.sha256).hexdigest()
+// ── Theme ────────────────────────────────────────────────────────────────────
+function applyTheme(t) {
+  document.documentElement.setAttribute("data-theme", t);
+  const lbl  = document.getElementById("mode-label");
+  const icon = document.getElementById("mode-icon");
+  const sw   = document.getElementById("switch-theme");
+  const isDark = t === "dark";
+  if (lbl)  lbl.textContent  = isDark ? "Dark Mode" : "Light Mode";
+  if (icon) icon.innerHTML   = isDark
+    ? `<svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`
+    : `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`;
+  if (sw)   sw.checked = !isDark;  // checked = light
+  localStorage.setItem("anitrack-theme", t);
+  // Update PWA theme-color to match
+  const tcMeta = document.getElementById("theme-color-meta");
+  if (tcMeta) tcMeta.setAttribute("content", isDark ? "#0d0f1a" : "#ffffff");
 
-def set_oauth_cookie(response, name: str, data: dict, max_age=600):
-    payload = base64.urlsafe_b64encode(json.dumps(data).encode()).decode()
-    sig = _sign(payload)
-    response.set_cookie(name, f"{payload}.{sig}", max_age=max_age, httponly=True,
-                        samesite="Lax", secure=IS_HTTPS, path="/")
+  // Invalidate WebGL snapshot so all glass instances re-sample the new theme
+  if (typeof Container !== 'undefined' && Container.pageSnapshot) {
+    Container.pageSnapshot = null;
+    // Brief delay for CSS transition to settle, then recapture
+    setTimeout(() => {
+      if (Container.instances.length > 0) {
+        Container.isCapturing = true;
+        Container.waitingForSnapshot = Container.instances.slice();
+        Container.instances[0].capturePageSnapshot();
+      }
+    }, 450);
+  }
+}
+function onThemeSwitch(el) {
+  hap(6);
+  applyTheme(el.checked ? "light" : "dark");
+}
+applyTheme(localStorage.getItem("anitrack-theme") || "light");
 
-def get_oauth_cookie(name: str):
-    raw = request.cookies.get(name, "")
-    if "." not in raw:
-        return None
-    payload, sig = raw.rsplit(".", 1)
-    if not hmac.compare_digest(sig, _sign(payload)):
-        return None
-    try:
-        return json.loads(base64.urlsafe_b64decode(payload).decode())
-    except Exception:
-        return None
+// ── Tab navigation ────────────────────────────────────────────────────────────
+function showPage(name, btn) {
+  document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+  document.querySelectorAll(".tab").forEach(b => b.classList.remove("active"));
+  const pg = document.getElementById("page-" + name);
+  if (pg) pg.classList.add("active");
+  if (btn) btn.classList.add("active");
+  // Always show navbar; sync active pill
+  const navWrap = document.getElementById("anitrack-navbar-wrap");
+  if (navWrap) navWrap.style.display = "";
+  const pillMap = { sync: 'anav-sync-btn', settings: 'anav-settings-btn', list: 'anav-watching' };
+  if (pillMap[name]) {
+    document.querySelectorAll('.anav-item').forEach(i => i.classList.remove('active'));
+    const activeBtn = document.getElementById(pillMap[name]);
+    activeBtn?.classList.add('active');
+    // Update indicator
+    const indicator = document.getElementById('anav-indicator');
+    const navEl     = document.getElementById('anitrack-navbar');
+    if (indicator && activeBtn && navEl) {
+      requestAnimationFrame(() => {
+        const w = parseFloat(activeBtn.style.width) || 80;
+        indicator.style.left = (activeBtn.offsetLeft + w / 2 - 15) + 'px';
+      });
+    }
+  }
+}
 
-# ── Shared HTTP session (connection pooling — avoids re-doing TLS handshakes
-#    on every single AniList/MAL request within a function invocation) ────────
-_http = requests.Session()
-_http.mount("https://", requests.adapters.HTTPAdapter(pool_connections=10, pool_maxsize=10))
+// Ensure list page is visible without disturbing tab active states
+function ensureListPage() {
+  document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+  const pg = document.getElementById("page-list");
+  if (pg) pg.classList.add("active");
+  const navWrap = document.getElementById("anitrack-navbar-wrap");
+  if (navWrap) navWrap.style.display = "";
+}
 
-# ── AniList helpers ───────────────────────────────────────────────────────────
-# AniList's API has been running in a degraded state, capped at 30 req/min
-# (vs. the usual 90) — see https://docs.anilist.co/guide/rate-limiting.
-# Rather than sleeping a fixed amount before every single call (safe but slow
-# for small lists), we read the X-RateLimit-Remaining / X-RateLimit-Reset
-# headers AniList sends back on every response and only pause once the
-# budget is actually about to run out — so short lists fetch at full speed
-# and long ones throttle themselves right before they'd get a 429.
-ANILIST_REQUEST_DELAY = 2.1  # fallback pacing if rate-limit headers are ever absent
-ANILIST_MAX_RETRIES = 2
-_al_rate_lock = threading.Lock()
-_al_rate_state = {"remaining": None, "reset": 0}
+// ── Collapsible sections ──────────────────────────────────────────────────────
+function toggleAniSection(id) {
+  hap(6);
+  document.getElementById(id).classList.toggle("open");
+}
 
-def _al_throttle():
-    with _al_rate_lock:
-        remaining, reset = _al_rate_state["remaining"], _al_rate_state["reset"]
-    if remaining is None:
-        return  # no data yet (first call) — just go
-    if remaining <= 1:
-        wait = reset - time.time()
-        if wait > 0:
-            time.sleep(wait + 0.5)
-
-def _al_record_rate_headers(headers):
-    try:
-        remaining = int(headers.get("X-RateLimit-Remaining"))
-        reset = int(headers.get("X-RateLimit-Reset"))
-    except (TypeError, ValueError):
-        return
-    with _al_rate_lock:
-        _al_rate_state["remaining"], _al_rate_state["reset"] = remaining, reset
-
-def anilist_query(query, variables=None, token=None):
-    headers = {"Content-Type": "application/json"}
-    if token:
-        headers["Authorization"] = f"Bearer {token.get('access_token', '')}"
-    for attempt in range(ANILIST_MAX_RETRIES + 1):
-        _al_throttle()
-        r = _http.post(ANILIST_API, json={"query": query, "variables": variables or {}},
-                        headers=headers, timeout=15)
-        _al_record_rate_headers(r.headers)
-        if r.status_code == 429:
-            try:
-                wait = float(r.headers.get("Retry-After", ANILIST_REQUEST_DELAY))
-            except ValueError:
-                wait = ANILIST_REQUEST_DELAY
-            if attempt < ANILIST_MAX_RETRIES:
-                time.sleep(min(wait, 30) + 0.5)
-                continue
-            raise RuntimeError(f"AniList rate limit hit, retry after {wait:.0f}s")
-        return r.json()
-
-GQL_LIST_COLLECTION = """
-query($username: String) {
-  MediaListCollection(userName: $username, type: ANIME) {
+// ── GQL ───────────────────────────────────────────────────────────────────────
+const GQL_USER_LIST = `
+query($userName: String) {
+  MediaListCollection(userName: $userName, type: ANIME) {
     lists {
       entries {
-        mediaId status score(format: POINT_10) progress updatedAt
+        id mediaId status score progress updatedAt
         startedAt { year month day }
         completedAt { year month day }
         media {
           id idMal title { romaji english } status episodes
+          coverImage { large color }
           nextAiringEpisode { airingAt episode timeUntilAiring }
+          startDate { year month day }
+          siteUrl genres
         }
       }
     }
   }
-}"""
+}`;
 
-GQL_LOOKUP_BY_MAL = """
-query($malId: Int) {
-  Media(idMal: $malId, type: ANIME) { id idMal title { romaji } }
-}"""
+// Safely embed a JS object as a single-quoted HTML attribute value
+// (escapes single quotes so titles like "I'm Standing Right Here" don't break onclick=' ... ')
+function attrJson(obj) {
+  return JSON.stringify(obj).replace(/'/g, "&#39;");
+}
 
-GQL_SEARCH = """
-query($search: String, $page: Int) {
-  Page(page: $page, perPage: 10) {
-    media(search: $search, type: ANIME) {
-      id idMal
-      title { romaji english }
-      status episodes
-      coverImage { medium }
-      mediaListEntry {
-        status score(format: POINT_10) progress
-        startedAt { year month day }
-        completedAt { year month day }
+function fmtCountdown(secs) {
+  if (secs <= 0) return "Now";
+  const d = Math.floor(secs / 86400);
+  const h = Math.floor((secs % 86400) / 3600);
+  const m = Math.floor((secs % 3600) / 60);
+  if (d > 0) return `${d}d ${h}h`;
+  if (h > 0) return `${h}h ${m}m`;
+  return `${m}m`;
+}
+function fmtDate(ts) {
+  return new Date(ts * 1000).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
+function buildCard(e) {
+  const m      = e.media;
+  const color  = m.coverImage?.color || "#444";
+  const cover  = m.coverImage?.large || "";
+  const total  = m.episodes || "?";
+  const genres = (m.genres || []).slice(0, 3);
+  const next   = m.nextAiringEpisode;
+  const title  = m.title?.english || m.title?.romaji || "Unknown";
+  const scoreHtml = e.score > 0
+    ? `<div class="prog-row"><span class="prog-label">Score</span><span class="prog-val" style="color:${color}">${e.score}/10</span></div>`
+    : "";
+  let airHtml = "";
+  if (next) {
+    airHtml = `<div class="air-box"><div><div class="air-label">Next Ep ${next.episode}</div><div class="air-date">${fmtDate(next.airingAt)}</div></div><div style="text-align:right"><div class="countdown" style="color:${color}">${fmtCountdown(next.timeUntilAiring)}</div><div class="countdown-sub">until ep ${next.episode}</div></div></div>`;
+  } else if (m.status === "FINISHED") {
+    const left = m.episodes ? m.episodes - e.progress : "?";
+    const epWord = left === 1 ? "ep" : "eps";
+    airHtml = `<div class="not-yet" style="background:rgba(2,169,255,0.05);border:1px solid rgba(2,169,255,0.15);color:rgba(2,169,255,0.6)">Series finished · ${left} ${epWord} left</div>`;
+  } else if (m.status === "NOT_YET_RELEASED") {
+    airHtml = `<div class="not-yet">Not yet airing</div>`;
+  } else {
+    airHtml = `<div class="no-sched">No schedule yet</div>`;
+  }
+  const entryId = e.id;
+  const maxEp = m.episodes || null;
+  const editPayload = {
+    alId: m.id, malId: m.idMal, title: title,
+    listStatus: e.status, listProgress: e.progress, listScore: e.score,
+    episodes: m.episodes, status: m.status,
+    startedAt: e.startedAt, completedAt: e.completedAt,
+  };
+  return `<div class="card" id="card-${entryId}"><div class="card-top-bar" style="background:${color}"></div><div class="cover">${cover?`<img src="${cover}" alt="${title}" loading="lazy">`:`<div class="cover-blank">📺</div>`}<div class="ep-badge" id="ep-badge-${entryId}">EP ${e.progress} / ${total}</div></div><div class="body"><a href="${m.siteUrl||'#'}" target="_blank" rel="noopener" class="anime-title" style="text-decoration:none;color:inherit">${title}</a><div class="prog-row"><span class="prog-label">Progress</span><span class="prog-val" id="ep-val-${entryId}">${e.progress} / ${total}</span></div>${scoreHtml}<div class="ep-controls"><button class="ep-btn" id="ep-dec-${entryId}" onclick="updateEp(${entryId},${e.progress},${maxEp},-1)" ${e.progress<=0?'disabled':''}>−</button><span class="ep-count" id="ep-cur-${entryId}">${e.progress}</span><button class="ep-btn" id="ep-inc-${entryId}" onclick="updateEp(${entryId},${e.progress},${maxEp},+1)" ${maxEp&&e.progress>=maxEp?'disabled':''}>+</button><button class="edit-btn" title="Edit" onclick='openAddOrEdit(${attrJson(editPayload)})'>✏</button></div><div class="genres">${genres.map(g=>`<span class="genre">${g}</span>`).join("")}</div>${airHtml}</div></div>`;
+}
+
+function buildDropRow(e) {
+  const m = e.media, cover = m.coverImage?.large || "", title = m.title?.english || m.title?.romaji || "Unknown", total = m.episodes || "?";
+  return `<div class="drop-row"><div class="drop-thumb">${cover?`<img src="${cover}" loading="lazy">`:"📺"}</div><div class="drop-title">${title}</div><div class="drop-ep">EP ${e.progress} / ${total}</div></div>`;
+}
+
+// ── Filter / Sort ─────────────────────────────────────────────────────────────
+let _allEntries = [];
+let _currentSort = 'default';
+let _sortDir = 1; // 1 = default direction, -1 = reversed
+
+const SORT_LABELS = {
+  default:  { asc: '✦ Default',    desc: '✦ Default' },
+  updated:  { asc: '🕒 Oldest',    desc: '🕒 Last Updated' },
+  airing:   { asc: '📡 Airing Last', desc: '📡 Airing Soon' },
+  title:    { asc: 'A → Z',         desc: 'Z → A' },
+  score:    { asc: '★ Low Score',   desc: '★ High Score' },
+  progress: { asc: '▶ Least Eps',   desc: '▶ Most Eps' },
+  'eps-left':{ asc: '⏳ Most Left', desc: '⏳ Fewest Left' },
+};
+
+function setFilter(btn, sort) {
+  hap(6);
+  if (_currentSort === sort && sort !== 'default') {
+    // Same pill clicked again — toggle direction
+    _sortDir *= -1;
+  } else {
+    // New pill — reset to default direction
+    _currentSort = sort;
+    _sortDir = 1;
+  }
+  document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  // Update label to reflect direction
+  const labels = SORT_LABELS[sort];
+  if (labels) btn.textContent = _sortDir === 1 ? labels.desc : labels.asc;
+  applyFilter();
+}
+
+function applyFilter() {
+  const isWatching = document.getElementById('view-watching').style.display !== 'none';
+  const entries = isWatching
+    ? _allEntries.filter(e => e.status === 'CURRENT')
+    : _allEntries.filter(e => e.status === 'PLANNING');
+
+  const dir = _sortDir;
+  let sorted;
+
+  if (_currentSort === 'default') {
+    const airing   = entries.filter(e => e.media?.nextAiringEpisode).sort((a,b) => (a.media.nextAiringEpisode.timeUntilAiring||0)-(b.media.nextAiringEpisode.timeUntilAiring||0));
+    const noSched  = entries.filter(e => !e.media?.nextAiringEpisode && e.media?.status !== 'FINISHED');
+    const finished = entries.filter(e => e.media?.status === 'FINISHED').sort((a,b) => ((b.media.episodes||0)-b.progress)-((a.media.episodes||0)-a.progress));
+    sorted = isWatching ? [...airing, ...noSched, ...finished] : entries;
+
+  } else if (_currentSort === 'updated') {
+    sorted = [...entries].sort((a,b) => dir * ((b.updatedAt||0) - (a.updatedAt||0)));
+
+  } else if (_currentSort === 'airing') {
+    const hasAiring = [...entries].filter(e => e.media?.nextAiringEpisode)
+      .sort((a,b) => dir * ((a.media.nextAiringEpisode.timeUntilAiring||0)-(b.media.nextAiringEpisode.timeUntilAiring||0)));
+    const rest = entries.filter(e => !e.media?.nextAiringEpisode);
+    sorted = [...hasAiring, ...rest];
+
+  } else if (_currentSort === 'title') {
+    sorted = [...entries].sort((a,b) => {
+      const ta = (a.media?.title?.english || a.media?.title?.romaji || '').toLowerCase();
+      const tb = (b.media?.title?.english || b.media?.title?.romaji || '').toLowerCase();
+      return dir * ta.localeCompare(tb);
+    });
+
+  } else if (_currentSort === 'score') {
+    sorted = [...entries].sort((a,b) => dir * ((b.score||0) - (a.score||0)));
+
+  } else if (_currentSort === 'progress') {
+    sorted = [...entries].sort((a,b) => dir * ((b.progress||0) - (a.progress||0)));
+
+  } else if (_currentSort === 'eps-left') {
+    sorted = [...entries].sort((a,b) => {
+      const la = (a.media?.episodes||0) - (a.progress||0);
+      const lb = (b.media?.episodes||0) - (b.progress||0);
+      return dir * (la - lb);
+    });
+
+  } else {
+    sorted = entries;
+  }
+
+  const target = isWatching ? 'view-watching' : 'view-planned';
+  document.getElementById(target).innerHTML = sorted.map(buildCard).join('') || emptyMsg('Nothing here');
+}
+
+const LIST_CACHE_KEY = "anitrack-list-cache-v1";
+
+function renderEntries(entries) {
+  _allEntries = entries;
+  const watching = entries.filter(e=>e.status==="CURRENT");
+  const planned  = entries.filter(e=>e.status==="PLANNING");
+  const airing   = watching.filter(e=>e.media?.nextAiringEpisode);
+  applyFilter();
+  document.getElementById("view-planned").innerHTML = planned.map(buildCard).join("") || emptyMsg("Nothing planned");
+  document.getElementById("total-watching").textContent = watching.length;
+  document.getElementById("total-planned").textContent  = planned.length;
+  document.getElementById("total-airing").textContent   = airing.length;
+  document.getElementById("stats").style.display = "";
+}
+
+async function loadList() {
+  const spinner = document.getElementById("spinner");
+  const errBox  = document.getElementById("cal-error");
+  const content = document.getElementById("cal-content");
+  errBox.style.display = "none";
+
+  // Stale-while-revalidate: paint the last cached list instantly (if any)
+  // so the page doesn't sit on a blank spinner every time, then refresh
+  // silently in the background.
+  let hadCache = false;
+  try {
+    const cached = localStorage.getItem(LIST_CACHE_KEY);
+    if (cached) {
+      const { username, entries } = JSON.parse(cached);
+      if (username === ANILIST_USERNAME && Array.isArray(entries)) {
+        renderEntries(entries);
+        content.style.display = "";
+        spinner.style.display = "none";
+        hadCache = true;
       }
     }
+  } catch (e) { /* corrupt cache, ignore */ }
+
+  if (!hadCache) { spinner.style.display = "flex"; content.style.display = "none"; }
+
+  try {
+    const res  = await fetch("https://graphql.anilist.co", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({query:GQL_USER_LIST,variables:{userName:ANILIST_USERNAME}}) });
+    const json = await res.json();
+    if (json.error)  throw new Error(json.error);
+    if (json.errors) throw new Error(json.errors[0]?.message || "AniList error");
+    const entries = (json.data?.MediaListCollection?.lists || []).flatMap(l => l.entries);
+    renderEntries(entries);
+    try {
+      localStorage.setItem(LIST_CACHE_KEY, JSON.stringify({ username: ANILIST_USERNAME, entries }));
+    } catch (e) { /* storage full/unavailable, ignore */ }
+    spinner.style.display = "none"; content.style.display = "";
+  } catch (err) {
+    spinner.style.display = "none";
+    // If we already painted a cached list, keep showing it and just warn
+    // instead of wiping the screen with an error.
+    if (hadCache) {
+      errBox.style.display = ""; content.style.display = "";
+      errBox.textContent = "⚠ Couldn't refresh (showing last saved list): " + err.message;
+    } else {
+      errBox.style.display = ""; content.style.display = "none";
+      errBox.textContent = "⚠ Failed to load list: " + err.message;
+    }
   }
-}"""
+}
+function emptyMsg(msg) { return `<div style="color:var(--text-muted);font-family:monospace;font-size:12px;padding:12px 4px">${msg}</div>`; }
 
-_AL_DELETE_GQL = """
-mutation($id: Int) {
-  DeleteMediaListEntry(id: $id) { deleted }
-}"""
+// ── Sync page ─────────────────────────────────────────────────────────────────
+let diffData = [];
+function setSyncSpinner(show, label) { const sp=document.getElementById("sync-spinner"); sp.style.display=show?"flex":"none"; if(label) document.getElementById("sync-spinner-label").textContent=label; }
+function setSyncStatus(msg) { document.getElementById("sync-status").innerHTML=msg; }
+function setSyncError(msg) { const el=document.getElementById("sync-error"); if(msg){el.style.display="";el.textContent="⚠ "+msg;}else{el.style.display="none";} }
+function buildDiffCard(d,idx) {
+  const type = d.action==="add_to_mal" ? "missing" : d.action==="only_on_mal" ? "malonly" : "outdated";
+  const changesHtml = (d.changes||[]).map(c=>`<span class="diff-change">${c}</span>`).join("");
+  const routes = [];
+  if (d.action !== "only_on_mal") routes.push("MAL");
+  if (d.needs_al_update || d.action === "only_on_mal") routes.push("AL");
+  const routeHtml = routes.length ? `<span class="diff-route">→ ${routes.join(" · ")}</span>` : "";
+  const actionable = d.action==="add_to_mal"||d.action==="update";
+  const checkHtml = actionable?`<input type="checkbox" class="diff-check" data-idx="${idx}" checked onchange="onDiffCheck()">`:`<div style="width:16px"></div>`;
+  return `<div class="diff-card selected" id="diff-card-${idx}" data-idx="${idx}" data-type="${type}">${checkHtml}<div class="diff-info"><div class="diff-title">${d.title||"Unknown"}</div><div class="diff-meta"><span class="diff-chip chip-${type}">${d.label}</span>${routeHtml}</div>${changesHtml?`<div class="diff-changes">${changesHtml}</div>`:""}</div>${actionable?`<div class="diff-action"><button class="apply-btn" id="apply-btn-${idx}" onclick="applySingle(${idx})">Apply</button></div>`:""}</div>`;
+}
+function renderDiffs(diffs) {
+  const list = document.getElementById("diff-list");
+  if (!diffs.length) { list.innerHTML=`<div class="empty-sync"><div class="icon">✅</div>Everything is in sync!</div>`; return; }
+  list.innerHTML = diffs.map((d,i)=>buildDiffCard(d,i)).join("");
+  document.getElementById("btn-auto").disabled = false;
+  onDiffCheck();
+}
+function onDiffCheck() {
+  const checked = document.querySelectorAll(".diff-check:checked");
+  document.getElementById("btn-apply-sel").disabled = checked.length===0;
+  document.querySelectorAll(".diff-card[data-idx]").forEach(card=>{ const cb=card.querySelector(".diff-check"); if(cb) card.classList.toggle("selected",cb.checked); });
+}
+async function loadDiff() {
+  hap(8);
+  setSyncError(""); setSyncSpinner(true,"Comparing lists…");
+  document.getElementById("diff-list").innerHTML = "";
+  document.getElementById("btn-apply-sel").disabled = true;
+  setSyncStatus("");
+  try {
+    const res=await fetch(`/api/sync/diff?username=${encodeURIComponent(ANILIST_USERNAME)}`); const json=await res.json();
+    if(json.error) throw new Error(json.error);
+    diffData=json.diffs||[];
+    setSyncStatus(`<b>${json.al_count}</b> AniList · <b>${json.mal_count}</b> MAL · <b>${diffData.length}</b> difference${diffData.length!==1?"s":""}`);
+    renderDiffs(diffData);
+  } catch(err){setSyncError(err.message);}
+  finally{setSyncSpinner(false);}
+}
+async function autoSync() {
+  hap(10);
+  setSyncError(""); setSyncSpinner(true,"Syncing all…"); setSyncStatus("Running auto sync…");
+  try {
+    const res=await fetch(`/api/sync/auto?username=${encodeURIComponent(ANILIST_USERNAME)}`,{method:"POST"}); const json=await res.json();
+    if(json.error) throw new Error(json.error);
+    setSyncStatus(`✓ Synced ${json.synced} item${json.synced!==1?"s":""}`);
+    await loadDiff();
+  } catch(err){setSyncError(err.message);setSyncSpinner(false);}
+}
+async function applySingle(idx) {
+  hap(8);
+  const diff=diffData[idx]; if(!diff) return;
+  const btn=document.getElementById(`apply-btn-${idx}`);
+  if(btn){btn.disabled=true;btn.textContent="…";}
+  try {
+    const res=await fetch("/api/sync/apply",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({items:[diff]})});
+    const json=await res.json(); const r=json.results?.[0];
+    if(btn){btn.classList.add(r?.mal_ok?"done":"err");btn.textContent=r?.mal_ok?"✓ Done":"✗ Error";}
+  } catch{if(btn){btn.classList.add("err");btn.textContent="✗ Error";}}
+}
+async function applySelected() {
+  hap(10);
+  const selected=[...document.querySelectorAll(".diff-check:checked")].map(cb=>diffData[+cb.dataset.idx]).filter(Boolean);
+  if(!selected.length) return;
+  setSyncStatus(`Applying ${selected.length} item${selected.length!==1?"s":""}…`);
+  document.getElementById("btn-apply-sel").disabled=true;
+  try {
+    const res=await fetch("/api/sync/apply",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({items:selected})});
+    const json=await res.json(); const ok=(json.results||[]).filter(r=>r.mal_ok).length;
+    setSyncStatus(`✓ Applied ${ok} / ${selected.length}`);
+    await loadDiff();
+  } catch(err){setSyncError(err.message);}
+}
 
-_AL_GET_LIST_ENTRY_GQL = """
-query($mediaId: Int) {
-  MediaList(mediaId: $mediaId, type: ANIME) { id }
-}"""
+// ── Oneko ─────────────────────────────────────────────────────────────────────
+const ONEKO_PNG = "data:image/png;base64,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";
+let nekoRunning = false, nekoEl = null, nekoAnimFrame = null;
+let nekoPosX=64,nekoPosY=64,mousePosX=0,mousePosY=0,frameCount=0,idleTime=0,idleAnimation=null,idleAnimFrame=0;
+const NEKO_SPEED=10;
+const spriteSets={idle:[[-3,-3]],alert:[[-7,-3]],scratchSelf:[[-5,0],[-6,0],[-7,0]],scratchWallN:[[0,0],[0,-1]],scratchWallS:[[-7,-1],[-6,-2]],scratchWallE:[[-2,-2],[-2,-3]],scratchWallW:[[-4,0],[-4,-1]],tired:[[-3,-2]],sleeping:[[-2,0],[-2,-1]],N:[[-1,-2],[-1,-3]],NE:[[0,-2],[0,-3]],E:[[-3,0],[-3,-1]],SE:[[-5,-1],[-5,-2]],S:[[-6,-3],[-7,-2]],SW:[[-5,-3],[-6,-1]],W:[[-4,-2],[-4,-3]],NW:[[-1,0],[-1,-1]]};
+document.addEventListener("mousemove",e=>{mousePosX=e.clientX;mousePosY=e.clientY;});
+function nekoSetSprite(name,f){const s=spriteSets[name][f%spriteSets[name].length];nekoEl.style.backgroundPosition=`${s[0]*32}px ${s[1]*32}px`;}
+function nekoResetIdle(){idleAnimation=null;idleAnimFrame=0;}
+function nekoIdle(){idleTime++;if(idleTime>10&&Math.floor(Math.random()*200)===0&&!idleAnimation){const opts=["sleeping","scratchSelf"];if(nekoPosX<32)opts.push("scratchWallW");if(nekoPosY<32)opts.push("scratchWallN");if(nekoPosX>window.innerWidth-32)opts.push("scratchWallE");if(nekoPosY>window.innerHeight-32)opts.push("scratchWallS");idleAnimation=opts[Math.floor(Math.random()*opts.length)];}switch(idleAnimation){case"sleeping":if(idleAnimFrame<8){nekoSetSprite("tired",0);break;}nekoSetSprite("sleeping",Math.floor(idleAnimFrame/4));if(idleAnimFrame>192)nekoResetIdle();break;case"scratchWallN":case"scratchWallS":case"scratchWallE":case"scratchWallW":case"scratchSelf":nekoSetSprite(idleAnimation,idleAnimFrame);if(idleAnimFrame>9)nekoResetIdle();break;default:nekoSetSprite("idle",0);return;}idleAnimFrame++;}
+let lastNekoTs;
+function nekoAnimLoop(ts){if(!nekoEl||!nekoEl.isConnected)return;if(!lastNekoTs)lastNekoTs=ts;if(ts-lastNekoTs>100){lastNekoTs=ts;frameCount++;const dx=nekoPosX-mousePosX,dy=nekoPosY-mousePosY,dist=Math.sqrt(dx*dx+dy*dy);if(dist<NEKO_SPEED||dist<48){nekoIdle();}else{idleAnimation=null;idleAnimFrame=0;if(idleTime>1){nekoSetSprite("alert",0);idleTime=Math.min(idleTime,7)-1;}else{let dir=dy/dist>0.5?"N":"";dir+=dy/dist<-0.5?"S":"";dir+=dx/dist>0.5?"W":"";dir+=dx/dist<-0.5?"E":"";nekoSetSprite(dir,frameCount);nekoPosX-=(dx/dist)*NEKO_SPEED;nekoPosY-=(dy/dist)*NEKO_SPEED;nekoPosX=Math.min(Math.max(16,nekoPosX),window.innerWidth-16);nekoPosY=Math.min(Math.max(16,nekoPosY),window.innerHeight-16);nekoEl.style.left=`${nekoPosX-16}px`;nekoEl.style.top=`${nekoPosY-16}px`;}}}nekoAnimFrame=requestAnimationFrame(nekoAnimLoop);}
+function startOneko(){
+  if(nekoRunning)return;
+  // reset all animation state so restarts are clean
+  frameCount=0;idleTime=0;idleAnimation=null;idleAnimFrame=0;lastNekoTs=null;
+  // seed position to current mouse or viewport centre
+  if(mousePosX===0&&mousePosY===0){mousePosX=Math.round(window.innerWidth/2);mousePosY=Math.round(window.innerHeight/2);}
+  nekoPosX=mousePosX;nekoPosY=mousePosY;
+  nekoEl=document.createElement("div");nekoEl.id="oneko";
+  nekoEl.style.cssText=`width:32px;height:32px;position:fixed;pointer-events:none;image-rendering:pixelated;left:${nekoPosX-16}px;top:${nekoPosY-16}px;z-index:2147483647;background-image:url(${ONEKO_PNG});background-size:256px 128px;`;
+  document.body.appendChild(nekoEl);
+  nekoRunning=true;
+  nekoAnimFrame=requestAnimationFrame(nekoAnimLoop);
+}
+function stopOneko(){nekoRunning=false;if(nekoAnimFrame){cancelAnimationFrame(nekoAnimFrame);nekoAnimFrame=null;}if(nekoEl){nekoEl.remove();nekoEl=null;}
+  frameCount=0;idleTime=0;idleAnimation=null;idleAnimFrame=0;lastNekoTs=null;
+}
 
-def _parse_entry(e):
-    t = e["media"]["title"]
-    return {
-        "alId":     e["media"]["id"],
-        "malId":    e["media"]["idMal"],
-        "title":    t.get("english") or t.get("romaji") or "Unknown",
-        "status":   e["status"],
-        "progress": e["progress"],
-        "score":    e["score"],
-        "updatedAt": e["updatedAt"],
-        "mediaStatus": e["media"]["status"],
-        "episodes":    e["media"]["episodes"],
-        "nextAiring":  e["media"].get("nextAiringEpisode"),
-        "startedAt":   e.get("startedAt"),
-        "completedAt": e.get("completedAt"),
+// ── Oneko settings switch ─────────────────────────────────────────────────────
+function onOnekoSwitch(el) {
+  hap(6);
+  if (el.checked) { startOneko(); } else { stopOneko(); }
+  localStorage.setItem("oneko-on", el.checked ? "1" : "0");
+  const icon = document.getElementById("oneko-icon");
+  if (icon) icon.innerHTML = el.checked
+    ? `<svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="10" x2="9.01" y2="10"/><line x1="15" y1="10" x2="15.01" y2="10"/><path d="M7 7 L5 3"/><path d="M17 7 L19 3"/></svg>`
+    : `<svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M8 15h8"/><path d="M8 11 Q9 10 10 11"/><path d="M14 11 Q15 10 16 11"/><path d="M7 7 L5 3"/><path d="M17 7 L19 3"/></svg>`;
+}
+
+// ── Sync settings switch ──────────────────────────────────────────────────────
+function onSyncSwitch(el) {
+  hap(6);
+  localStorage.setItem("sync-enabled", el.checked ? "1" : "0");
+  document.getElementById("open-sync-row").style.display = el.checked ? "" : "none";
+  const icon = document.getElementById("sync-icon");
+  if (icon) icon.innerHTML = el.checked
+    ? `<svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>`
+    : `<svg viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>`;
+}
+function openSyncPage() {
+  hap(8);
+  showPage("sync", null);
+  document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+}
+
+// ── Restore preferences ───────────────────────────────────────────────────────
+if (localStorage.getItem("oneko-on") === "1") {
+  requestAnimationFrame(() => { startOneko(); });
+  document.getElementById("switch-oneko").checked = true;
+}
+if (localStorage.getItem("sync-enabled") === "1") {
+  document.getElementById("switch-sync").checked = true;
+  document.getElementById("open-sync-row").style.display = "";
+}
+
+
+// ── Username setting ──────────────────────────────────────────────────────────
+function saveUsername() {
+  hap(8);
+  const input = document.getElementById('username-input');
+  const feedback = document.getElementById('username-feedback');
+  const val = input.value.trim();
+  if (!val) {
+    feedback.style.display = '';
+    feedback.style.color = 'var(--error-color)';
+    feedback.textContent = '⚠ Please enter a username';
+    return;
+  }
+  ANILIST_USERNAME = val;
+  localStorage.setItem('anitrack-username', val);
+  // Update the label
+  const label = document.getElementById('current-username-label');
+  if (label) label.textContent = val;
+  // Show success feedback
+  feedback.style.display = '';
+  feedback.style.color = 'var(--success-color)';
+  feedback.textContent = `✓ Switched to ${val} — reloading list…`;
+  input.value = '';
+  // Reload the list with the new username
+  setTimeout(() => {
+    feedback.style.display = 'none';
+    _allEntries = [];
+    loadList();
+  }, 800);
+}
+
+// Init username input placeholder with current active username
+(function initUsernameInput() {
+  const label = document.getElementById('current-username-label');
+  if (label) label.textContent = ANILIST_USERNAME;
+})();
+const GQL_UPDATE_PROGRESS = `
+mutation($id: Int, $progress: Int) {
+  SaveMediaListEntry(id: $id, progress: $progress) {
+    id progress
+  }
+}`;
+
+// In-memory progress store so we always have the latest value
+const epProgress = {};
+
+async function updateEp(entryId, currentProgress, maxEp, delta) {
+  hap(8);
+  // Use in-memory value if available (handles rapid clicks correctly)
+  const cur = epProgress[entryId] !== undefined ? epProgress[entryId] : currentProgress;
+  const next = cur + delta;
+  if (next < 0) return;
+  if (maxEp && next > maxEp) return;
+
+  // Optimistic UI update
+  epProgress[entryId] = next;
+  const curEl   = document.getElementById(`ep-cur-${entryId}`);
+  const badgeEl = document.getElementById(`ep-badge-${entryId}`);
+  const valEl   = document.getElementById(`ep-val-${entryId}`);
+  const decBtn  = document.getElementById(`ep-dec-${entryId}`);
+  const incBtn  = document.getElementById(`ep-inc-${entryId}`);
+  const card    = document.getElementById(`card-${entryId}`);
+
+  const totalStr = maxEp ? maxEp : '?';
+  if (curEl)   curEl.textContent   = next;
+  if (badgeEl) badgeEl.textContent = `EP ${next} / ${totalStr}`;
+  if (valEl)   valEl.textContent   = `${next} / ${totalStr}`;
+  if (decBtn)  decBtn.disabled     = (next <= 0);
+  if (incBtn)  incBtn.disabled     = (maxEp && next >= maxEp);
+  if (card)    card.classList.add('ep-updating');
+
+  try {
+    const res = await fetch('/api/anilist', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: GQL_UPDATE_PROGRESS, variables: { id: entryId, progress: next } })
+    });
+    const json = await res.json();
+    if (json.errors) throw new Error(json.errors[0]?.message || 'AniList error');
+    // Confirm with server value
+    const serverProgress = json.data?.SaveMediaListEntry?.progress;
+    if (serverProgress !== undefined) {
+      epProgress[entryId] = serverProgress;
+      if (curEl)   curEl.textContent   = serverProgress;
+      if (badgeEl) badgeEl.textContent = `EP ${serverProgress} / ${totalStr}`;
+      if (valEl)   valEl.textContent   = `${serverProgress} / ${totalStr}`;
+      if (decBtn)  decBtn.disabled     = (serverProgress <= 0);
+      if (incBtn)  incBtn.disabled     = (maxEp && serverProgress >= maxEp);
+    }
+  } catch (err) {
+    // Revert on error
+    epProgress[entryId] = cur;
+    if (curEl)   curEl.textContent   = cur;
+    if (badgeEl) badgeEl.textContent = `EP ${cur} / ${totalStr}`;
+    if (valEl)   valEl.textContent   = `${cur} / ${totalStr}`;
+    if (decBtn)  decBtn.disabled     = (cur <= 0);
+    if (incBtn)  incBtn.disabled     = (maxEp && cur >= maxEp);
+    console.error('Episode update failed:', err);
+  } finally {
+    if (card) card.classList.remove('ep-updating');
+  }
+}
+
+// ── Bottom Navbar ─────────────────────────────────────────────────────────────
+(function initAniNavbar() {
+  const watchBtn    = document.getElementById('anav-watching');
+  const planBtn     = document.getElementById('anav-planned');
+  const syncBtn     = document.getElementById('anav-sync-btn');
+  const settingsBtn = document.getElementById('anav-settings-btn');
+  const navEl       = document.getElementById('anitrack-navbar');
+  const indicator   = document.getElementById('anav-indicator');
+  const allBtns     = [watchBtn, planBtn, syncBtn, settingsBtn];
+
+  const INACTIVE_W = 50;
+  const ACTIVE_W   = 80;
+  const DURATION   = 300; // ms — mirrors Flutter's 300ms
+
+  // Per-button animation state: { progress: 0–1, raf: id|null }
+  const animState = new Map();
+
+  // ── Icon animation ───────────────────────────────────────────────────────────
+  // Adds 'icon-anim' class, removes it after the longest animation completes
+  // so it can be re-triggered on every tap.
+  const ANIM_DURATIONS = {
+    'anav-watching':    650,
+    'anav-planned':     500 + 210, // last tile delay + duration
+    'anav-sync-btn':    650,
+    'anav-settings-btn':650,
+  };
+  // Per-button timeout handle so rapid taps restart cleanly
+  const animTimers = {};
+
+  function triggerIconAnim(btn) {
+    if (!btn) return;
+    const id = btn.id;
+    // Cancel any in-flight removal timer and restart
+    if (animTimers[id]) {
+      clearTimeout(animTimers[id]);
+      btn.classList.remove('icon-anim');
+      // Force reflow so the browser sees the class removal before re-adding
+      void btn.offsetWidth;
+    }
+    btn.classList.add('icon-anim');
+    animTimers[id] = setTimeout(() => {
+      btn.classList.remove('icon-anim');
+      animTimers[id] = null;
+    }, (ANIM_DURATIONS[id] || 500) + 20);
+  }
+
+  function easeOutQuint(t) {
+    return 1 - Math.pow(1 - t, 5);
+  }
+
+  function animateBtn(el, toActive) {
+    let state = animState.get(el) || { progress: toActive ? 0 : 1, raf: null };
+    if (state.raf) cancelAnimationFrame(state.raf);
+
+    const startProgress = state.progress;
+    const endProgress   = toActive ? 1 : 0;
+    const startTime     = performance.now();
+    const totalDelta    = Math.abs(endProgress - startProgress);
+    const duration      = DURATION * totalDelta; // proportional mid-animation
+
+    function tick(now) {
+      const elapsed = now - startTime;
+      const rawT    = Math.min(elapsed / duration, 1);
+      const easedT  = easeOutQuint(rawT);
+
+      state.progress = startProgress + (endProgress - startProgress) * easedT;
+      el.style.width = (INACTIVE_W + (ACTIVE_W - INACTIVE_W) * state.progress) + 'px';
+
+      if (rawT < 1) {
+        state.raf = requestAnimationFrame(tick);
+      } else {
+        state.progress = endProgress;
+        state.raf = null;
+      }
+      animState.set(el, state);
+      updateIndicator();
     }
 
-def get_anilist_list(token=None, username=None):
-    """Fetch the user's entire AniList in ONE request via MediaListCollection,
-    instead of paginating through Page(mediaList) 50 entries at a time. This
-    is the AniList-recommended query for "give me this user's whole list" —
-    it returns every status group (watching/completed/etc.) in a single
-    round trip, which is both far faster and much easier on the rate limit
-    than N page requests. (Covers up to 11,000 entries — AniList's own cap
-    for "give me everything" queries; well beyond any real list size.)"""
-    username = username or ANILIST_USERNAME
-    data = anilist_query(GQL_LIST_COLLECTION, {"username": username}, token=token)
-    collection = data.get("data", {}).get("MediaListCollection") or {}
-    entries = []
-    for group in collection.get("lists", []):
-        entries += [_parse_entry(e) for e in group.get("entries", [])]
-    return entries
+    animState.set(el, state);
+    state.raf = requestAnimationFrame(tick);
+  }
 
-def al_headers():
-    token = session.get("al_token")
-    if token and token.get("expires_at", 0) < time.time() + 300:
-        token = refresh_al_token(token)
-    return token
+  function updateIndicator() {
+    const active = navEl ? navEl.querySelector('.anav-item.active') : null;
+    if (!active || !indicator) return;
+    const w = parseFloat(active.style.width) || ACTIVE_W;
+    const center = active.offsetLeft + w / 2;
+    indicator.style.left = (center - 15) + 'px';
+  }
 
-def refresh_al_token(token):
-    if not token.get("refresh_token"):
-        session.pop("al_token", None); return None
-    try:
-        r = requests.post(AL_TOKEN_URL, json={
-            "grant_type": "refresh_token", "client_id": AL_CLIENT_ID,
-            "client_secret": AL_CLIENT_SECRET, "refresh_token": token["refresh_token"]
-        }, timeout=15)
-        new_token = r.json()
-        if "access_token" in new_token:
-            new_token["expires_at"] = time.time() + new_token.get("expires_in", 3600)
-            session["al_token"] = new_token
-            return new_token
-    except Exception:
-        pass
-    session.pop("al_token", None); return None
-
-_AL_UPDATE_GQL = """
-mutation($mediaId: Int, $status: MediaListStatus, $progress: Int, $score: Float,
-         $startedAt: FuzzyDateInput, $completedAt: FuzzyDateInput) {
-    SaveMediaListEntry(mediaId: $mediaId, status: $status, progress: $progress, score: $score,
-                       startedAt: $startedAt, completedAt: $completedAt) {
-        id
+  function setActive(btn) {
+    hap(6);
+    triggerIconAnim(btn);
+    allBtns.forEach(b => {
+      if (!b) return;
+      if (b.classList.contains('active')) {
+        b.classList.remove('active');
+        animateBtn(b, false); // collapse: 80→50
+      }
+    });
+    if (btn) {
+      btn.classList.add('active');
+      animateBtn(btn, true); // expand: 50→80
     }
-}"""
+  }
 
-def al_update(media_id, status=None, progress=None, score=None, token=None,
-              started_at=None, completed_at=None):
-    token = token or al_headers()
-    if not token: return False
-    if status is None and progress is None and score is None:
-        return False
-    vars_ = {"mediaId": media_id}
-    if status       is not None: vars_["status"]      = status
-    if progress     is not None: vars_["progress"]    = progress
-    if score        is not None: vars_["score"]       = float(score)
-    if started_at   is not None: vars_["startedAt"]   = started_at
-    if completed_at is not None: vars_["completedAt"] = completed_at
-    r = anilist_query(_AL_UPDATE_GQL, vars_, token=token)
-    return "errors" not in r
+  function selectListTab(btn, view) {
+    setActive(btn);
+    ensureListPage();
+    const vw = document.getElementById('view-watching');
+    const vp = document.getElementById('view-planned');
+    if (vw) vw.style.display = (view === 'watching') ? '' : 'none';
+    if (vp) vp.style.display = (view === 'planned')  ? '' : 'none';
+    if (_allEntries.length) applyFilter();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
 
-def al_get_list_entry_id(media_id, token=None):
-    """Get the MediaList entry ID needed for deletion."""
-    token = token or al_headers()
-    if not token: return None
-    data = anilist_query(_AL_GET_LIST_ENTRY_GQL, {"mediaId": media_id}, token=token)
-    return (data.get("data") or {}).get("MediaList", {}).get("id")
+  watchBtn?.addEventListener('click', () => selectListTab(watchBtn, 'watching'));
+  planBtn?.addEventListener('click',  () => selectListTab(planBtn,  'planned'));
 
-def al_delete(media_id, token=None):
-    """Delete an anime from AniList by media ID."""
-    token = token or al_headers()
-    if not token: return False
-    entry_id = al_get_list_entry_id(media_id, token=token)
-    if not entry_id: return False
-    r = anilist_query(_AL_DELETE_GQL, {"id": entry_id}, token=token)
-    return (r.get("data") or {}).get("DeleteMediaListEntry", {}).get("deleted", False)
+  syncBtn?.addEventListener('click', () => {
+    setActive(syncBtn);
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById('page-sync')?.classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
 
-# ── MAL helpers ───────────────────────────────────────────────────────────────
-def mal_headers():
-    token = session.get("mal_token")
-    if not token: return None
-    if token.get("expires_at", 0) < time.time() + 300:
-        token = refresh_mal_token(token)
-    return {"Authorization": f"Bearer {token.get('access_token', '')}"} if token else None
+  settingsBtn?.addEventListener('click', () => {
+    setActive(settingsBtn);
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById('page-settings')?.classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
 
-def refresh_mal_token(token):
-    payload = {
-        "grant_type": "refresh_token", "refresh_token": token.get("refresh_token", ""),
-        "client_id":  MAL_CLIENT_ID,
+  // Init — set widths immediately (no animation)
+  allBtns.forEach(btn => {
+    if (!btn) return;
+    // Remove from natural tab order — we manage focus ourselves
+    btn.setAttribute('tabindex', '-1');
+    const isActive = btn.classList.contains('active');
+    btn.style.width = (isActive ? ACTIVE_W : INACTIVE_W) + 'px';
+    animState.set(btn, { progress: isActive ? 1 : 0, raf: null });
+  });
+  // Give the active button tab-focus entry point
+  const firstActive = allBtns.find(b => b?.classList.contains('active'));
+  if (firstActive) firstActive.setAttribute('tabindex', '0');
+
+  // ── Keyboard navigation ──────────────────────────────────────────────────────
+  // Tab cycles focus through buttons; arrows move between them; Enter activates.
+  navEl?.addEventListener('keydown', e => {
+    const focused = allBtns.indexOf(document.activeElement);
+    if (focused === -1) return;
+
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      const next = allBtns[(focused + 1) % allBtns.length];
+      if (next) { allBtns.forEach(b => b?.setAttribute('tabindex','-1')); next.setAttribute('tabindex','0'); next.focus(); }
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      const prev = allBtns[(focused - 1 + allBtns.length) % allBtns.length];
+      if (prev) { allBtns.forEach(b => b?.setAttribute('tabindex','-1')); prev.setAttribute('tabindex','0'); prev.focus(); }
+    } else if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      allBtns[focused]?.click();
     }
-    if MAL_CLIENT_SECRET:
-        payload["client_secret"] = MAL_CLIENT_SECRET
-    try:
-        r = requests.post(MAL_TOKEN_URL, data=payload, timeout=15)
-        new_token = r.json()
-        if "access_token" in new_token:
-            new_token["expires_at"] = time.time() + new_token.get("expires_in", 3600)
-            session["mal_token"] = new_token
-            session.modified = True
-            return new_token
-    except Exception:
-        pass
-    session.pop("mal_token", None); return None
+  });
 
-def get_mal_list():
-    headers = mal_headers()
-    return get_mal_list_with_headers(headers)
+  // When Tab key lands focus on the navbar from outside, land on active button
+  navEl?.addEventListener('focusin', e => {
+    if (allBtns.includes(e.target)) return; // already on a button
+    const active = allBtns.find(b => b?.classList.contains('active')) || allBtns[0];
+    allBtns.forEach(b => b?.setAttribute('tabindex','-1'));
+    if (active) { active.setAttribute('tabindex','0'); active.focus(); }
+  });
 
-def get_mal_list_with_headers(headers):
-    if not headers: return []
-    items, offset = [], 0
-    while True:
-        r = _http.get(f"{MAL_API}/users/@me/animelist",
-                      headers=headers,
-                      params={"fields": "list_status{status,score,num_episodes_watched,updated_at}",
-                              "limit": 1000, "offset": offset},
-                      timeout=15)
-        if r.status_code != 200: break
-        data = r.json()
-        for item in data.get("data", []):
-            ls = item["list_status"]
-            # MAL returns updated_at as ISO-8601; convert to unix timestamp for easy comparison
-            raw_updated = ls.get("updated_at", "")
-            try:
-                import datetime
-                updated_at = int(datetime.datetime.fromisoformat(
-                    raw_updated.replace("Z", "+00:00")).timestamp()) if raw_updated else 0
-            except Exception:
-                updated_at = 0
-            items.append({
-                "malId":     item["node"]["id"],
-                "title":     item["node"]["title"],
-                "status":    ls.get("status", ""),
-                "progress":  ls.get("num_episodes_watched", 0),
-                "score":     ls.get("score", 0),
-                "updatedAt": updated_at,
-            })
-        if not data.get("paging", {}).get("next"): break
-        offset += 1000
-    return items
+  // Init indicator position
+  requestAnimationFrame(updateIndicator);
+  window.addEventListener('resize', updateIndicator);
 
-def get_both_lists(al_token, username):
-    """Fetch the AniList and MAL lists concurrently instead of sequentially —
-    they're independent network calls to different APIs, so there's no reason
-    to make the user wait for both round trips back-to-back.
+  // Restore blur pref
+  if (localStorage.getItem('navbar-blur') === '0') navEl?.classList.add('no-blur');
+})();
 
-    mal_headers() touches Flask's `session`, which is only valid on the
-    request thread, so it must be resolved here (not inside the worker)
-    before we hand off to the pool."""
-    mal_hdrs = mal_headers()
-    with ThreadPoolExecutor(max_workers=2) as ex:
-        al_future  = ex.submit(get_anilist_list, al_token, username)
-        mal_future = ex.submit(get_mal_list_with_headers, mal_hdrs)
-        return al_future.result(), mal_future.result()
+// ── Navbar Blur switch ───────────────────────────────────────────────────────
+function onNavBlurSwitch(el) {
+  hap(6);
+  const navEl = document.getElementById('anitrack-navbar');
+  navEl.classList.toggle('no-blur', !el.checked);
+  localStorage.setItem('navbar-blur', el.checked ? '1' : '0');
+  const icon = document.getElementById('blur-icon');
+  if (icon) icon.innerHTML = el.checked
+    ? `<svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>`
+    : `<svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/></svg>`;
+}
+// Restore navbar blur pref
+(function restoreNavbarPrefs() {
+  const blurSw = document.getElementById('switch-navbar-blur');
+  const blurOn = localStorage.getItem('navbar-blur') !== '0';
+  if (blurSw) blurSw.checked = blurOn;
+  const blurIcon = document.getElementById('blur-icon');
+  if (blurIcon) blurIcon.innerHTML = blurOn
+    ? `<svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>`
+    : `<svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/></svg>`;
 
-def mal_update(mal_id, status=None, score=None, progress=None):
-    headers = mal_headers()
-    if not headers: return False
-    payload = {}
-    if status:   payload["status"] = status
-    if score is not None:    payload["score"] = score
-    if progress is not None: payload["num_watched_episodes"] = progress
-    if not payload: return False
-    r = _http.patch(f"{MAL_API}/anime/{mal_id}/my_list_status",
-                    headers=headers, data=payload, timeout=10)
-    return r.status_code == 200
+  // Oneko icon
+  const onekoOn = localStorage.getItem('oneko-on') === '1';
+  const onekoIcon = document.getElementById('oneko-icon');
+  if (onekoIcon) onekoIcon.innerHTML = onekoOn
+    ? `<svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="10" x2="9.01" y2="10"/><line x1="15" y1="10" x2="15.01" y2="10"/><path d="M7 7 L5 3"/><path d="M17 7 L19 3"/></svg>`
+    : `<svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M8 15h8"/><path d="M8 11 Q9 10 10 11"/><path d="M14 11 Q15 10 16 11"/><path d="M7 7 L5 3"/><path d="M17 7 L19 3"/></svg>`;
 
-# ── Sync logic ────────────────────────────────────────────────────────────────
-def resolve_fields(al, mal):
-    """Pick winning values using most-recently-updated platform (Option A).
+  // Sync icon
+  const syncOn = localStorage.getItem('sync-enabled') === '1';
+  const syncIcon = document.getElementById('sync-icon');
+  if (syncIcon) syncIcon.innerHTML = syncOn
+    ? `<svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>`
+    : `<svg viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>`;
+})();
 
-    al["status"]  is always an AL key  (e.g. "CURRENT")
-    mal["status"] is always a MAL key  (e.g. "watching")
-    Returns (win_progress, win_score, win_status) where win_status is an AL key.
-    """
-    al_newer = al["updatedAt"] >= mal.get("updatedAt", 0)
+// ── Init deferred to DOMContentLoaded (after glass library loads) ─────────────
+</script>
 
-    # Progress: winner takes all
-    win_progress = al["progress"] if al_newer else mal["progress"]
 
-    # Score: winner's score, but fall back to the other if winner hasn't rated
-    if al_newer:
-        win_score = al["score"] if al["score"] > 0 else mal["score"]
-    else:
-        win_score = mal["score"] if mal["score"] > 0 else al["score"]
+<script>
+// ── Back-to-top button ────────────────────────────────────────────────────
+function buildBackTop() {
+  const btn = document.createElement('button');
+  btn.textContent = '↑';
+  btn.setAttribute('aria-label', 'Back to top');
+  Object.assign(btn.style, {
+    position: 'fixed',
+    bottom: '112px',
+    right: '16px',
+    zIndex: '200',
+    width: '52px',
+    height: '52px',
+    borderRadius: '26px',
+    border: '1px solid var(--border)',
+    background: 'var(--glass-bg)',
+    backdropFilter: 'blur(20px)',
+    webkitBackdropFilter: 'blur(20px)',
+    color: 'var(--text)',
+    fontSize: '18px',
+    fontWeight: '700',
+    cursor: 'pointer',
+    opacity: '0',
+    pointerEvents: 'none',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  });
+  btn.onclick = () => { hap(6); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+  btn.style.transition = 'opacity 0.35s ease, transform 0.35s cubic-bezier(0.32,0,0.67,0)';
+  document.body.appendChild(btn);
+  let _rafPending = false;
+  let _lastY = window.scrollY;
+  window.addEventListener('scroll', () => {
+    if (_rafPending) return;
+    _rafPending = true;
+    requestAnimationFrame(() => {
+      _rafPending = false;
+      const currentY = window.scrollY;
+      const atTop = currentY < 60;
+      const scrollingDown = currentY > _lastY;
+      _lastY = currentY;
 
-    # Status: winner's status, normalised to an AL key
-    if al_newer:
-        win_status = al["status"]  # already an AL key
-    else:
-        win_status = MAL_TO_AL.get(mal["status"], "PLANNING")  # convert MAL → AL
+      const visible = currentY > 200 && (atTop || !scrollingDown);
+      btn.style.opacity = visible ? '1' : '0';
+      btn.style.pointerEvents = visible ? 'auto' : 'none';
+      btn.style.transform = visible ? 'translateY(0)' : 'translateY(16px)';
+    });
+  }, { passive: true });
+}
 
-    return win_progress, win_score, win_status
+// DOMContentLoaded: load list and build UI chrome
+document.addEventListener('DOMContentLoaded', () => {
+  loadList();
+  buildBackTop();
 
-def compute_diff(al_list, mal_list):
-    mal_map = {e["malId"]: e for e in mal_list}
-    diffs = []
-    for al in al_list:
-        mal_id = al["malId"]
-        if not mal_id: continue
-        mal = mal_map.get(mal_id)
-        al_mal_status = AL_TO_MAL.get(al["status"])
-        if not mal:
-            diffs.append({
-                "malId": mal_id, "alId": al["alId"], "title": al["title"],
-                "action": "add_to_mal", "label": "Missing on MAL",
-                "al_status": al["status"], "mal_status": None,
-                "al_progress": al["progress"], "mal_progress": 0,
-                "al_score": al["score"], "mal_score": 0,
-                "needs_al_update": False,
-            })
-        else:
-            changes = []
-            win_progress, win_score, win_status = resolve_fields(al, mal)
-            if al_mal_status and al_mal_status != mal["status"]:
-                changes.append(f"status: AL={al['status']} MAL={mal['status']} → {win_status}")
-            if al["progress"] != mal["progress"]:
-                changes.append(f"progress: AL={al['progress']} MAL={mal['progress']} → {win_progress}")
-            if al["score"] != mal["score"] and (al["score"] > 0 or mal["score"] > 0):
-                changes.append(f"score: AL={al['score']} MAL={mal['score']} → {win_score}")
-            if changes:
-                needs_al = (win_status != al["status"] or win_progress != al["progress"] or win_score != al["score"])
-                diffs.append({
-                    "malId": mal_id, "alId": al["alId"], "title": al["title"],
-                    "action": "update", "label": "Out of sync", "changes": changes,
-                    "al_status": al["status"], "mal_status": mal["status"],
-                    "al_progress": al["progress"], "mal_progress": mal["progress"],
-                    "al_score": al["score"], "mal_score": mal["score"],
-                    "win_status": win_status, "win_progress": win_progress, "win_score": win_score,
-                    "needs_al_update": needs_al,
-                })
-    al_mal_ids = {a["malId"] for a in al_list}
-    for mal in mal_list:
-        if mal["malId"] not in al_mal_ids:
-            diffs.append({
-                "malId": mal["malId"], "alId": None, "title": mal["title"],
-                "action": "only_on_mal", "label": "Only on MAL", "changes": [],
-                "al_status": None, "mal_status": mal["status"],
-                "al_progress": 0, "mal_progress": mal["progress"],
-                "al_score": 0, "mal_score": mal["score"],
-                "needs_al_update": False,
-            })
-    return diffs
+  // ── Navbar hide on scroll down, show on scroll up + always at top ───────────
+  (function initNavbarScroll() {
+    const wrap = document.getElementById('anitrack-navbar-wrap');
+    if (!wrap) return;
+    let lastY    = window.scrollY;
+    let rafPending = false;
 
-def resolve_al_id_from_mal(mal_id, token=None):
-    data = anilist_query(GQL_LOOKUP_BY_MAL, {"malId": mal_id}, token=token)
-    return (data.get("data") or {}).get("Media", {}).get("id")
+    window.addEventListener('scroll', () => {
+      if (rafPending) return;
+      rafPending = true;
+      requestAnimationFrame(() => {
+        rafPending = false;
+        const currentY = window.scrollY;
+        const atTop    = currentY < 60;
+        const scrollingDown = currentY > lastY;
+        lastY = currentY;
 
-def apply_diff_item(diff, al_token=None):
-    mal_ok = al_ok = False
-    if diff["action"] == "add_to_mal":
-        mal_status = AL_TO_MAL.get(diff["al_status"])
-        if mal_status and diff.get("malId"):
-            mal_ok = mal_update(diff["malId"], status=mal_status,
-                                progress=diff.get("al_progress", 0),
-                                score=diff.get("al_score", 0))
-    elif diff["action"] == "update":
-        wp, ws, wst = diff.get("win_progress", 0), diff.get("win_score", 0), diff.get("win_status", diff["al_status"])
-        mal_status = AL_TO_MAL.get(wst)
-        if mal_status and diff.get("malId"):
-            mal_ok = mal_update(diff["malId"], status=mal_status, progress=wp, score=ws)
-        if diff.get("needs_al_update") and diff.get("alId"):
-            al_ok = al_update(diff["alId"], status=wst, progress=wp, score=ws, token=al_token)
-    elif diff["action"] == "only_on_mal":
-        al_id = diff.get("alId") or resolve_al_id_from_mal(diff["malId"], token=al_token)
-        if al_id:
-            al_status = MAL_TO_AL.get(diff["mal_status"], "PLANNING")
-            al_ok = al_update(al_id, status=al_status,
-                              progress=diff.get("mal_progress", 0),
-                              score=diff.get("mal_score", 0),
-                              token=al_token)
-    return {"mal_ok": mal_ok, "al_ok": al_ok}
+        if (atTop || !scrollingDown) {
+          wrap.classList.remove('nav-hidden');
+        } else {
+          wrap.classList.add('nav-hidden');
+        }
+      });
+    }, { passive: true });
+  })();
+});
 
-# ── Routes ────────────────────────────────────────────────────────────────────
-@app.route("/service-worker.js")
-def service_worker():
-    from flask import send_from_directory
-    return send_from_directory("static", "service-worker.js",
-                               mimetype="application/javascript")
+</script>
 
-@app.route("/api/db-status")
-def db_status():
-    """Debug endpoint — visit /api/db-status to check DB connectivity and rows."""
-    if not DB_AVAILABLE:
-        return jsonify({"status": "error", "detail": "psycopg2 not installed. Run: pip install psycopg2-binary"}), 500
-    if not DB_URL:
-        return jsonify({"status": "error", "detail": "DATABASE_URL env var is not set"}), 500
-    try:
-        conn = _get_db()
-        cur = conn.cursor()
-        cur.execute("SELECT to_regclass('public.user_tokens')")
-        table_exists = cur.fetchone()[0] is not None
-        rows = []
-        if table_exists:
-            cur.execute("SELECT username, updated_at, "
-                        "(al_token IS NOT NULL) AS has_al, "
-                        "(mal_token IS NOT NULL) AS has_mal "
-                        "FROM user_tokens ORDER BY updated_at DESC")
-            rows = [{"username": r[0], "updated_at": str(r[1]),
-                     "al_connected": r[2], "mal_connected": r[3]}
-                    for r in cur.fetchall()]
-        cur.close(); conn.close()
-        return jsonify({
-            "status": "ok",
-            "table_exists": table_exists,
-            "row_count": len(rows),
-            "rows": rows
-        })
-    except Exception as e:
-        return jsonify({"status": "error", "detail": str(e)}), 500
+<!-- PWA Install Banner -->
+<div id="pwa-banner" class="pwa-banner">
+  <img src="/static/favicon.png" class="pwa-icon" alt="AniTrack"/>
+  <div class="pwa-text">
+    <div class="pwa-title">Add AniTrack to Home Screen</div>
+    <div class="pwa-sub">Install for quick access, offline support</div>
+  </div>
+  <button id="pwa-install-btn" class="pwa-install">Install</button>
+  <button id="pwa-dismiss-btn" class="pwa-close">&#x2715;</button>
+</div>
 
-@app.route("/")
-def index():
-    return render_template("index.html",
-        anilist_username = session.get("al_username", ANILIST_USERNAME),
-        mal_connected    = "mal_token" in session,
-        al_connected     = "al_token"  in session,
-        mal_error        = request.args.get("mal_error"),
-        mal_success      = request.args.get("mal_success"),
-        al_error         = request.args.get("al_error"),
-        al_success       = request.args.get("al_success"),
-    )
+<script>
+// ── PWA Install Prompt ──────────────────────────────────────────────────────
+(function() {
+  let deferredPrompt = null;
+  const banner     = document.getElementById('pwa-banner');
+  const installBtn = document.getElementById('pwa-install-btn');
+  const dismissBtn = document.getElementById('pwa-dismiss-btn');
+  if (!banner) return;
+  if (window.matchMedia('(display-mode: standalone)').matches) return;
+  if (navigator.standalone) return;
+  if (localStorage.getItem('pwa-dismissed')) return;
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    deferredPrompt = e;
+  });
+  setTimeout(() => banner.classList.add('show'), 1500);
+  installBtn.addEventListener('click', async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      deferredPrompt = null;
+      banner.classList.remove('show');
+    } else {
+      banner.querySelector('.pwa-sub').textContent = 'Tap ⋮ menu → "Add to Home screen"';
+      installBtn.style.display = 'none';
+    }
+  });
+  dismissBtn.addEventListener('click', () => {
+    banner.classList.remove('show');
+    localStorage.setItem('pwa-dismissed', '1');
+  });
+  window.addEventListener('appinstalled', () => {
+    banner.classList.remove('show');
+    localStorage.setItem('pwa-dismissed', '1');
+  });
+})();
+</script>
 
-@app.route("/api/anilist", methods=["POST"])
-def anilist_proxy():
-    body = request.get_json() or {}
-    result = anilist_query(body.get("query"), body.get("variables"), token=al_headers())
-    return jsonify(result)
+<!-- ── Search / Add Modal ─────────────────────────────────────────────── -->
+<div id="search-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.55);backdrop-filter:blur(4px);align-items:center;justify-content:center">
+  <div style="background:var(--surface);border:1px solid var(--glass-border);border-radius:16px;padding:24px;width:min(95vw,520px);max-height:85vh;display:flex;flex-direction:column;gap:14px;box-shadow:var(--card-shadow);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%)">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <span style="font-size:1.1rem;font-weight:600;color:var(--text-title)">＋ Add Anime</span>
+      <button onclick="closeSearchModal()" style="background:none;border:none;color:var(--text);font-size:1.4rem;cursor:pointer;opacity:.6">✕</button>
+    </div>
+    <div style="display:flex;gap:8px">
+      <input id="search-input" type="text" placeholder="Search anime title…"
+        style="flex:1;padding:10px 14px;border-radius:10px;border:1px solid var(--border);background:var(--glass-bg);color:var(--text);font-size:.95rem"
+        oninput="debounceSearch()" onkeydown="if(event.key==='Enter')doSearch()">
+      <button onclick="doSearch()" class="btn btn-primary" style="padding:10px 16px">Search</button>
+    </div>
+    <div id="search-results" style="overflow-y:auto;display:flex;flex-direction:column;gap:10px;max-height:55vh"></div>
+  </div>
+</div>
 
-# ── MAL OAuth ─────────────────────────────────────────────────────────────────
-@app.route("/mal/login")
-def mal_login():
-    if not MAL_CLIENT_ID:
-        return redirect("/?mal_error=" + quote("MAL_CLIENT_ID is not configured."))
-    # MAL's PKCE implementation requires the "plain" method.
-    # verifier == challenge; use token_urlsafe for RFC 7636-safe characters.
-    verifier = secrets.token_urlsafe(32)   # 43-char URL-safe string, no padding
-    state = secrets.token_hex(16)
-    resp = make_response(redirect(MAL_AUTH_URL + "?" + urlencode({
-        "response_type": "code", "client_id": MAL_CLIENT_ID,
-        "redirect_uri": MAL_REDIRECT_URI, "state": state,
-        "code_challenge": verifier, "code_challenge_method": "plain",
-    })))
-    set_oauth_cookie(resp, "mal_pkce", {"v": verifier, "s": state})
-    return resp
+<!-- ── Edit Modal ─────────────────────────────────────────────────────── -->
+<div id="edit-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.55);backdrop-filter:blur(4px);align-items:center;justify-content:center">
+  <div style="background:var(--surface);border:1px solid var(--glass-border);border-radius:16px;padding:24px;width:min(95vw,420px);display:flex;flex-direction:column;gap:16px;box-shadow:var(--card-shadow);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%)">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <span style="font-size:1.05rem;font-weight:600;color:var(--text-title)" id="edit-modal-title">Edit Entry</span>
+      <button onclick="closeEditModal()" style="background:none;border:none;color:var(--text);font-size:1.4rem;cursor:pointer;opacity:.6">✕</button>
+    </div>
+    <input type="hidden" id="edit-al-id">
+    <input type="hidden" id="edit-mal-id">
+    <input type="hidden" id="edit-title">
+    <input type="hidden" id="edit-episodes">
+    <input type="hidden" id="edit-media-status">
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <label style="font-size:.85rem;color:var(--text-sub)">Status</label>
+      <select id="edit-status" style="padding:9px 12px;border-radius:10px;border:1px solid var(--border);background:var(--glass-bg);color:var(--text);font-size:.95rem">
+        <option value="CURRENT">Watching</option>
+        <option value="COMPLETED">Completed</option>
+        <option value="PAUSED">On Hold</option>
+        <option value="DROPPED">Dropped</option>
+        <option value="PLANNING">Plan to Watch</option>
+      </select>
+    </div>
+    <div style="display:flex;gap:12px">
+      <div style="flex:1;display:flex;flex-direction:column;gap:8px">
+        <label style="font-size:.85rem;color:var(--text-sub)">Progress (episodes)</label>
+        <input id="edit-progress" type="number" min="0" value="0"
+          style="padding:9px 12px;border-radius:10px;border:1px solid var(--border);background:var(--glass-bg);color:var(--text);font-size:.95rem">
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:8px">
+        <label style="font-size:.85rem;color:var(--text-sub)">Score (0–10)</label>
+        <input id="edit-score" type="number" min="0" max="10" step="0.5" value="0"
+          style="padding:9px 12px;border-radius:10px;border:1px solid var(--border);background:var(--glass-bg);color:var(--text);font-size:.95rem">
+      </div>
+    </div>
+    <div style="display:flex;gap:12px">
+      <div style="flex:1;display:flex;flex-direction:column;gap:8px">
+        <label style="font-size:.85rem;color:var(--text-sub)">Date Started</label>
+        <input id="edit-started-at" type="date" class="date-input"
+          style="padding:9px 12px;border-radius:10px;border:1px solid var(--border);background:var(--glass-bg);color:var(--text);font-size:.95rem">
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:8px">
+        <label style="font-size:.85rem;color:var(--text-sub)">Date Completed</label>
+        <input id="edit-completed-at" type="date" class="date-input"
+          style="padding:9px 12px;border-radius:10px;border:1px solid var(--border);background:var(--glass-bg);color:var(--text);font-size:.95rem">
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:4px">
+      <button id="edit-save-btn" onclick="saveEdit()" class="btn btn-success" style="flex:1">💾 Save</button>
+      <button id="edit-delete-btn" onclick="confirmDelete()" class="btn" style="flex:0 0 auto;background:rgba(220,50,50,0.15);border:1px solid rgba(220,50,50,0.3);color:#f87171">🗑 Delete</button>
+    </div>
+    <div id="edit-status-msg" style="font-size:.85rem;text-align:center;min-height:18px"></div>
+  </div>
+</div>
 
-@app.route("/mal/callback")
-def mal_callback():
-    if request.args.get("error"):
-        return redirect("/?mal_error=" + quote(request.args.get("error_description", request.args["error"])))
-    code  = request.args.get("code", "")
-    state = request.args.get("state", "")
-    if not code:
-        return redirect("/?mal_error=" + quote("No authorization code received"))
-    pkce = get_oauth_cookie("mal_pkce")
-    if not pkce:
-        return redirect("/?mal_error=" + quote("PKCE cookie missing. Enable cookies and try again."))
-    if not hmac.compare_digest(state, pkce["s"]):
-        return redirect("/?mal_error=" + quote("State mismatch. Please try again."))
-    payload = {"grant_type": "authorization_code", "code": code,
-               "redirect_uri": MAL_REDIRECT_URI, "client_id": MAL_CLIENT_ID,
-               "code_verifier": pkce["v"]}
-    if MAL_CLIENT_SECRET:
-        payload["client_secret"] = MAL_CLIENT_SECRET
-    try:
-        r = requests.post(MAL_TOKEN_URL, data=payload, timeout=15)
-        token = r.json()
-    except Exception as e:
-        return redirect("/?mal_error=" + quote(f"Token request failed: {e}"))
-    if "error" in token:
-        return redirect("/?mal_error=" + quote(token.get("hint") or token.get("message") or token["error"]))
-    if "access_token" not in token:
-        return redirect("/?mal_error=" + quote(f"Unexpected MAL response (HTTP {r.status_code})"))
-    token["expires_at"] = time.time() + token.get("expires_in", 3600)
-    session["mal_token"] = token
-    session.modified = True
-    # Save to Supabase if AL is also connected
-    if session.get("al_token"):
-        username = session.get("al_username", ANILIST_USERNAME)
-        db_save_tokens(username, session["al_token"], token)
-    resp = make_response(redirect("/?mal_success=1"))
-    resp.delete_cookie("mal_pkce", path="/")
-    return resp
+<script>
+// ── Search / Add ────────────────────────────────────────────────────────────
+let _searchTimer = null;
+function openSearchModal() {
+  document.getElementById('search-modal').style.display = 'flex';
+  setTimeout(() => document.getElementById('search-input').focus(), 50);
+}
+function closeSearchModal() {
+  document.getElementById('search-modal').style.display = 'none';
+  document.getElementById('search-input').value = '';
+  document.getElementById('search-results').innerHTML = '';
+}
+function debounceSearch() {
+  clearTimeout(_searchTimer);
+  _searchTimer = setTimeout(doSearch, 500);
+}
+async function doSearch() {
+  const q = document.getElementById('search-input').value.trim();
+  if (!q) return;
+  const el = document.getElementById('search-results');
+  el.innerHTML = '<div style="text-align:center;color:var(--text-sub);padding:16px">Searching…</div>';
+  try {
+    const res = await fetch(`/api/anime/search?q=${encodeURIComponent(q)}`);
+    const data = await res.json();
+    if (!data.results || !data.results.length) {
+      el.innerHTML = '<div style="text-align:center;color:var(--text-sub);padding:16px">No results found</div>';
+      return;
+    }
+    el.innerHTML = data.results.map(r => {
+      const inList = r.listStatus;
+      const statusLabel = inList ? `<span style="font-size:.75rem;padding:2px 8px;border-radius:20px;background:var(--accent-bg);color:var(--accent)">${r.listStatus}</span>` : '';
+      const eps = r.episodes ? `${r.episodes} eps` : '?? eps';
+      return `<div style="display:flex;gap:12px;align-items:center;padding:10px;border-radius:10px;background:var(--glass-bg);border:1px solid var(--border)">
+        ${r.cover ? `<img src="${r.cover}" style="width:44px;height:60px;border-radius:6px;object-fit:cover;flex-shrink:0">` : '<div style="width:44px;height:60px;border-radius:6px;background:var(--glass-bg);flex-shrink:0"></div>'}
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:500;font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text-title)">${r.title}</div>
+          <div style="font-size:.78rem;color:var(--text-sub);margin-top:2px">${eps} · ${r.status || ''}</div>
+          <div style="margin-top:4px">${statusLabel}</div>
+        </div>
+        <button onclick='openAddOrEdit(${attrJson(r)})'
+          style="padding:7px 12px;border-radius:8px;border:1px solid var(--border);background:var(--glass-bg);color:var(--text);cursor:pointer;white-space:nowrap;font-size:.85rem">
+          ${inList ? '✏ Edit' : '＋ Add'}
+        </button>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    el.innerHTML = `<div style="color:#f87171;padding:12px">Error: ${e.message}</div>`;
+  }
+}
 
-@app.route("/mal/logout")
-def mal_logout():
-    username = session.get("al_username", ANILIST_USERNAME)
-    db_delete_tokens(username)
-    session.pop("mal_token", None)
-    return redirect("/")
+// ── Edit Modal ───────────────────────────────────────────────────────────────
+let _editIsNew = false;
 
-# ── AniList OAuth ─────────────────────────────────────────────────────────────
-@app.route("/al/login")
-def al_login():
-    if not AL_CLIENT_ID:
-        return redirect("/?al_error=" + quote("AL_CLIENT_ID is not configured."))
-    state = secrets.token_hex(16)
-    resp = make_response(redirect(AL_AUTH_URL + "?" + urlencode({
-        "client_id": AL_CLIENT_ID, "redirect_uri": AL_REDIRECT_URI,
-        "response_type": "code", "state": state,
-    })))
-    set_oauth_cookie(resp, "al_state", {"s": state})
-    return resp
+// Convert an AniList FuzzyDate {year,month,day} into a value usable by <input type="date">
+function fuzzyDateToInputValue(d) {
+  if (!d || !d.year || !d.month || !d.day) return '';
+  const mm = String(d.month).padStart(2, '0');
+  const dd = String(d.day).padStart(2, '0');
+  return `${d.year}-${mm}-${dd}`;
+}
+// Convert an <input type="date"> value ('YYYY-MM-DD') back into an AniList FuzzyDateInput
+function inputValueToFuzzyDate(v) {
+  if (!v) return null;
+  const [y, m, d] = v.split('-').map(Number);
+  if (!y || !m || !d) return null;
+  return { year: y, month: m, day: d };
+}
 
-@app.route("/al/callback")
-def al_callback():
-    if request.args.get("error"):
-        return redirect("/?al_error=" + quote(request.args.get("error_description", request.args["error"])))
-    code  = request.args.get("code", "")
-    state = request.args.get("state", "")
-    if not code:
-        return redirect("/?al_error=" + quote("No authorization code received from AniList"))
-    saved = get_oauth_cookie("al_state")
-    if not saved or not hmac.compare_digest(state, saved["s"]):
-        return redirect("/?al_error=" + quote("State mismatch. Please try again."))
-    try:
-        r = requests.post(AL_TOKEN_URL, json={
-            "grant_type": "authorization_code", "client_id": AL_CLIENT_ID,
-            "client_secret": AL_CLIENT_SECRET, "redirect_uri": AL_REDIRECT_URI,
-            "code": code,
-        }, timeout=15)
-        token = r.json()
-    except Exception as e:
-        return redirect("/?al_error=" + quote(f"Token request failed: {e}"))
-    if "access_token" not in token:
-        return redirect("/?al_error=" + quote(f"Unexpected AniList response (HTTP {r.status_code})"))
-    token["expires_at"] = time.time() + token.get("expires_in", 3600)
-    session["al_token"] = token
-    session.modified = True
-    # Fetch the authenticated user's AniList username and store in session
-    try:
-        viewer_data = anilist_query(
-            "query { Viewer { name } }",
-            token=token
-        )
-        al_viewer = (viewer_data.get("data") or {}).get("Viewer", {}).get("name", "")
-        if al_viewer:
-            session["al_username"] = al_viewer
-    except Exception:
-        pass
-    # Save to Supabase if MAL is also connected
-    if session.get("mal_token"):
-        username = session.get("al_username", ANILIST_USERNAME)
-        db_save_tokens(username, token, session["mal_token"])
-    resp = make_response(redirect("/?al_success=1"))
-    resp.delete_cookie("al_state", path="/")
-    return resp
+function openAddOrEdit(anime) {
+  _editIsNew = !anime.listStatus;
+  document.getElementById('edit-modal-title').textContent = _editIsNew ? `＋ Add: ${anime.title}` : `✏ Edit: ${anime.title}`;
+  document.getElementById('edit-al-id').value   = anime.alId  || '';
+  document.getElementById('edit-mal-id').value  = anime.malId || '';
+  document.getElementById('edit-title').value   = anime.title || '';
+  document.getElementById('edit-episodes').value = anime.episodes || '';
+  document.getElementById('edit-media-status').value = anime.status || '';
+  document.getElementById('edit-status').value  = anime.listStatus  || 'PLANNING';
+  document.getElementById('edit-progress').value = anime.listProgress || 0;
+  document.getElementById('edit-score').value    = anime.listScore   || 0;
+  document.getElementById('edit-started-at').value   = fuzzyDateToInputValue(anime.startedAt);
+  document.getElementById('edit-completed-at').value = fuzzyDateToInputValue(anime.completedAt);
+  document.getElementById('edit-status-msg').textContent = '';
+  document.getElementById('edit-delete-btn').style.display = _editIsNew ? 'none' : '';
+  document.getElementById('edit-modal').style.display = 'flex';
+}
+function closeEditModal() {
+  document.getElementById('edit-modal').style.display = 'none';
+}
+async function saveEdit() {
+  const btn = document.getElementById('edit-save-btn');
+  const msg = document.getElementById('edit-status-msg');
+  btn.disabled = true; btn.textContent = 'Saving…';
+  const body = {
+    alId:        parseInt(document.getElementById('edit-al-id').value),
+    malId:       parseInt(document.getElementById('edit-mal-id').value) || null,
+    title:       document.getElementById('edit-title').value || 'Unknown',
+    episodes:    parseInt(document.getElementById('edit-episodes').value) || null,
+    mediaStatus: document.getElementById('edit-media-status').value || null,
+    status:      document.getElementById('edit-status').value,
+    progress:    parseInt(document.getElementById('edit-progress').value) || 0,
+    score:       parseFloat(document.getElementById('edit-score').value) || 0,
+    startedAt:   inputValueToFuzzyDate(document.getElementById('edit-started-at').value),
+    completedAt: inputValueToFuzzyDate(document.getElementById('edit-completed-at').value),
+  };
+  const endpoint = _editIsNew ? '/api/anime/add' : '/api/anime/edit';
+  try {
+    const res  = await fetch(endpoint, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    const data = await res.json();
+    if (data.al_ok || data.mal_ok) {
+      msg.style.color = '#4ade80';
+      msg.textContent = `✓ Saved — AL: ${data.al_ok?'✓':'✗'}  MAL: ${data.mal_ok?'✓':'✗'}`;
+      setTimeout(() => { closeEditModal(); loadList(); }, 1200);
+    } else {
+      msg.style.color = '#f87171';
+      msg.textContent = 'Save failed — check you are logged in to AL and MAL';
+    }
+  } catch(e) {
+    msg.style.color = '#f87171'; msg.textContent = `Error: ${e.message}`;
+  }
+  btn.disabled = false; btn.textContent = '💾 Save';
+}
+async function confirmDelete() {
+  if (!confirm('Remove this anime from both AniList and MAL?')) return;
+  const btn = document.getElementById('edit-delete-btn');
+  const msg = document.getElementById('edit-status-msg');
+  btn.disabled = true; btn.textContent = 'Deleting…';
+  const body = {
+    alId:  parseInt(document.getElementById('edit-al-id').value),
+    malId: parseInt(document.getElementById('edit-mal-id').value) || null,
+  };
+  try {
+    const res  = await fetch('/api/anime/delete', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    const data = await res.json();
+    msg.style.color = '#4ade80';
+    msg.textContent = `Deleted — AL: ${data.al_ok?'✓':'✗'}  MAL: ${data.mal_ok?'✓':'✗'}`;
+    setTimeout(closeEditModal, 1200);
+  } catch(e) {
+    msg.style.color = '#f87171'; msg.textContent = `Error: ${e.message}`;
+  }
+  btn.disabled = false; btn.textContent = '🗑 Delete';
+}
+// Close modals on backdrop click
+document.getElementById('search-modal').addEventListener('click', e => { if(e.target===e.currentTarget) closeSearchModal(); });
+document.getElementById('edit-modal').addEventListener('click',   e => { if(e.target===e.currentTarget) closeEditModal(); });
+</script>
 
-@app.route("/al/logout")
-def al_logout():
-    session.pop("al_token", None)
-    session.pop("al_username", None)
-    return redirect("/")
-
-# ── Sync endpoints ────────────────────────────────────────────────────────────
-@app.route("/api/sync/diff")
-def sync_diff():
-    if "mal_token" not in session:
-        return jsonify({"error": "MAL not connected"}), 401
-    username = request.args.get("username", ANILIST_USERNAME).strip() or ANILIST_USERNAME
-    try:
-        al_list, mal_list = get_both_lists(al_headers(), username)
-        diffs    = compute_diff(al_list, mal_list)
-        # Save fetched AL list to Supabase
-        db_save_anime_list(username, al_list)
-        return jsonify({"diffs": diffs, "al_count": len(al_list), "mal_count": len(mal_list)})
-    except Exception as e:
-        print(f"[sync_diff] {username}: {e}")
-        if "rate limit" in str(e).lower():
-            return jsonify({"error": "AniList rate limit hit — wait a moment and try again."}), 429
-        return jsonify({"error": "Sync failed. Please try again."}), 500
-
-@app.route("/api/sync/apply", methods=["POST"])
-def sync_apply():
-    if "mal_token" not in session:
-        return jsonify({"error": "MAL not connected"}), 401
-    items = (request.get_json(silent=True) or {}).get("items", [])
-    results = []
-    for item in items:
-        if item.get("action") not in ("add_to_mal", "update", "only_on_mal"):
-            continue
-        r = apply_diff_item(item, al_token=al_headers())
-        results.append({"malId": item["malId"], "title": item.get("title"), **r})
-    return jsonify({"results": results})
-
-@app.route("/api/sync/auto", methods=["POST"])
-def sync_auto():
-    if "mal_token" not in session:
-        return jsonify({"error": "MAL not connected"}), 401
-    username = request.args.get("username", ANILIST_USERNAME).strip() or ANILIST_USERNAME
-    try:
-        al_list, mal_list = get_both_lists(al_headers(), username)
-        diffs    = compute_diff(al_list, mal_list)
-        results  = []
-        for diff in diffs:
-            if diff["action"] in ("add_to_mal", "update", "only_on_mal") and diff.get("malId"):
-                try:
-                    r = apply_diff_item(diff, al_token=al_headers())
-                    results.append({"title": diff["title"], **r})
-                except Exception as item_err:
-                    results.append({"title": diff.get("title", "?"), "error": str(item_err)})
-                time.sleep(0.3)
-        # Save post-sync AL list to Supabase
-        db_save_anime_list(username, al_list)
-        return jsonify({"synced": len(results), "results": results})
-    except Exception as e:
-        print(f"[sync_auto] {username}: {e}")
-        if "rate limit" in str(e).lower():
-            return jsonify({"error": "AniList rate limit hit — wait a moment and try again."}), 429
-        return jsonify({"error": "Auto sync failed. Please try again."}), 500
-
-# ── Cron auto-sync (called by Vercel Cron every 2 hours) ─────────────────────
-@app.route("/api/cron/sync", methods=["GET", "POST"])
-def cron_sync():
-    # Protect with a secret so only Vercel Cron can call it
-    auth = request.headers.get("Authorization", "")
-    if CRON_SECRET and auth != f"Bearer {CRON_SECRET}":
-        return jsonify({"error": "Unauthorized"}), 401
-
-    rows = db_load_all_tokens()
-    if not rows:
-        return jsonify({"message": "No users registered", "synced_users": 0})
-
-    total_synced = 0
-    results = []
-    for row in rows:
-        username  = row["username"]
-        al_token  = row["al_token"]
-        mal_token = row["mal_token"]
-        try:
-            print(f"[Cron] Syncing {username}…")
-
-            # ── Refresh MAL token if near expiry ──────────────────────────────
-            if mal_token.get("expires_at", 0) < time.time() + 300:
-                payload = {
-                    "grant_type":    "refresh_token",
-                    "refresh_token": mal_token.get("refresh_token", ""),
-                    "client_id":     MAL_CLIENT_ID,
-                }
-                if MAL_CLIENT_SECRET:
-                    payload["client_secret"] = MAL_CLIENT_SECRET
-                try:
-                    rr = requests.post(MAL_TOKEN_URL, data=payload, timeout=15)
-                    new_tok = rr.json()
-                    if "access_token" in new_tok:
-                        new_tok["expires_at"] = time.time() + new_tok.get("expires_in", 3600)
-                        mal_token = new_tok
-                        db_save_tokens(username, al_token, mal_token)
-                        print(f"[Cron] Refreshed MAL token for {username}")
-                except Exception as te:
-                    print(f"[Cron] MAL token refresh failed for {username}: {te}")
-
-            # mal_headers() relies on Flask's `session`, which isn't valid here
-            # (this route runs outside a normal request/session context per-user),
-            # so headers are built directly from the stored mal_token instead.
-            # Built once up-front so both the fetch below and the later
-            # patch-back-to-MAL calls share the same headers.
-            mal_headers_cron = {"Authorization": f"Bearer {mal_token.get('access_token', '')}"}
-
-            # ── Fetch AniList + MAL lists concurrently (independent network
-            #    calls — no reason to wait for one before starting the other) ──
-            def _fetch_mal_items():
-                items, offset = [], 0
-                while True:
-                    r = _http.get(f"{MAL_API}/users/@me/animelist",
-                                  headers=mal_headers_cron,
-                                  params={"fields": "list_status{status,score,num_episodes_watched,updated_at}",
-                                          "limit": 1000, "offset": offset},
-                                  timeout=15)
-                    if r.status_code != 200: break
-                    data = r.json()
-                    for item in data.get("data", []):
-                        ls = item["list_status"]
-                        raw_updated = ls.get("updated_at", "")
-                        try:
-                            import datetime
-                            updated_at = int(datetime.datetime.fromisoformat(
-                                raw_updated.replace("Z", "+00:00")).timestamp()) if raw_updated else 0
-                        except Exception:
-                            updated_at = 0
-                        items.append({
-                            "malId":     item["node"]["id"],
-                            "title":     item["node"]["title"],
-                            "status":    ls.get("status", ""),
-                            "progress":  ls.get("num_episodes_watched", 0),
-                            "score":     ls.get("score", 0),
-                            "updatedAt": updated_at,
-                        })
-                    if not data.get("paging", {}).get("next"): break
-                    offset += 1000
-                return items
-
-            with ThreadPoolExecutor(max_workers=2) as ex:
-                al_future  = ex.submit(get_anilist_list, al_token, username)
-                mal_future = ex.submit(_fetch_mal_items)
-                al_list    = al_future.result()
-                mal_items  = mal_future.result()
-
-            diffs = compute_diff(al_list, mal_items)
-            synced = 0
-            for diff in diffs:
-                action = diff["action"]
-
-                if action in ("add_to_mal", "update") and diff.get("malId"):
-                    wp  = diff.get("win_progress", diff.get("al_progress", 0))
-                    ws  = diff.get("win_score",    diff.get("al_score", 0))
-                    wst = diff.get("win_status",   diff.get("al_status", "CURRENT"))
-                    mal_status = AL_TO_MAL.get(wst)
-                    if mal_status:
-                        payload = {"status": mal_status}
-                        if wp: payload["num_watched_episodes"] = wp
-                        if ws: payload["score"] = ws
-                        requests.patch(f"{MAL_API}/anime/{diff['malId']}/my_list_status",
-                                       headers=mal_headers_cron, data=payload, timeout=10)
-                        synced += 1
-                        time.sleep(0.3)
-                    # Also update AniList side if needed
-                    if diff.get("needs_al_update") and diff.get("alId"):
-                        al_update(diff["alId"], status=wst, progress=wp, score=ws, token=al_token)
-                        time.sleep(0.3)
-
-                elif action == "only_on_mal" and diff.get("malId"):
-                    # sync MAL-only entries back to AniList
-                    al_id = diff.get("alId") or resolve_al_id_from_mal(diff["malId"], token=al_token)
-                    if al_id:
-                        al_status = MAL_TO_AL.get(diff["mal_status"], "PLANNING")
-                        al_update(al_id, status=al_status,
-                                  progress=diff.get("mal_progress", 0),
-                                  score=diff.get("mal_score", 0),
-                                  token=al_token)
-                        synced += 1
-                        time.sleep(0.3)
-
-            total_synced += synced
-            results.append({"username": username, "synced": synced})
-            # Save final synced list to Supabase
-            db_save_anime_list(username, al_list)
-            print(f"[Cron] {username}: {synced} items synced")
-        except Exception as e:
-            print(f"[Cron] Error for {username}: {e}")
-            results.append({"username": username, "error": str(e)})
-
-    return jsonify({"synced_users": len(rows), "total_synced": total_synced, "results": results})
-
-# ── Supabase anime list API ───────────────────────────────────────────────────
-@app.route("/api/db/anime-list")
-def db_anime_list():
-    """Return the stored anime list for a user from Supabase.
-    Query params:
-      username  — defaults to session AL username or ANILIST_USERNAME
-      status    — optional AL status filter (CURRENT, COMPLETED, PAUSED, DROPPED, PLANNING)
-    """
-    if not DB_AVAILABLE or not DB_URL:
-        return jsonify({"error": "Database not configured"}), 503
-    username      = request.args.get("username", "").strip()
-    username      = username or session.get("al_username", ANILIST_USERNAME)
-    status_filter = request.args.get("status", "").strip().upper() or None
-    entries = db_load_anime_list(username, status_filter=status_filter)
-    return jsonify({"username": username, "count": len(entries), "entries": entries})
-
-@app.route("/api/db/stats")
-def db_stats():
-    """Return per-status counts for a user's stored anime list."""
-    if not DB_AVAILABLE or not DB_URL:
-        return jsonify({"error": "Database not configured"}), 503
-    username = request.args.get("username", "").strip()
-    username = username or session.get("al_username", ANILIST_USERNAME)
-    all_entries = db_load_anime_list(username)
-    stats = {}
-    for e in all_entries:
-        s = e.get("status", "UNKNOWN")
-        stats[s] = stats.get(s, 0) + 1
-    return jsonify({"username": username, "total": len(all_entries), "by_status": stats})
-
-# ── Anime search / add / edit / delete ───────────────────────────────────────
-@app.route("/api/anime/search")
-def anime_search():
-    """Search anime by title via AniList.
-    Query params: q (search string), page (default 1)
-    """
-    q = request.args.get("q", "").strip()
-    if not q:
-        return jsonify({"error": "Missing search query"}), 400
-    page = int(request.args.get("page", 1))
-    data = anilist_query(GQL_SEARCH, {"search": q, "page": page}, token=al_headers())
-    media = (data.get("data") or {}).get("Page", {}).get("media", [])
-    results = []
-    for m in media:
-        t = m["title"]
-        entry = m.get("mediaListEntry") or {}
-        sa = entry.get("startedAt") or {}
-        ca = entry.get("completedAt") or {}
-        results.append({
-            "alId":          m["id"],
-            "malId":         m.get("idMal"),
-            "title":         t.get("english") or t.get("romaji") or "Unknown",
-            "episodes":      m.get("episodes"),
-            "status":        m.get("status"),
-            "cover":         (m.get("coverImage") or {}).get("medium"),
-            "listStatus":    entry.get("status"),
-            "listProgress":  entry.get("progress", 0),
-            "listScore":     entry.get("score", 0),
-            "startedAt":     sa if any(sa.values()) else None,
-            "completedAt":   ca if any(ca.values()) else None,
-        })
-    return jsonify({"results": results})
-
-@app.route("/api/anime/add", methods=["POST"])
-def anime_add():
-    """Add an anime to both AniList and MAL lists.
-    Body: { alId, malId, status (AL key), progress, score }
-    """
-    if "al_token" not in session:
-        return jsonify({"error": "AniList not connected"}), 401
-    body     = request.get_json(silent=True) or {}
-    al_id    = body.get("alId")
-    mal_id   = body.get("malId")
-    status   = body.get("status", "PLANNING")
-    progress = int(body.get("progress", 0))
-    score    = float(body.get("score", 0))
-    started_at   = body.get("startedAt")
-    completed_at = body.get("completedAt")
-    if not al_id:
-        return jsonify({"error": "alId is required"}), 400
-    al_ok  = al_update(al_id, status=status, progress=progress, score=score,
-                       token=al_headers(), started_at=started_at, completed_at=completed_at)
-    mal_ok = False
-    if mal_id and "mal_token" in session:
-        mal_status = AL_TO_MAL.get(status, "plan_to_watch")
-        mal_ok = mal_update(mal_id, status=mal_status, progress=progress, score=score)
-    if al_ok:
-        username = session.get("al_username", ANILIST_USERNAME)
-        db_save_anime_list(username, [{
-            "alId": al_id, "malId": mal_id, "title": body.get("title", "Unknown"),
-            "status": status, "progress": progress, "score": score,
-            "episodes": body.get("episodes"), "mediaStatus": body.get("mediaStatus"),
-            "startedAt": started_at, "completedAt": completed_at,
-        }])
-    return jsonify({"al_ok": al_ok, "mal_ok": mal_ok})
-
-@app.route("/api/anime/edit", methods=["POST"])
-def anime_edit():
-    """Edit an existing list entry on both AniList and MAL.
-    Body: { alId, malId, status (AL key), progress, score, startedAt, completedAt }
-    """
-    if "al_token" not in session:
-        return jsonify({"error": "AniList not connected"}), 401
-    body     = request.get_json(silent=True) or {}
-    al_id    = body.get("alId")
-    mal_id   = body.get("malId")
-    status   = body.get("status", "PLANNING")
-    progress = int(body.get("progress", 0))
-    score    = float(body.get("score", 0))
-    started_at   = body.get("startedAt")
-    completed_at = body.get("completedAt")
-    if not al_id:
-        return jsonify({"error": "alId is required"}), 400
-    al_ok  = al_update(al_id, status=status, progress=progress, score=score,
-                       token=al_headers(), started_at=started_at, completed_at=completed_at)
-    mal_ok = False
-    if mal_id and "mal_token" in session:
-        mal_status = AL_TO_MAL.get(status, "plan_to_watch")
-        mal_ok = mal_update(mal_id, status=mal_status, progress=progress, score=score)
-    if al_ok:
-        username = session.get("al_username", ANILIST_USERNAME)
-        db_save_anime_list(username, [{
-            "alId": al_id, "malId": mal_id, "title": body.get("title", "Unknown"),
-            "status": status, "progress": progress, "score": score,
-            "episodes": body.get("episodes"), "mediaStatus": body.get("mediaStatus"),
-            "startedAt": started_at, "completedAt": completed_at,
-        }])
-    return jsonify({"al_ok": al_ok, "mal_ok": mal_ok})
-
-@app.route("/api/anime/delete", methods=["POST"])
-def anime_delete():
-    """Delete an anime from both AniList and MAL.
-    Body: { alId, malId }
-    """
-    if "al_token" not in session:
-        return jsonify({"error": "AniList not connected"}), 401
-    body   = request.get_json(silent=True) or {}
-    al_id  = body.get("alId")
-    mal_id = body.get("malId")
-    if not al_id:
-        return jsonify({"error": "alId is required"}), 400
-    al_ok  = al_delete(al_id, token=al_headers())
-    mal_ok = False
-    if mal_id and "mal_token" in session:
-        headers = mal_headers()
-        if headers:
-            r = requests.delete(f"{MAL_API}/anime/{mal_id}/my_list_status",
-                                headers=headers, timeout=10)
-            mal_ok = r.status_code == 200
-    return jsonify({"al_ok": al_ok, "mal_ok": mal_ok})
-
-# ── Vercel entry point ────────────────────────────────────────────────────────
-if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+</body>
+</html>
