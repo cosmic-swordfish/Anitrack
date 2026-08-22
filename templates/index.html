@@ -378,6 +378,97 @@
   .dot-disconnected{background:#ff4444;box-shadow:0 0 5px #ff4444}
   .pill-sep{opacity:.4}
 
+  /* ─── Top bar: hamburger / logo / search / inbox / avatar ─── */
+  .top-bar{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+  .top-bar .logo{margin-right:auto}
+  .icon-btn{
+    width:38px;height:38px;border-radius:50%;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+    background:var(--glass-bg);border:1px solid var(--border);
+    color:var(--text-sub);cursor:pointer;transition:background .2s,color .2s,transform .15s;
+  }
+  .icon-btn svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .icon-btn:hover{background:var(--accent-bg);color:var(--accent);border-color:var(--accent-border)}
+  .icon-btn:active{transform:scale(0.9)}
+  .icon-group{display:flex;align-items:center;gap:8px;flex-shrink:0}
+
+  .avatar-btn{
+    width:38px;height:38px;border-radius:50%;flex-shrink:0;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    background:var(--accent);color:#fff;font-weight:700;font-size:14px;
+    border:none;transition:transform .15s;position:relative;
+  }
+  .avatar-btn:active{transform:scale(0.9)}
+
+  .avatar-dropdown-wrap{position:relative}
+  .avatar-dropdown{
+    position:absolute;top:calc(100% + 10px);right:0;min-width:210px;
+    background:var(--surface, var(--glass-bg));border:1px solid var(--border);
+    border-radius:14px;padding:8px;z-index:150;
+    box-shadow:0 12px 32px rgba(0,0,0,0.28);
+    backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+    opacity:0;transform:translateY(-6px) scale(0.97);pointer-events:none;
+    transition:opacity .16s ease,transform .16s ease;
+  }
+  .avatar-dropdown.open{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}
+  .avatar-dropdown-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:9px}
+  .avatar-dropdown-name{flex:1;font-size:13px;font-weight:700;color:var(--text-title);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .avatar-dropdown-gear{background:none;border:none;color:var(--text-sub);cursor:pointer;width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .avatar-dropdown-gear:hover{background:var(--accent-bg);color:var(--accent)}
+  .avatar-dropdown-gear svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .avatar-dropdown-sep{height:1px;background:var(--border);margin:4px 6px}
+  .avatar-dropdown-logout{
+    display:flex;align-items:center;gap:9px;width:100%;padding:9px 10px;
+    background:none;border:none;border-radius:9px;cursor:pointer;
+    font-size:13px;font-weight:700;color:var(--error-color, #ff4444);
+    text-decoration:none;box-sizing:border-box;
+  }
+  .avatar-dropdown-logout:hover{background:var(--error-bg)}
+  .avatar-dropdown-logout svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+  /* ─── Slide-out side menu ─── */
+  .side-menu-overlay{
+    position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:800;
+    opacity:0;pointer-events:none;transition:opacity .22s ease;
+  }
+  .side-menu-overlay.open{opacity:1;pointer-events:auto}
+  .side-menu{
+    position:fixed;top:0;left:0;bottom:0;width:min(300px,84vw);z-index:801;
+    background:var(--header-bg);border-right:1px solid var(--border);
+    backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+    display:flex;flex-direction:column;
+    transform:translateX(-100%);transition:transform .26s cubic-bezier(0.22,1,0.36,1);
+    padding-top:env(safe-area-inset-top);
+  }
+  .side-menu.open{transform:translateX(0)}
+  .side-menu-header{display:flex;align-items:center;gap:10px;padding:18px 16px 14px;border-bottom:1px solid var(--border-lo)}
+  .side-menu-header img{height:34px;width:auto}
+  .side-menu-header-title{font-weight:800;font-size:13px;letter-spacing:.18em;color:var(--logo-color);flex:1}
+  .side-menu-close{background:none;border:none;color:var(--text-sub);cursor:pointer;width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center}
+  .side-menu-close:hover{background:var(--glass-bg);color:var(--text)}
+  .side-menu-close svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+  .side-menu-nav{display:flex;flex-direction:column;gap:2px;padding:10px 10px;flex:1;overflow-y:auto}
+  .side-menu-item{
+    display:flex;align-items:center;gap:14px;padding:12px 12px;border-radius:12px;
+    background:none;border:none;cursor:pointer;text-align:left;width:100%;
+    font-size:14px;font-weight:600;color:var(--text);transition:background .15s;
+  }
+  .side-menu-item:hover{background:var(--glass-bg)}
+  .side-menu-item.active{background:var(--accent-bg);color:var(--accent)}
+  .side-menu-item svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+  .side-menu-footer{
+    display:flex;align-items:center;gap:10px;padding:14px 16px;
+    border-top:1px solid var(--border-lo);cursor:pointer;
+    padding-bottom:calc(14px + env(safe-area-inset-bottom));
+  }
+  .side-menu-footer:hover{background:var(--glass-bg)}
+  .side-menu-avatar{width:36px;height:36px;border-radius:50%;background:var(--accent);color:#fff;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .side-menu-user-wrap{flex:1;min-width:0}
+  .side-menu-username{font-size:13px;font-weight:700;color:var(--text-title);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .side-menu-sub{font-size:11px;color:var(--text-sub);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .side-menu-footer-gear{background:none;border:none;color:var(--text-sub);flex-shrink:0;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:8px}
+  .side-menu-footer-gear svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
   /* ─── Nav tabs ─── */
   .nav-tabs{display:flex;gap:4px}
   .tab{padding:6px 14px;border-radius:9px;font-size:12px;font-family:monospace;cursor:pointer;border:1px solid var(--border);background:var(--glass-bg);color:var(--text-sub);transition:all .2s;letter-spacing:.02em;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
@@ -680,29 +771,89 @@
 <body>
 
 <header>
-  <div class="header-top">
-    <a class="logo" href="/" style="text-decoration:none;cursor:pointer;" title="Home" onclick="hap(8)"><img src="/static/anitrack-logo-transparent-512.png" alt="AniTrack" style="height:52px;width:auto;display:block;"></a>
-    <div class="header-right">
-      <div class="user-pill">
-        <span class="dot"></span> {{ anilist_username }}
-        <span class="pill-sep">·</span><span class="dot {% if al_connected %}dot-al{% else %}dot-disconnected{% endif %}"></span> AL
-        <span class="pill-sep">·</span><span class="dot {% if mal_connected %}dot-mal{% else %}dot-disconnected{% endif %}"></span> MAL
-      </div>
-      <div class="stats" id="stats">
-        <b id="total-watching">0</b> watching · <b id="total-planned">0</b> planned · <b id="total-airing">0</b> airing soon
+  <div class="top-bar">
+    <button class="icon-btn" id="hamburger-btn" aria-label="Menu" onclick="openSideMenu()">
+      <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+    <a class="logo" href="/" style="text-decoration:none;cursor:pointer;" title="Home" onclick="hap(8)"><img src="/static/anitrack-logo-transparent-512.png" alt="AniTrack" style="height:36px;width:auto;display:block;"></a>
+    <div class="icon-group">
+      <button class="icon-btn" id="search-icon-btn" aria-label="Search" onclick="hap(6);openSearchModal()">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </button>
+      <button class="icon-btn" id="sync-icon-btn" aria-label="Sync" onclick="hap(6);document.getElementById('anav-sync-btn')?.click()">
+        <svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
+      </button>
+      <div class="avatar-dropdown-wrap">
+        <button class="avatar-btn" id="avatar-btn" aria-label="Account" onclick="toggleAvatarDropdown(event)">{{ anilist_username[0]|upper }}</button>
+        <div class="avatar-dropdown" id="avatar-dropdown">
+          <div class="avatar-dropdown-row">
+            <span class="avatar-dropdown-name">{{ anilist_username }}</span>
+            <button class="avatar-dropdown-gear" aria-label="Settings" onclick="hap(6);document.getElementById('anav-settings-btn')?.click();closeAvatarDropdown()">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            </button>
+          </div>
+          {% if al_connected or mal_connected %}
+          <div class="avatar-dropdown-sep"></div>
+          <a class="avatar-dropdown-logout" href="{% if al_connected %}/al/logout{% else %}/mal/logout{% endif %}" onclick="hap(8)">
+            <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            Logout
+          </a>
+          {% endif %}
+        </div>
       </div>
     </div>
   </div>
 
-
+  <div class="stats" id="stats" style="margin-bottom:2px">
+    <b id="total-watching">0</b> watching · <b id="total-planned">0</b> planned · <b id="total-airing">0</b> airing soon
+  </div>
 
   {% if mal_error %}<div class="notif-bar error">⚠ MAL error: {{ mal_error }}</div>{% endif %}
   {% if mal_success %}<div class="notif-bar success" id="mal-success-banner">✓ MyAnimeList connected!</div>{% endif %}
   {% if al_error %}<div class="notif-bar error">⚠ AniList error: {{ al_error }}</div>{% endif %}
   {% if al_success %}<div class="notif-bar success" id="al-success-banner">✓ AniList connected!</div>{% endif %}
 
-
 </header>
+
+<!-- ── Slide-out side menu ── -->
+<div class="side-menu-overlay" id="side-menu-overlay" onclick="closeSideMenu()"></div>
+<div class="side-menu" id="side-menu" role="dialog" aria-label="Main menu">
+  <div class="side-menu-header">
+    <img src="/static/anitrack-logo-transparent-512.png" alt="AniTrack">
+    <span class="side-menu-header-title">ANITRACK</span>
+    <button class="side-menu-close" aria-label="Close menu" onclick="closeSideMenu()">
+      <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+  <nav class="side-menu-nav">
+    <button class="side-menu-item" data-target="anav-watching">
+      <svg viewBox="0 0 24 24"><path d="M3 12s3-7 9-7 9 7 9 7-3 7-9 7-9-7-9-7z"/><circle cx="12" cy="12" r="3"/></svg>
+      Watching
+    </button>
+    <button class="side-menu-item" data-target="anav-planned">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Plan to Watch
+    </button>
+    <button class="side-menu-item" data-target="anav-sync-btn">
+      <svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
+      Sync
+    </button>
+    <button class="side-menu-item" data-target="anav-settings-btn">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Settings
+    </button>
+  </nav>
+  <div class="side-menu-footer" onclick="hap(6);document.getElementById('anav-settings-btn')?.click();closeSideMenu()">
+    <div class="side-menu-avatar">{{ anilist_username[0]|upper }}</div>
+    <div class="side-menu-user-wrap">
+      <div class="side-menu-username">{{ anilist_username }}</div>
+      <div class="side-menu-sub">{% if al_connected %}Signed in via AniList{% elif mal_connected %}Signed in via MAL{% else %}Local username{% endif %}</div>
+    </div>
+    <span class="side-menu-footer-gear" aria-hidden="true">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </span>
+  </div>
+</div>
 
 <main>
   <!-- ── Anime List Page ── -->
@@ -1727,6 +1878,52 @@ async function updateEp(entryId, currentProgress, maxEp, delta) {
   // Restore blur pref
   if (localStorage.getItem('navbar-blur') === '0') navEl?.classList.add('no-blur');
 })();
+
+// ── Top bar: avatar dropdown ─────────────────────────────────────────────────
+function toggleAvatarDropdown(e) {
+  e?.stopPropagation();
+  hap(6);
+  document.getElementById('avatar-dropdown')?.classList.toggle('open');
+}
+function closeAvatarDropdown() {
+  document.getElementById('avatar-dropdown')?.classList.remove('open');
+}
+document.addEventListener('click', (e) => {
+  const dd = document.getElementById('avatar-dropdown');
+  const wrap = document.querySelector('.avatar-dropdown-wrap');
+  if (dd && dd.classList.contains('open') && wrap && !wrap.contains(e.target)) closeAvatarDropdown();
+});
+
+// ── Slide-out side menu ──────────────────────────────────────────────────────
+function openSideMenu() {
+  hap(8);
+  closeAvatarDropdown();
+  document.getElementById('side-menu-overlay')?.classList.add('open');
+  document.getElementById('side-menu')?.classList.add('open');
+  syncSideMenuActive();
+}
+function closeSideMenu() {
+  document.getElementById('side-menu-overlay')?.classList.remove('open');
+  document.getElementById('side-menu')?.classList.remove('open');
+}
+function syncSideMenuActive() {
+  const activeNavId = document.querySelector('.anav-item.active')?.id;
+  document.querySelectorAll('.side-menu-item').forEach(item => {
+    item.classList.toggle('active', item.dataset.target === activeNavId);
+  });
+}
+document.querySelectorAll('.side-menu-item').forEach(item => {
+  item.addEventListener('click', () => {
+    hap(6);
+    document.getElementById(item.dataset.target)?.click();
+    closeSideMenu();
+  });
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  closeSideMenu();
+  closeAvatarDropdown();
+});
 
 // ── Navbar Blur switch ───────────────────────────────────────────────────────
 function onNavBlurSwitch(el) {
