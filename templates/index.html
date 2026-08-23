@@ -187,148 +187,36 @@
     flex-direction:column;
     transition:background 0.4s ease,color 0.25s ease
   }
-  main{flex:1;padding-bottom:110px}
+  main{flex:1;padding-bottom:32px}
 
-  /* ─── Floating Icon Pill Navbar ─── */
-  .anitrack-navbar-wrap{
-    position:fixed;bottom:max(24px, env(safe-area-inset-bottom));
-    left:50%;transform:translateX(-50%);
-    z-index:300;width:calc(100% - 64px);max-width:320px;
-    transition:transform 0.35s cubic-bezier(0.32,0,0.67,0), opacity 0.35s ease;
+  /* ─── Day tabs / schedule ─── */
+  .day-tabs{display:flex;gap:8px;overflow-x:auto;padding:2px 0 14px;scrollbar-width:none}
+  .day-tabs::-webkit-scrollbar{display:none}
+  .day-tab{
+    flex-shrink:0;padding:10px 16px;border-radius:12px;font-size:12px;font-weight:700;
+    font-family:monospace;text-align:center;cursor:pointer;
+    border:1.5px solid var(--border);background:var(--glass-bg);color:var(--text-sub);
+    transition:all .2s;
   }
-  .anitrack-navbar-wrap.nav-hidden{
-    transform:translateX(-50%) translateY(calc(100% + 32px));
-    opacity:0;
-    pointer-events:none;
-  }
-  .anitrack-navbar{
-    height:68px;border-radius:34px;
-    border:1px solid rgba(255,255,255,0.13);
-    display:flex;align-items:center;justify-content:space-evenly;
-    padding:0 10px;position:relative;overflow:hidden;
-  }
-  .anitrack-navbar::before{
-    content:'';position:absolute;inset:0;
-    background:rgba(255,255,255,0.10);
-    backdrop-filter:blur(40px) saturate(2);
-    -webkit-backdrop-filter:blur(40px) saturate(2);
-    border-radius:34px;transition:background 0.3s;
-  }
-  .anitrack-navbar.no-blur::before{
-    backdrop-filter:none !important;
-    -webkit-backdrop-filter:none !important;
-    background:rgba(28,30,40,0.96) !important;
-  }
-  [data-theme="light"] .anitrack-navbar::before{
-    background:rgba(210,215,235,0.55);
-  }
-  [data-theme="light"] .anitrack-navbar.no-blur::before{
-    background:rgba(210,215,235,0.97) !important;
-  }
+  .day-tab .day-tab-date{display:block;font-size:9px;font-weight:400;opacity:.7;margin-top:2px}
+  .day-tab:hover{background:var(--surface);color:var(--text)}
+  .day-tab.active{background:var(--accent-bg);border-color:var(--accent-border);color:var(--accent)}
+  [data-theme="light"] .day-tab.active{background:rgba(0,113,227,0.1)}
+  .day-tab.is-today::before{content:'• ';color:var(--accent)}
 
-  .anav-item{
-    position:relative;z-index:1;
-    display:flex;align-items:center;justify-content:center;
-    height:48px;border-radius:24px;
-    cursor:pointer;border:none;background:transparent;
-    outline:none;
-    transition:background 300ms ease,box-shadow 300ms ease;
-    -webkit-tap-highlight-color:transparent;
-    will-change:width;
-    /* width driven by JS RAF animation */
+  .sched-list{display:flex;flex-direction:column;gap:10px}
+  .sched-row{
+    display:flex;align-items:center;gap:12px;padding:10px;border-radius:12px;
+    background:var(--glass-bg);border:1px solid var(--border-lo);
   }
-
-  /* Top-edge indicator bar */
-  .anav-indicator{
-    position:absolute;top:0;height:2px;width:30px;
-    background:#FFFFFF;border-radius:0 0 2px 2px;
-    box-shadow:0 0 8px rgba(255,255,255,0.5);
-    transition:left 300ms cubic-bezier(0.25,0.46,0.45,0.94);
-    z-index:2;pointer-events:none;
-  }
-
-  .anav-item svg{
-    width:22px;height:22px;flex-shrink:0;
-    fill:none;stroke:#C3CBD8;
-    stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;
-    transition:stroke 0.25s ease,transform 300ms cubic-bezier(0.34,1.56,0.64,1),filter 300ms ease;
-    position:relative;z-index:1;
-  }
-  [data-theme="light"] .anav-item svg{ stroke:rgba(0,0,0,0.35); }
-  .anav-item.active svg{
-    stroke:#FFFFFF;
-    transform:scale(1.1);
-    filter:none;
-  }
-  [data-theme="dark"] .anav-item.active svg{ stroke:#FFFFFF; }
-
-  .anav-item.active{
-    background:rgba(255,255,255,0.22);
-    box-shadow:none;
-  }
-  [data-theme="light"] .anav-item.active{
-    background:rgba(0,0,0,0.12);
-  }
-
-  .anav-item:active{ transform:scale(0.88); }
-
-  /* Tap ripple */
-  .anav-item::after{
-    content:'';position:absolute;inset:0;border-radius:26px;
-    background:radial-gradient(circle,rgba(255,255,255,0.12) 0%,transparent 70%);
-    opacity:0;transform:scale(0.5);
-    transition:opacity 0.15s,transform 0.3s;pointer-events:none;
-  }
-  .anav-item:active::after{opacity:1;transform:scale(1);}
-
-  /* ── Icon click animations ─────────────────────────── */
-
-  /* Sync: full 360° spin */
-  @keyframes anav-spin{
-    0%  { transform: rotate(0deg)   scale(1.1); }
-    60% { transform: rotate(300deg) scale(1.15); }
-    100%{ transform: rotate(360deg) scale(1.1); }
-  }
-  #anav-sync-btn.icon-anim svg{
-    animation: anav-spin 650ms cubic-bezier(0.22,1,0.36,1) both;
-  }
-
-  /* Settings: jolt-rotate ±25° */
-  @keyframes anav-jolt{
-    0%  { transform: rotate(0deg)   scale(1.1); }
-    25% { transform: rotate(28deg)  scale(1.15); }
-    55% { transform: rotate(-18deg) scale(1.12); }
-    78% { transform: rotate(12deg)  scale(1.1); }
-    100%{ transform: rotate(0deg)   scale(1.1); }
-  }
-  #anav-settings-btn.icon-anim svg{
-    animation: anav-jolt 650ms cubic-bezier(0.34,1.56,0.64,1) both;
-  }
-
-  /* Grid (Planned): tiles pop in staggered */
-  @keyframes anav-pop{
-    0%  { transform: scale(1.1); }
-    40% { transform: scale(1.28); }
-    70% { transform: scale(1.0);  }
-    100%{ transform: scale(1.1); }
-  }
-  #anav-planned.icon-anim svg rect:nth-child(1){ animation: anav-pop 500ms 0ms   cubic-bezier(0.34,1.56,0.64,1) both; }
-  #anav-planned.icon-anim svg rect:nth-child(2){ animation: anav-pop 500ms 70ms  cubic-bezier(0.34,1.56,0.64,1) both; }
-  #anav-planned.icon-anim svg rect:nth-child(3){ animation: anav-pop 500ms 140ms cubic-bezier(0.34,1.56,0.64,1) both; }
-  #anav-planned.icon-anim svg rect:nth-child(4){ animation: anav-pop 500ms 210ms cubic-bezier(0.34,1.56,0.64,1) both; }
-
-  /* Eye (Watching): scale pulse + blink */
-  @keyframes anav-blink{
-    0%  { transform: scale(1.1); }
-    18% { transform: scaleY(0.15) scaleX(1.1); }
-    36% { transform: scale(1.18); }
-    60% { transform: scale(1.05); }
-    100%{ transform: scale(1.1); }
-  }
-  #anav-watching.icon-anim svg{
-    animation: anav-blink 650ms cubic-bezier(0.34,1.56,0.64,1) both;
-  }
-
+  .sched-thumb{width:46px;height:66px;border-radius:7px;flex-shrink:0;background:#111420;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:18px}
+  .sched-thumb img{width:100%;height:100%;object-fit:cover}
+  .sched-info{flex:1;min-width:0}
+  .sched-title{font-size:13px;font-weight:700;color:var(--text-title);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .sched-ep{font-size:11px;color:var(--text-sub);font-family:monospace;margin-top:2px}
+  .sched-time{text-align:right;flex-shrink:0}
+  .sched-time-val{font-size:15px;font-weight:700;color:var(--accent);font-family:monospace}
+  .sched-time-sub{font-size:9px;color:var(--text-muted);font-family:monospace;text-transform:uppercase;letter-spacing:.06em}
 
   /* ─── Episode update buttons ─── */
   .ep-controls{display:flex;align-items:center;gap:6px;margin-top:6px}
@@ -609,7 +497,7 @@
   .spinner{width:34px;height:34px;border-radius:50%;border:2px solid var(--spinner-border);border-top-color:var(--accent);animation:spin .9s linear infinite}
   .error-box{background:var(--error-bg);border:1px solid var(--error-border);color:var(--error-color);padding:14px 18px;border-radius:10px;font-size:13px;margin-bottom:16px}
 
-  .sync-fab{position:fixed;right:18px;bottom:calc(104px + env(safe-area-inset-bottom));width:52px;height:52px;border-radius:50%;background:var(--accent);color:#04121c;border:none;font-size:24px;font-weight:600;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 8px 22px rgba(2,169,255,.35);z-index:40;transition:transform .15s,box-shadow .15s}
+  .sync-fab{position:fixed;right:18px;bottom:calc(24px + env(safe-area-inset-bottom));width:52px;height:52px;border-radius:50%;background:var(--accent);color:#04121c;border:none;font-size:24px;font-weight:600;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 8px 22px rgba(2,169,255,.35);z-index:40;transition:transform .15s,box-shadow .15s}
   .sync-fab:hover{transform:translateY(-2px);box-shadow:0 10px 28px rgba(2,169,255,.45)}
   .sync-fab:active{transform:scale(.92)}
 
@@ -734,7 +622,7 @@
   }
   /* ── PWA Install Banner ── */
   .pwa-banner{
-    position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(120px);
+    position:fixed;bottom:calc(24px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%) translateY(120px);
     width:calc(100% - 32px);max-width:420px;
     display:flex;align-items:center;gap:12px;
     padding:14px 14px 14px 16px;border-radius:20px;
@@ -780,7 +668,7 @@
       <button class="icon-btn" id="search-icon-btn" aria-label="Search" onclick="hap(6);openSearchModal()">
         <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       </button>
-      <button class="icon-btn" id="sync-icon-btn" aria-label="Sync" onclick="hap(6);document.getElementById('anav-sync-btn')?.click()">
+      <button class="icon-btn" id="sync-icon-btn" aria-label="Sync" onclick="navigateTo('sync')">
         <svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
       </button>
       <div class="avatar-dropdown-wrap">
@@ -788,7 +676,7 @@
         <div class="avatar-dropdown" id="avatar-dropdown">
           <div class="avatar-dropdown-row">
             <span class="avatar-dropdown-name">{{ anilist_username }}</span>
-            <button class="avatar-dropdown-gear" aria-label="Settings" onclick="hap(6);document.getElementById('anav-settings-btn')?.click();closeAvatarDropdown()">
+            <button class="avatar-dropdown-gear" aria-label="Settings" onclick="closeAvatarDropdown();navigateTo('settings')">
               <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
             </button>
           </div>
@@ -826,24 +714,28 @@
     </button>
   </div>
   <nav class="side-menu-nav">
-    <button class="side-menu-item" data-target="anav-watching">
+    <button class="side-menu-item active" data-view="watching">
       <svg viewBox="0 0 24 24"><path d="M3 12s3-7 9-7 9 7 9 7-3 7-9 7-9-7-9-7z"/><circle cx="12" cy="12" r="3"/></svg>
       Watching
     </button>
-    <button class="side-menu-item" data-target="anav-planned">
+    <button class="side-menu-item" data-view="planned">
       <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
       Plan to Watch
     </button>
-    <button class="side-menu-item" data-target="anav-sync-btn">
+    <button class="side-menu-item" data-view="schedule">
+      <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      Schedule
+    </button>
+    <button class="side-menu-item" data-view="sync">
       <svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
       Sync
     </button>
-    <button class="side-menu-item" data-target="anav-settings-btn">
+    <button class="side-menu-item" data-view="settings">
       <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
       Settings
     </button>
   </nav>
-  <div class="side-menu-footer" onclick="hap(6);document.getElementById('anav-settings-btn')?.click();closeSideMenu()">
+  <div class="side-menu-footer" onclick="navigateTo('settings')">
     <div class="side-menu-avatar">{{ anilist_username[0]|upper }}</div>
     <div class="side-menu-user-wrap">
       <div class="side-menu-username">{{ anilist_username }}</div>
@@ -882,6 +774,19 @@
       <div id="view-planned" class="grid" style="display:none"></div>
 
     </div>
+  </div>
+
+  <!-- ── Schedule Page ── -->
+  <div class="page" id="page-schedule">
+    <div class="filter-row" id="sched-quick-row">
+      <button class="filter-pill" data-quick="yesterday" onclick="schedQuickJump(this,'yesterday')">Yesterday</button>
+      <button class="filter-pill active" data-quick="today" onclick="schedQuickJump(this,'today')">Today</button>
+      <button class="filter-pill" data-quick="tomorrow" onclick="schedQuickJump(this,'tomorrow')">Tomorrow</button>
+      <button class="filter-pill" data-quick="prevweek" onclick="schedQuickJump(this,'prevweek')">Previous week</button>
+      <button class="filter-pill" data-quick="nextweekend" onclick="schedQuickJump(this,'nextweekend')">Next weekend</button>
+    </div>
+    <div class="day-tabs" id="day-tabs"></div>
+    <div class="sched-list" id="sched-list"></div>
   </div>
 
   <!-- ── Sync Page ── -->
@@ -952,21 +857,6 @@
           </div>
           <label class="ios-switch" title="Toggle Oneko">
             <input type="checkbox" id="switch-oneko" onchange="onOnekoSwitch(this)">
-            <div class="ios-track"></div>
-            <div class="ios-thumb"></div>
-          </label>
-        </div>
-        <!-- Navbar Blur toggle -->
-        <div class="settings-row">
-          <span class="settings-icon" id="blur-icon">
-            <svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
-          </span>
-          <div class="settings-label-wrap">
-            <div class="settings-label">Navbar Blur</div>
-            <div class="settings-sublabel">Glass blur effect on bottom navigation</div>
-          </div>
-          <label class="ios-switch" title="Toggle navbar blur">
-            <input type="checkbox" id="switch-navbar-blur" checked onchange="onNavBlurSwitch(this)">
             <div class="ios-track"></div>
             <div class="ios-thumb"></div>
           </label>
@@ -1088,34 +978,6 @@
   <span>Built with <a href="https://anilist.co" target="_blank" rel="noopener">AniList</a> &amp; <a href="https://myanimelist.net" target="_blank" rel="noopener">MyAnimeList</a></span>
 </footer>
 
-<!-- ── Bottom Navbar ── -->
-<div class="anitrack-navbar-wrap" id="anitrack-navbar-wrap">
-  <nav class="anitrack-navbar" id="anitrack-navbar">
-    <div class="anav-indicator" id="anav-indicator"></div>
-
-    <!-- Watching -->
-    <button class="anav-item active" id="anav-watching" aria-label="Watching">
-      <svg viewBox="0 0 24 24"><path d="M3 12s3-7 9-7 9 7 9 7-3 7-9 7-9-7-9-7z"/><circle cx="12" cy="12" r="3"/></svg>
-    </button>
-
-    <!-- Planned -->
-    <button class="anav-item" id="anav-planned" aria-label="Planned">
-      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-    </button>
-
-    <!-- Sync -->
-    <button class="anav-item" id="anav-sync-btn" aria-label="Sync">
-      <svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
-    </button>
-
-    <!-- Settings -->
-    <button class="anav-item" id="anav-settings-btn" aria-label="Settings">
-      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-    </button>
-
-  </nav>
-</div>
-
 <script>
 const AL_CONNECTED = {{ 'true' if al_connected else 'false' }};
 const _DEFAULT_USERNAME = "{{ anilist_username }}";
@@ -1178,39 +1040,36 @@ function onThemeSwitch(el) {
 applyTheme(localStorage.getItem("anitrack-theme") || "light");
 
 // ── Tab navigation ────────────────────────────────────────────────────────────
-function showPage(name, btn) {
+// Unified page switcher: 'watching' | 'planned' | 'schedule' | 'sync' | 'settings'
+function navigateTo(view) {
+  hap(6);
   document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
-  document.querySelectorAll(".tab").forEach(b => b.classList.remove("active"));
-  const pg = document.getElementById("page-" + name);
-  if (pg) pg.classList.add("active");
-  if (btn) btn.classList.add("active");
-  // Always show navbar; sync active pill
-  const navWrap = document.getElementById("anitrack-navbar-wrap");
-  if (navWrap) navWrap.style.display = "";
-  const pillMap = { sync: 'anav-sync-btn', settings: 'anav-settings-btn', list: 'anav-watching' };
-  if (pillMap[name]) {
-    document.querySelectorAll('.anav-item').forEach(i => i.classList.remove('active'));
-    const activeBtn = document.getElementById(pillMap[name]);
-    activeBtn?.classList.add('active');
-    // Update indicator
-    const indicator = document.getElementById('anav-indicator');
-    const navEl     = document.getElementById('anitrack-navbar');
-    if (indicator && activeBtn && navEl) {
-      requestAnimationFrame(() => {
-        const w = parseFloat(activeBtn.style.width) || 80;
-        indicator.style.left = (activeBtn.offsetLeft + w / 2 - 15) + 'px';
-      });
-    }
+
+  if (view === 'watching' || view === 'planned') {
+    document.getElementById('page-list')?.classList.add('active');
+    const vw = document.getElementById('view-watching');
+    const vp = document.getElementById('view-planned');
+    if (vw) vw.style.display = (view === 'watching') ? '' : 'none';
+    if (vp) vp.style.display = (view === 'planned')  ? '' : 'none';
+    if (_allEntries.length) applyFilter();
+  } else {
+    document.getElementById('page-' + view)?.classList.add('active');
+    if (view === 'schedule') renderSchedule();
   }
+
+  document.querySelectorAll('.side-menu-item').forEach(item => {
+    item.classList.toggle('active', item.dataset.view === view);
+  });
+
+  closeSideMenu();
+  closeAvatarDropdown();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 // Ensure list page is visible without disturbing tab active states
 function ensureListPage() {
   document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
-  const pg = document.getElementById("page-list");
-  if (pg) pg.classList.add("active");
-  const navWrap = document.getElementById("anitrack-navbar-wrap");
-  if (navWrap) navWrap.style.display = "";
+  document.getElementById("page-list")?.classList.add("active");
 }
 
 // ── Collapsible sections ──────────────────────────────────────────────────────
@@ -1396,7 +1255,95 @@ function renderEntries(entries) {
   document.getElementById("total-planned").textContent  = planned.length;
   document.getElementById("total-airing").textContent   = airing.length;
   document.getElementById("stats").style.display = "";
+  if (document.getElementById('page-schedule')?.classList.contains('active')) renderSchedule();
 }
+
+// ── Schedule ──────────────────────────────────────────────────────────────────
+const DAY_NAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+let _scheduleDay = new Date().getDay(); // 0 (Sun) – 6 (Sat), defaults to today
+
+function buildDayTabs() {
+  const wrap = document.getElementById('day-tabs');
+  if (!wrap) return;
+  const today = new Date();
+  const todayIdx = today.getDay();
+  let html = '';
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - todayIdx + i); // this calendar week's date for day i
+    const dateLabel = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    const isToday  = i === todayIdx;
+    const isActive = i === _scheduleDay;
+    html += `<button class="day-tab${isActive?' active':''}${isToday?' is-today':''}" onclick="selectScheduleDay(${i})">${DAY_NAMES[i]}<span class="day-tab-date">${dateLabel}</span></button>`;
+  }
+  wrap.innerHTML = html;
+}
+
+function syncQuickPillActive() {
+  const today = new Date().getDay();
+  const map = { yesterday: (today + 6) % 7, today, tomorrow: (today + 1) % 7 };
+  let matched = null;
+  for (const [k, v] of Object.entries(map)) if (v === _scheduleDay) matched = k;
+  document.querySelectorAll('#sched-quick-row .filter-pill').forEach(p => {
+    p.classList.toggle('active', p.dataset.quick === matched);
+  });
+}
+
+function selectScheduleDay(dayIdx) {
+  hap(6);
+  _scheduleDay = dayIdx;
+  syncQuickPillActive();
+  renderSchedule();
+}
+
+// Quick-jump pills. "Yesterday/Today/Tomorrow" map to real relative weekdays.
+// AniTrack's schedule reflects your watching list's normal weekly airing slot
+// (not a full simulcast calendar), so "Previous week" / "Next weekend" jump the
+// day-strip to the start of last week / the coming weekend rather than filtering
+// by an absolute date range.
+function schedQuickJump(btn, kind) {
+  hap(6);
+  document.querySelectorAll('#sched-quick-row .filter-pill').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  const today = new Date().getDay();
+  if      (kind === 'yesterday')   _scheduleDay = (today + 6) % 7;
+  else if (kind === 'today')       _scheduleDay = today;
+  else if (kind === 'tomorrow')    _scheduleDay = (today + 1) % 7;
+  else if (kind === 'prevweek')    _scheduleDay = 1; // Monday
+  else if (kind === 'nextweekend') _scheduleDay = 6; // Saturday
+  renderSchedule();
+}
+
+function renderSchedule() {
+  buildDayTabs();
+  const list = document.getElementById('sched-list');
+  if (!list) return;
+
+  const entries = (_allEntries || [])
+    .filter(e => e.status === 'CURRENT' && e.media?.nextAiringEpisode)
+    .filter(e => new Date(e.media.nextAiringEpisode.airingAt * 1000).getDay() === _scheduleDay)
+    .sort((a, b) => {
+      const da = new Date(a.media.nextAiringEpisode.airingAt * 1000);
+      const db = new Date(b.media.nextAiringEpisode.airingAt * 1000);
+      return (da.getHours() * 60 + da.getMinutes()) - (db.getHours() * 60 + db.getMinutes());
+    });
+
+  if (!entries.length) {
+    list.innerHTML = emptyMsg('Nothing from your watching list airs on this day.');
+    return;
+  }
+
+  list.innerHTML = entries.map(e => {
+    const m     = e.media;
+    const title = m.title?.english || m.title?.romaji || 'Unknown';
+    const cover = m.coverImage?.large || '';
+    const next  = m.nextAiringEpisode;
+    const d     = new Date(next.airingAt * 1000);
+    const time  = d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+    return `<div class="sched-row"><div class="sched-thumb">${cover ? `<img src="${cover}" loading="lazy">` : '📺'}</div><div class="sched-info"><div class="sched-title">${title}</div><div class="sched-ep">Episode ${next.episode}</div></div><div class="sched-time"><div class="sched-time-val">${time}</div><div class="sched-time-sub">${fmtCountdown(next.timeUntilAiring)} left</div></div></div>`;
+  }).join('');
+}
+
 
 async function loadList() {
   const spinner = document.getElementById("spinner");
@@ -1578,9 +1525,7 @@ function onSyncSwitch(el) {
     : `<svg viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>`;
 }
 function openSyncPage() {
-  hap(8);
-  showPage("sync", null);
-  document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+  navigateTo('sync');
 }
 
 // ── Restore preferences ───────────────────────────────────────────────────────
@@ -1696,189 +1641,6 @@ async function updateEp(entryId, currentProgress, maxEp, delta) {
   }
 }
 
-// ── Bottom Navbar ─────────────────────────────────────────────────────────────
-(function initAniNavbar() {
-  const watchBtn    = document.getElementById('anav-watching');
-  const planBtn     = document.getElementById('anav-planned');
-  const syncBtn     = document.getElementById('anav-sync-btn');
-  const settingsBtn = document.getElementById('anav-settings-btn');
-  const navEl       = document.getElementById('anitrack-navbar');
-  const indicator   = document.getElementById('anav-indicator');
-  const allBtns     = [watchBtn, planBtn, syncBtn, settingsBtn];
-
-  const INACTIVE_W = 50;
-  const ACTIVE_W   = 80;
-  const DURATION   = 300; // ms — mirrors Flutter's 300ms
-
-  // Per-button animation state: { progress: 0–1, raf: id|null }
-  const animState = new Map();
-
-  // ── Icon animation ───────────────────────────────────────────────────────────
-  // Adds 'icon-anim' class, removes it after the longest animation completes
-  // so it can be re-triggered on every tap.
-  const ANIM_DURATIONS = {
-    'anav-watching':    650,
-    'anav-planned':     500 + 210, // last tile delay + duration
-    'anav-sync-btn':    650,
-    'anav-settings-btn':650,
-  };
-  // Per-button timeout handle so rapid taps restart cleanly
-  const animTimers = {};
-
-  function triggerIconAnim(btn) {
-    if (!btn) return;
-    const id = btn.id;
-    // Cancel any in-flight removal timer and restart
-    if (animTimers[id]) {
-      clearTimeout(animTimers[id]);
-      btn.classList.remove('icon-anim');
-      // Force reflow so the browser sees the class removal before re-adding
-      void btn.offsetWidth;
-    }
-    btn.classList.add('icon-anim');
-    animTimers[id] = setTimeout(() => {
-      btn.classList.remove('icon-anim');
-      animTimers[id] = null;
-    }, (ANIM_DURATIONS[id] || 500) + 20);
-  }
-
-  function easeOutQuint(t) {
-    return 1 - Math.pow(1 - t, 5);
-  }
-
-  function animateBtn(el, toActive) {
-    let state = animState.get(el) || { progress: toActive ? 0 : 1, raf: null };
-    if (state.raf) cancelAnimationFrame(state.raf);
-
-    const startProgress = state.progress;
-    const endProgress   = toActive ? 1 : 0;
-    const startTime     = performance.now();
-    const totalDelta    = Math.abs(endProgress - startProgress);
-    const duration      = DURATION * totalDelta; // proportional mid-animation
-
-    function tick(now) {
-      const elapsed = now - startTime;
-      const rawT    = Math.min(elapsed / duration, 1);
-      const easedT  = easeOutQuint(rawT);
-
-      state.progress = startProgress + (endProgress - startProgress) * easedT;
-      el.style.width = (INACTIVE_W + (ACTIVE_W - INACTIVE_W) * state.progress) + 'px';
-
-      if (rawT < 1) {
-        state.raf = requestAnimationFrame(tick);
-      } else {
-        state.progress = endProgress;
-        state.raf = null;
-      }
-      animState.set(el, state);
-      updateIndicator();
-    }
-
-    animState.set(el, state);
-    state.raf = requestAnimationFrame(tick);
-  }
-
-  function updateIndicator() {
-    const active = navEl ? navEl.querySelector('.anav-item.active') : null;
-    if (!active || !indicator) return;
-    const w = parseFloat(active.style.width) || ACTIVE_W;
-    const center = active.offsetLeft + w / 2;
-    indicator.style.left = (center - 15) + 'px';
-  }
-
-  function setActive(btn) {
-    hap(6);
-    triggerIconAnim(btn);
-    allBtns.forEach(b => {
-      if (!b) return;
-      if (b.classList.contains('active')) {
-        b.classList.remove('active');
-        animateBtn(b, false); // collapse: 80→50
-      }
-    });
-    if (btn) {
-      btn.classList.add('active');
-      animateBtn(btn, true); // expand: 50→80
-    }
-  }
-
-  function selectListTab(btn, view) {
-    setActive(btn);
-    ensureListPage();
-    const vw = document.getElementById('view-watching');
-    const vp = document.getElementById('view-planned');
-    if (vw) vw.style.display = (view === 'watching') ? '' : 'none';
-    if (vp) vp.style.display = (view === 'planned')  ? '' : 'none';
-    if (_allEntries.length) applyFilter();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
-
-  watchBtn?.addEventListener('click', () => selectListTab(watchBtn, 'watching'));
-  planBtn?.addEventListener('click',  () => selectListTab(planBtn,  'planned'));
-
-  syncBtn?.addEventListener('click', () => {
-    setActive(syncBtn);
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    document.getElementById('page-sync')?.classList.add('active');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  });
-
-  settingsBtn?.addEventListener('click', () => {
-    setActive(settingsBtn);
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    document.getElementById('page-settings')?.classList.add('active');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  });
-
-  // Init — set widths immediately (no animation)
-  allBtns.forEach(btn => {
-    if (!btn) return;
-    // Remove from natural tab order — we manage focus ourselves
-    btn.setAttribute('tabindex', '-1');
-    const isActive = btn.classList.contains('active');
-    btn.style.width = (isActive ? ACTIVE_W : INACTIVE_W) + 'px';
-    animState.set(btn, { progress: isActive ? 1 : 0, raf: null });
-  });
-  // Give the active button tab-focus entry point
-  const firstActive = allBtns.find(b => b?.classList.contains('active'));
-  if (firstActive) firstActive.setAttribute('tabindex', '0');
-
-  // ── Keyboard navigation ──────────────────────────────────────────────────────
-  // Tab cycles focus through buttons; arrows move between them; Enter activates.
-  navEl?.addEventListener('keydown', e => {
-    const focused = allBtns.indexOf(document.activeElement);
-    if (focused === -1) return;
-
-    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
-      e.preventDefault();
-      const next = allBtns[(focused + 1) % allBtns.length];
-      if (next) { allBtns.forEach(b => b?.setAttribute('tabindex','-1')); next.setAttribute('tabindex','0'); next.focus(); }
-    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-      e.preventDefault();
-      const prev = allBtns[(focused - 1 + allBtns.length) % allBtns.length];
-      if (prev) { allBtns.forEach(b => b?.setAttribute('tabindex','-1')); prev.setAttribute('tabindex','0'); prev.focus(); }
-    } else if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      allBtns[focused]?.click();
-    }
-  });
-
-  // When Tab key lands focus on the navbar from outside, land on active button
-  navEl?.addEventListener('focusin', e => {
-    if (allBtns.includes(e.target)) return; // already on a button
-    const active = allBtns.find(b => b?.classList.contains('active')) || allBtns[0];
-    allBtns.forEach(b => b?.setAttribute('tabindex','-1'));
-    if (active) { active.setAttribute('tabindex','0'); active.focus(); }
-  });
-
-  // Init indicator position
-  requestAnimationFrame(updateIndicator);
-  window.addEventListener('resize', updateIndicator);
-
-  // Restore blur pref
-  if (localStorage.getItem('navbar-blur') === '0') navEl?.classList.add('no-blur');
-})();
-
 // ── Top bar: avatar dropdown ─────────────────────────────────────────────────
 function toggleAvatarDropdown(e) {
   e?.stopPropagation();
@@ -1900,24 +1662,13 @@ function openSideMenu() {
   closeAvatarDropdown();
   document.getElementById('side-menu-overlay')?.classList.add('open');
   document.getElementById('side-menu')?.classList.add('open');
-  syncSideMenuActive();
 }
 function closeSideMenu() {
   document.getElementById('side-menu-overlay')?.classList.remove('open');
   document.getElementById('side-menu')?.classList.remove('open');
 }
-function syncSideMenuActive() {
-  const activeNavId = document.querySelector('.anav-item.active')?.id;
-  document.querySelectorAll('.side-menu-item').forEach(item => {
-    item.classList.toggle('active', item.dataset.target === activeNavId);
-  });
-}
 document.querySelectorAll('.side-menu-item').forEach(item => {
-  item.addEventListener('click', () => {
-    hap(6);
-    document.getElementById(item.dataset.target)?.click();
-    closeSideMenu();
-  });
+  item.addEventListener('click', () => navigateTo(item.dataset.view));
 });
 document.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;
@@ -1925,28 +1676,8 @@ document.addEventListener('keydown', (e) => {
   closeAvatarDropdown();
 });
 
-// ── Navbar Blur switch ───────────────────────────────────────────────────────
-function onNavBlurSwitch(el) {
-  hap(6);
-  const navEl = document.getElementById('anitrack-navbar');
-  navEl.classList.toggle('no-blur', !el.checked);
-  localStorage.setItem('navbar-blur', el.checked ? '1' : '0');
-  const icon = document.getElementById('blur-icon');
-  if (icon) icon.innerHTML = el.checked
-    ? `<svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>`
-    : `<svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/></svg>`;
-}
-// Restore navbar blur pref
-(function restoreNavbarPrefs() {
-  const blurSw = document.getElementById('switch-navbar-blur');
-  const blurOn = localStorage.getItem('navbar-blur') !== '0';
-  if (blurSw) blurSw.checked = blurOn;
-  const blurIcon = document.getElementById('blur-icon');
-  if (blurIcon) blurIcon.innerHTML = blurOn
-    ? `<svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>`
-    : `<svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/></svg>`;
-
-  // Oneko icon
+// Restore misc icon-state prefs (oneko / sync)
+(function restoreIconPrefs() {
   const onekoOn = localStorage.getItem('oneko-on') === '1';
   const onekoIcon = document.getElementById('oneko-icon');
   if (onekoIcon) onekoIcon.innerHTML = onekoOn
@@ -1973,7 +1704,7 @@ function buildBackTop() {
   btn.setAttribute('aria-label', 'Back to top');
   Object.assign(btn.style, {
     position: 'fixed',
-    bottom: '112px',
+    bottom: '88px',
     right: '16px',
     zIndex: '200',
     width: '52px',
@@ -2020,33 +1751,8 @@ function buildBackTop() {
 document.addEventListener('DOMContentLoaded', () => {
   loadList();
   buildBackTop();
-
-  // ── Navbar hide on scroll down, show on scroll up + always at top ───────────
-  (function initNavbarScroll() {
-    const wrap = document.getElementById('anitrack-navbar-wrap');
-    if (!wrap) return;
-    let lastY    = window.scrollY;
-    let rafPending = false;
-
-    window.addEventListener('scroll', () => {
-      if (rafPending) return;
-      rafPending = true;
-      requestAnimationFrame(() => {
-        rafPending = false;
-        const currentY = window.scrollY;
-        const atTop    = currentY < 60;
-        const scrollingDown = currentY > lastY;
-        lastY = currentY;
-
-        if (atTop || !scrollingDown) {
-          wrap.classList.remove('nav-hidden');
-        } else {
-          wrap.classList.add('nav-hidden');
-        }
-      });
-    }, { passive: true });
-  })();
 });
+
 
 </script>
 
