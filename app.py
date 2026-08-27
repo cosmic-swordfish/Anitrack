@@ -1,4 +1,5 @@
 import os, time, secrets, requests, hmac, hashlib, base64, json, threading
+from datetime import timedelta
 from concurrent.futures import ThreadPoolExecutor
 from urllib.parse import urlencode, quote
 from flask import Flask, redirect, request, session, jsonify, render_template, make_response
@@ -279,6 +280,16 @@ app.secret_key = _secret
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SECURE"] = IS_HTTPS
+# Sessions default to browser-session-only cookies (no Max-Age), which is why
+# reconnecting to AniList/MAL kept dropping — the cookie itself was expiring,
+# not just the OAuth token. Make it a real 90-day persistent cookie instead,
+# refreshed on every request so it keeps rolling forward while you're active.
+app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=90)
+app.config["SESSION_REFRESH_EACH_REQUEST"] = True
+
+@app.before_request
+def _make_session_permanent():
+    session.permanent = True
 
 # ── Config ────────────────────────────────────────────────────────────────────
 ANILIST_USERNAME    = os.environ.get("ANILIST_USERNAME", "cosmicswordfish")
