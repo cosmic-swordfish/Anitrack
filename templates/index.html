@@ -278,7 +278,7 @@
   .icon-btn svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
   .icon-btn:hover{background:var(--accent-bg);color:var(--accent);border-color:var(--accent-border)}
   .icon-btn:active{transform:scale(0.9)}
-  .icon-group{display:flex;align-items:center;gap:8px;flex-shrink:0}
+  .icon-group{display:flex;align-items:center;gap:8px;flex-shrink:0;position:relative}
 
   .avatar-btn{
     width:38px;height:38px;border-radius:50%;flex-shrink:0;cursor:pointer;
@@ -290,7 +290,7 @@
 
   .avatar-dropdown-wrap{position:relative}
   .avatar-dropdown{
-    position:absolute;top:calc(100% + 10px);right:0;min-width:210px;
+    position:absolute;top:calc(100% + 10px);right:0;min-width:190px;
     background:var(--surface, var(--glass-bg));border:1px solid var(--border);
     border-radius:14px;padding:8px;z-index:150;
     box-shadow:0 12px 32px rgba(0,0,0,0.28);
@@ -299,20 +299,44 @@
     transition:opacity .16s ease,transform .16s ease;
   }
   .avatar-dropdown.open{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}
-  .avatar-dropdown-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:9px}
-  .avatar-dropdown-name{flex:1;font-size:13px;font-weight:700;color:var(--text-title);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .avatar-dropdown-gear{background:none;border:none;color:var(--text-sub);cursor:pointer;width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-  .avatar-dropdown-gear:hover{background:var(--accent-bg);color:var(--accent)}
-  .avatar-dropdown-gear svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-  .avatar-dropdown-sep{height:1px;background:var(--border);margin:4px 6px}
-  .avatar-dropdown-logout{
-    display:flex;align-items:center;gap:9px;width:100%;padding:9px 10px;
+  .avatar-dropdown-option{
+    display:flex;align-items:center;gap:10px;width:100%;padding:10px 10px;
     background:none;border:none;border-radius:9px;cursor:pointer;
-    font-size:13px;font-weight:700;color:var(--error-color, #ff4444);
-    text-decoration:none;box-sizing:border-box;
+    font-size:13px;font-weight:700;color:var(--text-title);
+    text-decoration:none;box-sizing:border-box;text-align:left;
   }
+  .avatar-dropdown-option:hover{background:var(--glass-bg)}
+  .avatar-dropdown-option svg{width:17px;height:17px;flex-shrink:0;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .avatar-dropdown-logout{color:var(--error-color, #ff4444)}
   .avatar-dropdown-logout:hover{background:var(--error-bg)}
-  .avatar-dropdown-logout svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+  /* ─── Notifications ─── */
+  .notif-badge{
+    position:absolute;top:-2px;right:-2px;min-width:16px;height:16px;padding:0 3px;
+    border-radius:8px;background:var(--error-color,#ff4444);color:#fff;
+    font-size:9px;font-weight:800;line-height:16px;text-align:center;
+  }
+  .notif-panel{
+    position:absolute;top:calc(100% + 10px);right:0;width:min(340px,90vw);max-height:70vh;
+    background:var(--surface, var(--glass-bg));border:1px solid var(--border);
+    border-radius:16px;z-index:150;overflow:hidden;display:flex;flex-direction:column;
+    box-shadow:0 12px 32px rgba(0,0,0,0.28);
+    backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+    opacity:0;transform:translateY(-6px) scale(0.97);pointer-events:none;
+    transition:opacity .16s ease,transform .16s ease;
+  }
+  .notif-panel.open{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}
+  .notif-panel-head{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid var(--border-lo);font-size:13px;font-weight:800;color:var(--text-title)}
+  .notif-count-label{font-size:11px;font-weight:600;color:var(--text-muted)}
+  .notif-list{overflow-y:auto;padding:6px}
+  .notif-row{display:flex;align-items:center;gap:10px;padding:9px 8px;border-radius:10px}
+  .notif-row:hover{background:var(--glass-bg)}
+  .notif-thumb{width:36px;height:50px;border-radius:6px;flex-shrink:0;background:#111420;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:15px}
+  .notif-thumb img{width:100%;height:100%;object-fit:cover}
+  .notif-info{flex:1;min-width:0}
+  .notif-title{font-size:12px;font-weight:700;color:var(--text-title);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .notif-sub{font-size:10.5px;color:var(--text-sub);font-family:monospace;margin-top:1px}
+
 
   /* ─── Slide-out side menu ─── */
   .side-menu-overlay{
@@ -454,6 +478,53 @@
   .sync-dot{width:6px;height:6px;border-radius:50%;display:inline-block;flex-shrink:0}
   .sync-dot.al{background:var(--al-color)}
   .sync-dot.mal{background:var(--mal-color)}
+  .sync-dot.off{background:var(--text-muted);opacity:.4}
+
+  /* ─── Profile page ─── */
+  .profile-head{display:flex;flex-direction:column;align-items:center;text-align:center;padding:20px 0 22px}
+  .profile-avatar{width:64px;height:64px;border-radius:50%;background:var(--accent);color:#fff;font-weight:800;font-size:26px;display:flex;align-items:center;justify-content:center;margin-bottom:10px}
+  .profile-name{font-size:17px;font-weight:800;color:var(--text-title)}
+  .profile-sub{font-size:11px;color:var(--text-sub);margin-top:2px;font-family:monospace}
+  .profile-accounts{display:flex;gap:8px;margin-top:12px}
+  .profile-account-pill{display:flex;align-items:center;gap:6px;font-size:10.5px;font-weight:700;color:var(--text-sub);background:var(--glass-bg);border:1px solid var(--border);padding:5px 11px;border-radius:20px}
+  .profile-stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:22px}
+  .profile-stat-box{background:var(--glass-bg);border:1px solid var(--border-lo);border-radius:14px;padding:14px;text-align:center}
+  .profile-stat-val{font-size:22px;font-weight:800;color:var(--accent)}
+  .profile-stat-label{font-size:10px;color:var(--text-muted);font-family:monospace;text-transform:uppercase;letter-spacing:.05em;margin-top:2px}
+  .profile-section-title{font-size:12px;font-weight:800;color:var(--text-sub);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px}
+  .profile-genre-list{display:flex;flex-wrap:wrap;gap:8px}
+  .profile-genre-pill{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:var(--text-title);background:var(--glass-bg);border:1px solid var(--border-lo);padding:6px 12px;border-radius:20px}
+  .profile-genre-pill .cnt{color:var(--accent);font-family:monospace}
+
+  /* ─── Home hero ─── */
+  .hero-card{
+    position:relative;border-radius:20px;overflow:hidden;margin-bottom:16px;
+    min-height:280px;display:flex;flex-direction:column;justify-content:flex-end;
+    background:#111420 center/cover no-repeat;padding:20px 18px 18px;
+  }
+  .hero-scrim{
+    position:absolute;inset:0;
+    background:linear-gradient(180deg, rgba(10,12,20,0.15) 0%, rgba(10,12,20,0.55) 55%, rgba(10,12,20,0.94) 100%);
+  }
+  .hero-top-badges{position:relative;z-index:1;display:flex;justify-content:space-between;align-items:flex-start}
+  .hero-badge{background:rgba(0,0,0,0.5);color:#fff;font-size:11px;font-weight:700;padding:5px 10px;border-radius:20px;font-family:monospace;backdrop-filter:blur(6px)}
+  .hero-body{position:relative;z-index:1}
+  .hero-meta-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+  .hero-meta-pill{background:rgba(255,255,255,0.14);color:#fff;font-size:10px;font-weight:700;padding:4px 9px;border-radius:20px;backdrop-filter:blur(6px)}
+  .hero-title{font-size:22px;font-weight:800;color:#fff;line-height:1.15;margin-bottom:6px;text-shadow:0 2px 8px rgba(0,0,0,0.4)}
+  .hero-genres{font-size:11.5px;color:rgba(255,255,255,0.75);font-weight:600;margin-bottom:14px}
+  .hero-actions{display:flex;gap:10px}
+  .hero-btn{
+    flex:1;display:flex;align-items:center;justify-content:center;gap:6px;
+    padding:11px;border-radius:24px;border:none;cursor:pointer;
+    font-size:12.5px;font-weight:800;transition:transform .15s;
+  }
+  .hero-btn:active{transform:scale(0.96)}
+  .hero-btn-ghost{background:rgba(255,255,255,0.16);color:#fff;backdrop-filter:blur(6px)}
+  .hero-btn-solid{background:#fff;color:#0a0c14}
+  .hero-btn svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+
+  #genre-chip-row .filter-pill{font-size:11px}
   .sync-stats{font-size:12px;font-family:monospace;color:var(--text-dim);margin:5px 0 16px}
   .sync-stats b{color:var(--text-title);font-weight:700}
 
@@ -668,21 +739,26 @@
       <button class="icon-btn" id="search-icon-btn" aria-label="Search" onclick="hap(6);openSearchModal()">
         <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       </button>
-      <button class="icon-btn" id="sync-icon-btn" aria-label="Sync" onclick="navigateTo('sync')">
-        <svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
+      <button class="icon-btn" id="notif-icon-btn" aria-label="Notifications" onclick="toggleNotifPanel(event)">
+        <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <span class="notif-badge" id="notif-badge" style="display:none">0</span>
       </button>
+      <div class="notif-panel" id="notif-panel">
+        <div class="notif-panel-head">
+          <span>Notifications</span>
+          <span id="notif-count-label" class="notif-count-label"></span>
+        </div>
+        <div class="notif-list" id="notif-list"></div>
+      </div>
       <div class="avatar-dropdown-wrap">
         <button class="avatar-btn" id="avatar-btn" aria-label="Account" onclick="toggleAvatarDropdown(event)">{{ anilist_username[0]|upper }}</button>
         <div class="avatar-dropdown" id="avatar-dropdown">
-          <div class="avatar-dropdown-row">
-            <span class="avatar-dropdown-name">{{ anilist_username }}</span>
-            <button class="avatar-dropdown-gear" aria-label="Settings" onclick="closeAvatarDropdown();navigateTo('settings')">
-              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-            </button>
-          </div>
+          <button class="avatar-dropdown-option" onclick="closeAvatarDropdown();navigateTo('profile')">
+            <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            Profile
+          </button>
           {% if al_connected or mal_connected %}
-          <div class="avatar-dropdown-sep"></div>
-          <a class="avatar-dropdown-logout" href="{% if al_connected %}/al/logout{% else %}/mal/logout{% endif %}" onclick="hap(8)">
+          <a class="avatar-dropdown-option avatar-dropdown-logout" href="{% if al_connected %}/al/logout{% else %}/mal/logout{% endif %}" onclick="hap(8)">
             <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
             Logout
           </a>
@@ -757,6 +833,12 @@
     <div id="cal-error" class="error-box" style="display:none"></div>
     <div id="cal-content" style="display:none">
 
+      <!-- Hero: spotlight for what's next in your watching list -->
+      <div id="home-hero"></div>
+
+      <!-- Genre quick-filter -->
+      <div class="filter-row" id="genre-chip-row"></div>
+
       <!-- Filter pills -->
       <div class="filter-row" id="filter-row">
         <button class="filter-pill active" data-sort="default"  onclick="setFilter(this,'default')">✦ Default</button>
@@ -774,6 +856,22 @@
       <div id="view-planned" class="grid" style="display:none"></div>
 
     </div>
+  </div>
+
+  <!-- ── Profile Page ── -->
+  <div class="page" id="page-profile">
+    <div class="profile-head">
+      <div class="profile-avatar">{{ anilist_username[0]|upper }}</div>
+      <div class="profile-name">{{ anilist_username }}</div>
+      <div class="profile-sub">{% if al_connected %}Signed in via AniList{% elif mal_connected %}Signed in via MAL{% else %}Local username{% endif %}</div>
+      <div class="profile-accounts">
+        <span class="profile-account-pill"><i class="sync-dot al {% if not al_connected %}off{% endif %}"></i>AniList</span>
+        <span class="profile-account-pill"><i class="sync-dot mal {% if not mal_connected %}off{% endif %}"></i>MAL</span>
+      </div>
+    </div>
+    <div class="profile-stats-grid" id="profile-stats-grid"></div>
+    <div class="profile-section-title">Genres you watch most</div>
+    <div class="profile-genre-list" id="profile-genre-list"></div>
   </div>
 
   <!-- ── Schedule Page ── -->
@@ -1055,6 +1153,7 @@ function navigateTo(view) {
   } else {
     document.getElementById('page-' + view)?.classList.add('active');
     if (view === 'schedule') renderSchedule();
+    if (view === 'profile')  renderProfile();
   }
 
   document.querySelectorAll('.side-menu-item').forEach(item => {
@@ -1063,6 +1162,7 @@ function navigateTo(view) {
 
   closeSideMenu();
   closeAvatarDropdown();
+  closeNotifPanel();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -1090,6 +1190,7 @@ query($userName: String) {
         media {
           id idMal title { romaji english } status episodes
           coverImage { large color }
+          bannerImage format duration averageScore
           nextAiringEpisode { airingAt episode timeUntilAiring }
           startDate { year month day }
           siteUrl genres
@@ -1190,11 +1291,14 @@ function setFilter(btn, sort) {
   applyFilter();
 }
 
+let _genreFilter = null;
+
 function applyFilter() {
   const isWatching = document.getElementById('view-watching').style.display !== 'none';
-  const entries = isWatching
+  let entries = isWatching
     ? _allEntries.filter(e => e.status === 'CURRENT')
     : _allEntries.filter(e => e.status === 'PLANNING');
+  if (_genreFilter) entries = entries.filter(e => (e.media?.genres || []).includes(_genreFilter));
 
   const dir = _sortDir;
   let sorted;
@@ -1255,7 +1359,10 @@ function renderEntries(entries) {
   document.getElementById("total-planned").textContent  = planned.length;
   document.getElementById("total-airing").textContent   = airing.length;
   document.getElementById("stats").style.display = "";
+  updateNotifBadge();
   if (document.getElementById('page-schedule')?.classList.contains('active')) renderSchedule();
+  if (document.getElementById('page-profile')?.classList.contains('active')) renderProfile();
+  renderHomeHero();
 }
 
 // ── Schedule ──────────────────────────────────────────────────────────────────
@@ -1343,6 +1450,121 @@ function renderSchedule() {
     return `<div class="sched-row"><div class="sched-thumb">${cover ? `<img src="${cover}" loading="lazy">` : '📺'}</div><div class="sched-info"><div class="sched-title">${title}</div><div class="sched-ep">Episode ${next.episode}</div></div><div class="sched-time"><div class="sched-time-val">${time}</div><div class="sched-time-sub">${fmtCountdown(next.timeUntilAiring)} left</div></div></div>`;
   }).join('');
 }
+
+// ── Home hero + genre chips ─────────────────────────────────────────────────
+function renderHomeHero() {
+  const hero = document.getElementById('home-hero');
+  if (!hero) return;
+
+  const watching = (_allEntries || []).filter(e => e.status === 'CURRENT');
+  if (!watching.length) { hero.innerHTML = ''; buildGenreChips(); return; }
+
+  // Feature whichever watching entry has the soonest-airing next episode;
+  // fall back to the most recently updated entry if nothing's currently airing.
+  const airing = watching.filter(e => e.media?.nextAiringEpisode)
+    .sort((a, b) => a.media.nextAiringEpisode.timeUntilAiring - b.media.nextAiringEpisode.timeUntilAiring);
+  const featured = airing[0] || [...watching].sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))[0];
+
+  const m      = featured.media;
+  const title  = m.title?.english || m.title?.romaji || 'Unknown';
+  const bg     = m.bannerImage || m.coverImage?.large || '';
+  const genres = (m.genres || []).slice(0, 3).join(' · ');
+  const next   = m.nextAiringEpisode;
+  const total  = m.episodes || '?';
+
+  const badges = [
+    m.format ? m.format.replace('_', ' ') : null,
+    m.duration ? `${m.duration} min` : null,
+    m.averageScore ? `★ ${(m.averageScore / 10).toFixed(1)}` : null,
+  ].filter(Boolean).map(b => `<span class="hero-meta-pill">${b}</span>`).join('');
+
+  const topBadge = next
+    ? `<span class="hero-badge">EP ${next.episode} · ${fmtCountdown(next.timeUntilAiring)}</span>`
+    : `<span class="hero-badge">EP ${featured.progress}/${total}</span>`;
+
+  hero.innerHTML = `
+    <div class="hero-card" style="background-image:url('${bg}')">
+      <div class="hero-scrim"></div>
+      <div class="hero-top-badges">${topBadge}</div>
+      <div class="hero-body">
+        <div class="hero-meta-row">${badges}</div>
+        <div class="hero-title">${title}</div>
+        ${genres ? `<div class="hero-genres">${genres}</div>` : ''}
+        <div class="hero-actions">
+          <a class="hero-btn hero-btn-ghost" href="${m.siteUrl || '#'}" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            Details
+          </a>
+          <button class="hero-btn hero-btn-solid" onclick="updateEp(${featured.id},${featured.progress},${m.episodes||0},+1)">
+            <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            +1 Episode
+          </button>
+        </div>
+      </div>
+    </div>`;
+
+  buildGenreChips();
+}
+
+function buildGenreChips() {
+  const row = document.getElementById('genre-chip-row');
+  if (!row) return;
+  const isWatching = document.getElementById('view-watching')?.style.display !== 'none';
+  const pool = (_allEntries || []).filter(e => e.status === (isWatching ? 'CURRENT' : 'PLANNING'));
+  const counts = {};
+  pool.forEach(e => (e.media?.genres || []).forEach(g => counts[g] = (counts[g] || 0) + 1));
+  const genres = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
+
+  if (!genres.length) { row.innerHTML = ''; return; }
+
+  const chips = [`<button class="filter-pill${!_genreFilter ? ' active' : ''}" onclick="setGenreFilter(null,this)">All</button>`]
+    .concat(genres.map(g => `<button class="filter-pill${_genreFilter === g ? ' active' : ''}" onclick="setGenreFilter('${g.replace(/'/g, "\\'")}',this)">${g}</button>`));
+  row.innerHTML = chips.join('');
+}
+
+function setGenreFilter(genre, btn) {
+  hap(6);
+  _genreFilter = genre;
+  document.querySelectorAll('#genre-chip-row .filter-pill').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  applyFilter();
+}
+
+
+function renderProfile() {
+  const grid = document.getElementById('profile-stats-grid');
+  const genreWrap = document.getElementById('profile-genre-list');
+  if (!grid) return;
+
+  const all       = _allEntries || [];
+  const watching  = all.filter(e => e.status === 'CURRENT');
+  const planned   = all.filter(e => e.status === 'PLANNING');
+  const completed = all.filter(e => e.status === 'COMPLETED');
+  const airing    = watching.filter(e => e.media?.nextAiringEpisode);
+  const epsWatched = all.reduce((sum, e) => sum + (e.progress || 0), 0);
+  const scored    = all.filter(e => e.score > 0);
+  const avgScore  = scored.length ? (scored.reduce((s, e) => s + e.score, 0) / scored.length).toFixed(1) : '—';
+
+  const stats = [
+    { val: watching.length,  label: 'Watching' },
+    { val: planned.length,   label: 'Plan to Watch' },
+    { val: completed.length, label: 'Completed' },
+    { val: airing.length,    label: 'Airing Soon' },
+    { val: epsWatched,       label: 'Episodes Logged' },
+    { val: avgScore,         label: 'Avg Score' },
+  ];
+  grid.innerHTML = stats.map(s => `<div class="profile-stat-box"><div class="profile-stat-val">${s.val}</div><div class="profile-stat-label">${s.label}</div></div>`).join('');
+
+  if (genreWrap) {
+    const counts = {};
+    all.forEach(e => (e.media?.genres || []).forEach(g => counts[g] = (counts[g] || 0) + 1));
+    const top = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 8);
+    genreWrap.innerHTML = top.length
+      ? top.map(([g, c]) => `<span class="profile-genre-pill">${g} <span class="cnt">${c}</span></span>`).join('')
+      : emptyMsg('Add some anime to see your genre breakdown.');
+  }
+}
+
 
 
 async function loadList() {
@@ -1645,6 +1867,7 @@ async function updateEp(entryId, currentProgress, maxEp, delta) {
 function toggleAvatarDropdown(e) {
   e?.stopPropagation();
   hap(6);
+  closeNotifPanel();
   document.getElementById('avatar-dropdown')?.classList.toggle('open');
 }
 function closeAvatarDropdown() {
@@ -1655,6 +1878,68 @@ document.addEventListener('click', (e) => {
   const wrap = document.querySelector('.avatar-dropdown-wrap');
   if (dd && dd.classList.contains('open') && wrap && !wrap.contains(e.target)) closeAvatarDropdown();
 });
+
+// ── Top bar: notifications ───────────────────────────────────────────────────
+// AniTrack only knows each show's *next* airing episode (no historical airing
+// log), so "notifications" surfaces what's airing soon for your watching list
+// rather than a full activity feed.
+function toggleNotifPanel(e) {
+  e?.stopPropagation();
+  hap(6);
+  closeAvatarDropdown();
+  const panel = document.getElementById('notif-panel');
+  const opening = !panel.classList.contains('open');
+  panel.classList.toggle('open');
+  if (opening) renderNotifications();
+}
+function closeNotifPanel() {
+  document.getElementById('notif-panel')?.classList.remove('open');
+}
+document.addEventListener('click', (e) => {
+  const panel = document.getElementById('notif-panel');
+  const btn = document.getElementById('notif-icon-btn');
+  if (panel && panel.classList.contains('open') && !panel.contains(e.target) && !btn.contains(e.target)) closeNotifPanel();
+});
+
+function getAiringSoonEntries(hoursWindow = 48) {
+  return (_allEntries || [])
+    .filter(e => e.status === 'CURRENT' && e.media?.nextAiringEpisode)
+    .filter(e => e.media.nextAiringEpisode.timeUntilAiring <= hoursWindow * 3600)
+    .sort((a, b) => a.media.nextAiringEpisode.timeUntilAiring - b.media.nextAiringEpisode.timeUntilAiring);
+}
+
+function updateNotifBadge() {
+  const badge = document.getElementById('notif-badge');
+  if (!badge) return;
+  const count = getAiringSoonEntries().length;
+  badge.textContent = count > 9 ? '9+' : String(count);
+  badge.style.display = count > 0 ? '' : 'none';
+}
+
+function renderNotifications() {
+  const list  = document.getElementById('notif-list');
+  const label = document.getElementById('notif-count-label');
+  if (!list) return;
+  const entries = getAiringSoonEntries();
+  if (label) label.textContent = entries.length ? `${entries.length} airing soon` : '';
+  if (!entries.length) {
+    list.innerHTML = emptyMsg('Nothing airing in the next 48 hours.');
+    return;
+  }
+  list.innerHTML = entries.map(e => {
+    const m     = e.media;
+    const title = m.title?.english || m.title?.romaji || 'Unknown';
+    const cover = m.coverImage?.large || '';
+    const next  = m.nextAiringEpisode;
+    return `<a class="notif-row" href="${m.siteUrl || '#'}" target="_blank" rel="noopener" style="text-decoration:none">
+      <div class="notif-thumb">${cover ? `<img src="${cover}" loading="lazy">` : '📺'}</div>
+      <div class="notif-info">
+        <div class="notif-title">${title}</div>
+        <div class="notif-sub">EP ${next.episode} · ${fmtCountdown(next.timeUntilAiring)}</div>
+      </div>
+    </a>`;
+  }).join('');
+}
 
 // ── Slide-out side menu ──────────────────────────────────────────────────────
 function openSideMenu() {
@@ -1674,6 +1959,7 @@ document.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;
   closeSideMenu();
   closeAvatarDropdown();
+  closeNotifPanel();
 });
 
 // Restore misc icon-state prefs (oneko / sync)
