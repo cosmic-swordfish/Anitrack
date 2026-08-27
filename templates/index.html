@@ -574,46 +574,51 @@
   /* ─── Home hero ─── */
   .hero-card{
     position:relative;border-radius:20px;overflow:hidden;margin-bottom:16px;
-    min-height:280px;display:flex;flex-direction:column;justify-content:flex-end;
-    background:#111420 center/cover no-repeat;padding:20px 18px 18px;
+    background:var(--glass-bg);border:1px solid var(--border-lo);
+  }
+  .hero-media{
+    position:relative;aspect-ratio:16/11;width:100%;
+    background:#111420 center/cover no-repeat;
   }
   .hero-scrim{
     position:absolute;inset:0;
-    background:linear-gradient(180deg, rgba(10,12,20,0.15) 0%, rgba(10,12,20,0.55) 55%, rgba(10,12,20,0.94) 100%);
+    background:linear-gradient(180deg, rgba(10,12,20,0.35) 0%, rgba(10,12,20,0.05) 30%, rgba(10,12,20,0.05) 65%, rgba(10,12,20,0.75) 100%);
   }
-  .hero-top-badges{position:relative;z-index:1;display:flex;justify-content:space-between;align-items:flex-start}
-  .hero-badge{background:rgba(0,0,0,0.5);color:#fff;font-size:11px;font-weight:700;padding:5px 10px;border-radius:20px;font-family:monospace;backdrop-filter:blur(6px)}
-  .hero-body{position:relative;z-index:1}
-  .hero-meta-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
-  .hero-meta-pill{background:rgba(255,255,255,0.14);color:#fff;font-size:10px;font-weight:700;padding:4px 9px;border-radius:20px;backdrop-filter:blur(6px)}
-  .hero-title{font-size:22px;font-weight:800;color:#fff;line-height:1.15;margin-bottom:6px;text-shadow:0 2px 8px rgba(0,0,0,0.4)}
-  .hero-genres{font-size:11.5px;color:rgba(255,255,255,0.75);font-weight:600;margin-bottom:14px}
+  .hero-top-badges{position:absolute;left:14px;right:14px;top:14px;z-index:1;display:flex;justify-content:space-between;align-items:flex-start}
+  .hero-badge{display:flex;align-items:center;gap:5px;background:rgba(0,0,0,0.55);color:#fff;font-size:11px;font-weight:700;padding:6px 11px;border-radius:20px;font-family:monospace;backdrop-filter:blur(6px)}
+  .hero-badge svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2.3;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+  .hero-body{position:relative;z-index:1;padding:16px 16px 18px}
+  .hero-meta-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+  .hero-meta-pill{display:flex;align-items:center;gap:5px;background:var(--pill-bg);border:1px solid var(--pill-border);color:var(--text-sub);font-size:10.5px;font-weight:700;padding:4px 10px;border-radius:20px}
+  .hero-title{font-size:20px;font-weight:800;color:var(--text-title);line-height:1.2;margin-bottom:8px}
+  .hero-genres{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
+  .hero-genre-pill{background:var(--pill-bg);border:1px solid var(--pill-border);color:var(--text-dim);font-size:10.5px;font-weight:700;padding:5px 11px;border-radius:20px}
   .hero-actions{display:flex;gap:8px}
   .hero-btn{
-    display:flex;align-items:center;justify-content:center;gap:6px;
-    padding:10px 16px;border-radius:22px;border:none;cursor:pointer;
-    font-size:12.5px;font-weight:800;line-height:1;transition:transform .15s,background .15s;
-    text-decoration:none;white-space:nowrap;
+    flex:1;display:flex;align-items:center;justify-content:center;gap:7px;
+    padding:11px;border-radius:22px;border:1px solid var(--pill-border);cursor:pointer;
+    font-size:12px;font-weight:800;line-height:1;letter-spacing:.03em;text-transform:uppercase;
+    transition:transform .15s,background .15s;text-decoration:none;white-space:nowrap;
   }
   .hero-btn:active{transform:scale(0.96)}
-  .hero-btn svg{width:14px;height:14px;flex-shrink:0}
-  .hero-btn-ghost{flex:0 0 auto;background:rgba(255,255,255,0.14);color:#fff;backdrop-filter:blur(6px)}
-  .hero-btn-ghost:hover{background:rgba(255,255,255,0.22)}
-  .hero-btn-ghost svg{fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
-  .hero-btn-solid{flex:1 1 auto;background:#fff;color:#0a0c14}
+  .hero-btn svg{width:13px;height:13px;flex-shrink:0}
+  .hero-btn-ghost{background:var(--pill-bg);color:var(--text-title)}
+  .hero-btn-ghost:hover{background:var(--surface-hover)}
+  .hero-btn-ghost svg{fill:none;stroke:currentColor;stroke-width:2.3;stroke-linecap:round;stroke-linejoin:round}
+  .hero-btn-solid{background:var(--accent);border-color:var(--accent);color:#04121c}
   .hero-btn-solid svg{fill:currentColor;stroke:none}
   .hero-nav{display:flex;align-items:center;gap:8px}
   .hero-nav-btn{
-    width:30px;height:30px;border-radius:50%;border:none;flex-shrink:0;cursor:pointer;
+    width:28px;height:28px;border-radius:50%;border:none;flex-shrink:0;cursor:pointer;
     background:rgba(0,0,0,0.45);color:#fff;backdrop-filter:blur(6px);
     display:flex;align-items:center;justify-content:center;transition:background .15s,transform .15s;
   }
   .hero-nav-btn:hover{background:rgba(0,0,0,0.65)}
   .hero-nav-btn:active{transform:scale(0.9)}
-  .hero-nav-btn svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
-  .hero-counter{background:rgba(0,0,0,0.45);color:#fff;font-size:11px;font-weight:700;padding:5px 10px;border-radius:20px;font-family:monospace;backdrop-filter:blur(6px);min-width:44px;text-align:center}
-  .hero-dots{position:relative;z-index:1;display:flex;gap:5px;justify-content:center;margin-top:12px}
-  .hero-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.3);border:none;cursor:pointer;padding:0;transition:all .2s}
+  .hero-nav-btn svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+  .hero-counter{background:rgba(0,0,0,0.45);color:#fff;font-size:10.5px;font-weight:700;padding:5px 10px;border-radius:20px;font-family:monospace;backdrop-filter:blur(6px);min-width:40px;text-align:center}
+  .hero-dots{display:flex;gap:5px;justify-content:center;padding:0 0 14px}
+  .hero-dot{width:6px;height:6px;border-radius:50%;background:var(--pill-border);border:none;cursor:pointer;padding:0;transition:all .2s}
   .hero-dot.active{background:#fff;width:16px;border-radius:3px}
 
   #genre-chip-row .filter-pill{font-size:11px}
@@ -878,10 +883,6 @@
         </div>
       </div>
     </div>
-  </div>
-
-  <div class="stats" id="stats" style="margin-bottom:2px">
-    <b id="total-watching">0</b> watching · <b id="total-planned">0</b> planned · <b id="total-airing">0</b> airing soon
   </div>
 
   {% if mal_error %}<div class="notif-bar error">⚠ MAL error: {{ mal_error }}</div>{% endif %}
@@ -1482,10 +1483,6 @@ function renderEntries(entries) {
   const airing   = watching.filter(e=>e.media?.nextAiringEpisode);
   applyFilter();
   document.getElementById("view-planned").innerHTML = planned.map(buildCard).join("") || emptyMsg("Nothing planned");
-  document.getElementById("total-watching").textContent = watching.length;
-  document.getElementById("total-planned").textContent  = planned.length;
-  document.getElementById("total-airing").textContent   = airing.length;
-  document.getElementById("stats").style.display = "";
   updateNotifBadge();
   if (document.getElementById('page-schedule')?.classList.contains('active')) renderSchedule();
   if (document.getElementById('page-profile')?.classList.contains('active')) renderProfile();
@@ -1628,8 +1625,8 @@ function renderHeroSlide() {
   ].filter(Boolean).map(b => `<span class="hero-meta-pill">${b}</span>`).join('');
 
   const topBadge = next
-    ? `<span class="hero-badge">EP ${next.episode} · ${fmtCountdown(next.timeUntilAiring)}</span>`
-    : `<span class="hero-badge">EP ${featured.progress}/${total}</span>`;
+    ? `<span class="hero-badge"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>EP ${next.episode} · ${fmtCountdown(next.timeUntilAiring)}</span>`
+    : `<span class="hero-badge"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>EP ${featured.progress}/${total}</span>`;
 
   const nav = _heroSlides.length > 1 ? `
       <div class="hero-nav">
@@ -1648,13 +1645,15 @@ function renderHeroSlide() {
       </div>` : '';
 
   hero.innerHTML = `
-    <div class="hero-card" style="background-image:url('${bg}');animation:fadeIn .35s ease">
-      <div class="hero-scrim"></div>
-      <div class="hero-top-badges">${topBadge}${nav}</div>
+    <div class="hero-card" style="animation:fadeIn .35s ease">
+      <div class="hero-media" style="background-image:url('${bg}')">
+        <div class="hero-scrim"></div>
+        <div class="hero-top-badges">${topBadge}${nav}</div>
+      </div>
       <div class="hero-body">
         <div class="hero-meta-row">${badges}</div>
         <div class="hero-title">${title}</div>
-        ${genres ? `<div class="hero-genres">${genres}</div>` : ''}
+        ${genres ? `<div class="hero-genres">${(m.genres || []).slice(0, 3).map(g => `<span class="hero-genre-pill">${g}</span>`).join('')}</div>` : ''}
         <div class="hero-actions">
           <a class="hero-btn hero-btn-ghost" href="${m.siteUrl || '#'}" target="_blank" rel="noopener">
             <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
