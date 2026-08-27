@@ -910,7 +910,7 @@
         <div class="notif-list" id="notif-list"></div>
       </div>
       <div class="avatar-dropdown-wrap">
-        <button class="avatar-btn" id="avatar-btn" aria-label="Account" onclick="toggleAvatarDropdown(event)">{{ anilist_username[0]|upper }}</button>
+        <button class="avatar-btn" id="avatar-btn" aria-label="Account" onclick="toggleAvatarDropdown(event)">{% if anilist_avatar %}<img src="{{ anilist_avatar }}" alt="{{ anilist_username }}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;display:block">{% else %}{{ anilist_username[0]|upper }}{% endif %}</button>
         <div class="avatar-dropdown" id="avatar-dropdown">
           <button class="avatar-dropdown-option" onclick="closeAvatarDropdown();navigateTo('profile')">
             <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
@@ -1027,7 +1027,7 @@
   <!-- ── Profile Page ── -->
   <div class="page" id="page-profile">
     <div class="profile-head">
-      <div class="profile-avatar">{{ anilist_username[0]|upper }}</div>
+      <div class="profile-avatar">{% if anilist_avatar %}<img src="{{ anilist_avatar }}" alt="{{ anilist_username }}" style="width:100%;height:100%;border-radius:50%;object-fit:cover">{% else %}{{ anilist_username[0]|upper }}{% endif %}</div>
       <div class="profile-name">{{ anilist_username }}</div>
       <div class="profile-sub">{% if al_connected %}Signed in via AniList{% elif mal_connected %}Signed in via MAL{% else %}Local username{% endif %}</div>
       <div class="profile-accounts">
@@ -1126,56 +1126,6 @@
           </label>
         </div>
 
-      </div>
-
-      <!-- AniList Username -->
-      <div class="settings-section-title">AniList Username</div>
-      <div class="settings-group">
-        <div class="settings-row" style="flex-direction:column;align-items:stretch;gap:10px">
-          <div style="display:flex;align-items:center;gap:10px">
-            <span class="settings-icon">⬡</span>
-            <div class="settings-label-wrap">
-              <div class="settings-label">Viewing list for</div>
-              <div class="settings-sublabel" id="current-username-label">{{ anilist_username }}</div>
-            </div>
-          </div>
-          <div style="display:flex;gap:8px;padding:0 4px">
-            <input
-              id="username-input"
-              type="text"
-              placeholder="Enter AniList username…"
-              autocomplete="off"
-              autocorrect="off"
-              autocapitalize="off"
-              spellcheck="false"
-              style="
-                flex:1;padding:9px 14px;border-radius:10px;
-                border:1px solid var(--border);
-                background:var(--glass-bg);
-                color:var(--text);
-                font-size:13px;font-family:monospace;
-                outline:none;
-                transition:border-color 0.2s;
-              "
-              onfocus="this.style.borderColor='var(--accent-border)'"
-              onblur="this.style.borderColor='var(--border)'"
-              onkeydown="if(event.key==='Enter') saveUsername()"
-            />
-            <button
-              onclick="saveUsername()"
-              style="
-                padding:9px 18px;border-radius:10px;
-                background:var(--accent);color:#fff;
-                border:none;font-size:13px;font-weight:700;
-                cursor:pointer;white-space:nowrap;
-                transition:opacity 0.2s;
-              "
-              onmouseover="this.style.opacity='0.85'"
-              onmouseout="this.style.opacity='1'"
-            >Save</button>
-          </div>
-          <div id="username-feedback" style="display:none;font-size:11px;font-family:monospace;padding:0 4px"></div>
-        </div>
       </div>
 
       <!-- About -->
@@ -1988,41 +1938,6 @@ if (localStorage.getItem("sync-enabled") === "1") {
 }
 
 
-// ── Username setting ──────────────────────────────────────────────────────────
-function saveUsername() {
-  hap(8);
-  const input = document.getElementById('username-input');
-  const feedback = document.getElementById('username-feedback');
-  const val = input.value.trim();
-  if (!val) {
-    feedback.style.display = '';
-    feedback.style.color = 'var(--error-color)';
-    feedback.textContent = '⚠ Please enter a username';
-    return;
-  }
-  ANILIST_USERNAME = val;
-  localStorage.setItem('anitrack-username', val);
-  // Update the label
-  const label = document.getElementById('current-username-label');
-  if (label) label.textContent = val;
-  // Show success feedback
-  feedback.style.display = '';
-  feedback.style.color = 'var(--success-color)';
-  feedback.textContent = `✓ Switched to ${val} — reloading list…`;
-  input.value = '';
-  // Reload the list with the new username
-  setTimeout(() => {
-    feedback.style.display = 'none';
-    _allEntries = [];
-    loadList();
-  }, 800);
-}
-
-// Init username input placeholder with current active username
-(function initUsernameInput() {
-  const label = document.getElementById('current-username-label');
-  if (label) label.textContent = ANILIST_USERNAME;
-})();
 const GQL_UPDATE_PROGRESS = `
 mutation($id: Int, $progress: Int) {
   SaveMediaListEntry(id: $id, progress: $progress) {
