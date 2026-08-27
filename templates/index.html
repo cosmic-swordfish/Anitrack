@@ -381,6 +381,81 @@
   .side-menu-footer-gear{background:none;border:none;color:var(--text-sub);flex-shrink:0;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:8px}
   .side-menu-footer-gear svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 
+  /* ─── Sidebar quick-action rail (theme / oneko) ─── */
+  .side-menu-quickrow{display:flex;align-items:center;gap:6px;padding:0 10px 10px}
+  .side-menu-quickbtn{
+    width:32px;height:32px;border-radius:9px;flex-shrink:0;border:1px solid var(--border);
+    background:var(--glass-bg);color:var(--text-sub);cursor:pointer;
+    display:flex;align-items:center;justify-content:center;transition:all .15s;
+  }
+  .side-menu-quickbtn:hover{background:var(--accent-bg);color:var(--accent);border-color:var(--accent-border)}
+  .side-menu-quickbtn.on{background:var(--accent-bg);color:var(--accent);border-color:var(--accent-border)}
+  .side-menu-quickbtn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .side-menu-collapse-btn{display:none}
+
+  /* ─── Persistent sidebar on desktop ─── */
+  @media (min-width:900px){
+    :root{--sbw:264px}
+    body.sidebar-collapsed{--sbw:76px}
+    .side-menu-overlay{display:none}
+    .side-menu{
+      position:fixed;transform:none;width:var(--sbw);
+      transition:width .22s cubic-bezier(0.22,1,0.36,1);
+    }
+    header,main{margin-left:var(--sbw);transition:margin-left .22s cubic-bezier(0.22,1,0.36,1)}
+    #hamburger-btn{display:none}
+    .side-menu-collapse-btn{
+      display:flex;background:none;border:none;color:var(--text-sub);cursor:pointer;
+      width:30px;height:30px;border-radius:8px;align-items:center;justify-content:center;flex-shrink:0;
+    }
+    .side-menu-collapse-btn:hover{background:var(--glass-bg);color:var(--text)}
+    .side-menu-collapse-btn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:transform .22s}
+    .side-menu-close{display:none}
+    body.sidebar-collapsed .side-menu-collapse-btn svg{transform:rotate(180deg)}
+    body.sidebar-collapsed .label,
+    body.sidebar-collapsed .side-menu-header-title{display:none}
+    body.sidebar-collapsed .side-menu-item{justify-content:center}
+    body.sidebar-collapsed .side-menu-quickrow{justify-content:center}
+    body.sidebar-collapsed .side-menu-footer{justify-content:center;padding-left:0;padding-right:0}
+    body.sidebar-collapsed .side-menu-user-wrap{display:none}
+    body.sidebar-collapsed .side-menu-footer-gear{display:none}
+    body.sidebar-collapsed .side-menu-header{justify-content:center;padding-left:0;padding-right:0}
+  }
+
+  /* ─── Sign-in gate ─── */
+  .login-gate{display:none}
+  body.logged-out header,
+  body.logged-out .side-menu,
+  body.logged-out .side-menu-overlay,
+  body.logged-out main{display:none}
+  body.logged-out .login-gate{
+    display:flex;position:fixed;inset:0;z-index:500;
+    align-items:center;justify-content:center;padding:24px;
+    background:var(--bg-mesh);background-attachment:fixed;
+  }
+  .login-card{
+    width:100%;max-width:380px;padding:36px 30px;border-radius:22px;text-align:center;
+    background:var(--glass-bg);border:1px solid var(--glass-border);
+    backdrop-filter:var(--glass);-webkit-backdrop-filter:var(--glass);
+    box-shadow:var(--card-shadow);
+  }
+  .login-card img{height:56px;width:auto;margin-bottom:16px}
+  .login-title{font-size:19px;font-weight:800;color:var(--text-title);letter-spacing:.02em}
+  .login-sub{font-size:13px;color:var(--text-sub);margin-top:6px;margin-bottom:26px;line-height:1.5}
+  .login-btn{
+    display:flex;align-items:center;justify-content:center;gap:10px;width:100%;
+    padding:13px 16px;border-radius:13px;font-size:14px;font-weight:700;
+    text-decoration:none;cursor:pointer;transition:transform .15s,filter .15s;margin-bottom:10px;
+    border:1px solid transparent;
+  }
+  .login-btn:active{transform:scale(0.97)}
+  .login-btn.al{background:#02a9ff;color:#fff}
+  .login-btn.mal{background:#2e51a2;color:#fff}
+  .login-btn:hover{filter:brightness(1.08)}
+  .login-btn svg{width:18px;height:18px;flex-shrink:0}
+  .login-divider{font-size:11px;color:var(--text-muted);margin:16px 0;text-transform:uppercase;letter-spacing:.1em}
+  .login-note{font-size:11px;color:var(--text-muted);margin-top:18px;line-height:1.5}
+
   /* ─── Nav tabs ─── */
   .nav-tabs{display:flex;gap:4px}
   .tab{padding:6px 14px;border-radius:9px;font-size:12px;font-family:monospace;cursor:pointer;border:1px solid var(--border);background:var(--glass-bg);color:var(--text-sub);transition:all .2s;letter-spacing:.02em;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
@@ -522,7 +597,19 @@
   .hero-btn:active{transform:scale(0.96)}
   .hero-btn-ghost{background:rgba(255,255,255,0.16);color:#fff;backdrop-filter:blur(6px)}
   .hero-btn-solid{background:#fff;color:#0a0c14}
-  .hero-btn svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+  .hero-nav{display:flex;align-items:center;gap:8px}
+  .hero-nav-btn{
+    width:30px;height:30px;border-radius:50%;border:none;flex-shrink:0;cursor:pointer;
+    background:rgba(0,0,0,0.45);color:#fff;backdrop-filter:blur(6px);
+    display:flex;align-items:center;justify-content:center;transition:background .15s,transform .15s;
+  }
+  .hero-nav-btn:hover{background:rgba(0,0,0,0.65)}
+  .hero-nav-btn:active{transform:scale(0.9)}
+  .hero-nav-btn svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+  .hero-counter{background:rgba(0,0,0,0.45);color:#fff;font-size:11px;font-weight:700;padding:5px 10px;border-radius:20px;font-family:monospace;backdrop-filter:blur(6px);min-width:44px;text-align:center}
+  .hero-dots{position:relative;z-index:1;display:flex;gap:5px;justify-content:center;margin-top:12px}
+  .hero-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.3);border:none;cursor:pointer;padding:0;transition:all .2s}
+  .hero-dot.active{background:#fff;width:16px;border-radius:3px}
 
   #genre-chip-row .filter-pill{font-size:11px}
   .sync-stats{font-size:12px;font-family:monospace;color:var(--text-dim);margin:5px 0 16px}
@@ -727,7 +814,27 @@
 
 
 </head>
-<body>
+<body class="{% if not logged_in %}logged-out{% endif %}">
+
+<!-- ── Sign-in gate ── -->
+<div class="login-gate">
+  <div class="login-card">
+    <img src="/static/anitrack-logo-transparent-512.png" alt="AniTrack">
+    <div class="login-title">Welcome to AniTrack</div>
+    <div class="login-sub">Sign in to view and sync your anime list.</div>
+    {% if al_error %}<div class="notif-bar error" style="margin-bottom:14px;text-align:left">⚠ {{ al_error }}</div>{% endif %}
+    {% if mal_error %}<div class="notif-bar error" style="margin-bottom:14px;text-align:left">⚠ {{ mal_error }}</div>{% endif %}
+    <a class="login-btn al" href="/al/login" onclick="hap(8)">
+      <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M3 12s3-7 9-7 9 7 9 7-3 7-9 7-9-7-9-7z"/></svg>
+      Continue with AniList
+    </a>
+    <a class="login-btn mal" href="/mal/login" onclick="hap(8)">
+      <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="3" y="3" width="18" height="18" rx="4"/></svg>
+      Continue with MyAnimeList
+    </a>
+    <div class="login-note">AniList sign-in enables episode syncing. Connect both later in Settings for two-way sync.</div>
+  </div>
+</div>
 
 <header>
   <div class="top-bar">
@@ -785,6 +892,9 @@
   <div class="side-menu-header">
     <img src="/static/anitrack-logo-transparent-512.png" alt="AniTrack">
     <span class="side-menu-header-title">ANITRACK</span>
+    <button class="side-menu-collapse-btn" aria-label="Collapse menu" onclick="toggleSidebarCollapse()">
+      <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
     <button class="side-menu-close" aria-label="Close menu" onclick="closeSideMenu()">
       <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
     </button>
@@ -792,25 +902,33 @@
   <nav class="side-menu-nav">
     <button class="side-menu-item active" data-view="watching">
       <svg viewBox="0 0 24 24"><path d="M3 12s3-7 9-7 9 7 9 7-3 7-9 7-9-7-9-7z"/><circle cx="12" cy="12" r="3"/></svg>
-      Watching
+      <span class="label">Home</span>
     </button>
     <button class="side-menu-item" data-view="planned">
       <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-      Plan to Watch
+      <span class="label">Plan to Watch</span>
     </button>
     <button class="side-menu-item" data-view="schedule">
       <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-      Schedule
+      <span class="label">Schedule</span>
     </button>
     <button class="side-menu-item" data-view="sync">
       <svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
-      Sync
+      <span class="label">Sync</span>
     </button>
     <button class="side-menu-item" data-view="settings">
       <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-      Settings
+      <span class="label">Settings</span>
     </button>
   </nav>
+  <div class="side-menu-quickrow">
+    <button class="side-menu-quickbtn" id="rail-theme-btn" aria-label="Toggle theme" onclick="railToggleTheme()">
+      <svg id="rail-theme-icon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    </button>
+    <button class="side-menu-quickbtn" id="rail-oneko-btn" aria-label="Toggle Oneko" onclick="railToggleOneko()">
+      <svg viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 0 1 1-1h3M20 8V5a1 1 0 0 0-1-1h-3M4 16v3a1 1 0 0 0 1 1h3M20 16v3a1 1 0 0 1-1 1h-3"/><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/></svg>
+    </button>
+  </div>
   <div class="side-menu-footer" onclick="navigateTo('settings')">
     <div class="side-menu-avatar">{{ anilist_username[0]|upper }}</div>
     <div class="side-menu-user-wrap">
@@ -1109,9 +1227,11 @@ function applyTheme(t) {
   const sw   = document.getElementById("switch-theme");
   const isDark = t === "dark";
   if (lbl)  lbl.textContent  = isDark ? "Dark Mode" : "Light Mode";
-  if (icon) icon.innerHTML   = isDark
-    ? `<svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`
-    : `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`;
+  const sunSvg  = `<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>`;
+  const moonSvg = `<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>`;
+  if (icon) icon.innerHTML = isDark ? `<svg viewBox="0 0 24 24">${sunSvg}</svg>` : `<svg viewBox="0 0 24 24">${moonSvg}</svg>`;
+  const railIcon = document.getElementById("rail-theme-icon");
+  if (railIcon) railIcon.innerHTML = isDark ? sunSvg : moonSvg;
   if (sw)   sw.checked = !isDark;  // checked = light
   localStorage.setItem("anitrack-theme", t);
   // Update PWA theme-color to match
@@ -1142,6 +1262,8 @@ applyTheme(localStorage.getItem("anitrack-theme") || "light");
 function navigateTo(view) {
   hap(6);
   document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+
+  if (view !== 'watching') clearTimeout(_heroTimer);
 
   if (view === 'watching' || view === 'planned') {
     document.getElementById('page-list')?.classList.add('active');
@@ -1452,19 +1574,41 @@ function renderSchedule() {
 }
 
 // ── Home hero + genre chips ─────────────────────────────────────────────────
+let _heroSlides = [];
+let _heroIndex  = 0;
+let _heroTimer  = null;
+
 function renderHomeHero() {
   const hero = document.getElementById('home-hero');
   if (!hero) return;
 
   const watching = (_allEntries || []).filter(e => e.status === 'CURRENT');
-  if (!watching.length) { hero.innerHTML = ''; buildGenreChips(); return; }
+  if (!watching.length) { hero.innerHTML = ''; _heroSlides = []; buildGenreChips(); return; }
 
-  // Feature whichever watching entry has the soonest-airing next episode;
-  // fall back to the most recently updated entry if nothing's currently airing.
+  // Build a browsable slate: currently-airing entries first (soonest episode
+  // first), then the most-recently-updated entries fill any remaining slots.
   const airing = watching.filter(e => e.media?.nextAiringEpisode)
     .sort((a, b) => a.media.nextAiringEpisode.timeUntilAiring - b.media.nextAiringEpisode.timeUntilAiring);
-  const featured = airing[0] || [...watching].sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))[0];
+  const recent = [...watching].sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
 
+  const seen = new Set();
+  _heroSlides = [...airing, ...recent].filter(e => {
+    if (seen.has(e.id)) return false;
+    seen.add(e.id);
+    return true;
+  }).slice(0, 8);
+
+  _heroIndex = 0;
+  renderHeroSlide();
+  buildGenreChips();
+}
+
+function renderHeroSlide() {
+  const hero = document.getElementById('home-hero');
+  if (!hero || !_heroSlides.length) return;
+  clearTimeout(_heroTimer);
+
+  const featured = _heroSlides[_heroIndex];
   const m      = featured.media;
   const title  = m.title?.english || m.title?.romaji || 'Unknown';
   const bg     = m.bannerImage || m.coverImage?.large || '';
@@ -1482,10 +1626,26 @@ function renderHomeHero() {
     ? `<span class="hero-badge">EP ${next.episode} · ${fmtCountdown(next.timeUntilAiring)}</span>`
     : `<span class="hero-badge">EP ${featured.progress}/${total}</span>`;
 
+  const nav = _heroSlides.length > 1 ? `
+      <div class="hero-nav">
+        <button class="hero-nav-btn" aria-label="Previous" onclick="heroPrev()">
+          <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <span class="hero-counter">${_heroIndex + 1} / ${_heroSlides.length}</span>
+        <button class="hero-nav-btn" aria-label="Next" onclick="heroNext()">
+          <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+      </div>` : '';
+
+  const dots = _heroSlides.length > 1 ? `
+      <div class="hero-dots">
+        ${_heroSlides.map((_, i) => `<button class="hero-dot${i === _heroIndex ? ' active' : ''}" aria-label="Slide ${i + 1}" onclick="heroGoTo(${i})"></button>`).join('')}
+      </div>` : '';
+
   hero.innerHTML = `
-    <div class="hero-card" style="background-image:url('${bg}')">
+    <div class="hero-card" style="background-image:url('${bg}');animation:fadeIn .35s ease">
       <div class="hero-scrim"></div>
-      <div class="hero-top-badges">${topBadge}</div>
+      <div class="hero-top-badges">${topBadge}${nav}</div>
       <div class="hero-body">
         <div class="hero-meta-row">${badges}</div>
         <div class="hero-title">${title}</div>
@@ -1501,10 +1661,31 @@ function renderHomeHero() {
           </button>
         </div>
       </div>
+      ${dots}
     </div>`;
 
-  buildGenreChips();
+  // Auto-advance every 8s, pausing whenever the person interacts manually.
+  if (_heroSlides.length > 1) {
+    _heroTimer = setTimeout(() => heroNext(true), 8000);
+  }
 }
+
+function heroPrev() {
+  hap(6);
+  _heroIndex = (_heroIndex - 1 + _heroSlides.length) % _heroSlides.length;
+  renderHeroSlide();
+}
+function heroNext(auto) {
+  if (!auto) hap(6);
+  _heroIndex = (_heroIndex + 1) % _heroSlides.length;
+  renderHeroSlide();
+}
+function heroGoTo(i) {
+  hap(6);
+  _heroIndex = i;
+  renderHeroSlide();
+}
+
 
 function buildGenreChips() {
   const row = document.getElementById('genre-chip-row');
@@ -1939,6 +2120,32 @@ function renderNotifications() {
       </div>
     </a>`;
   }).join('');
+}
+
+// ── Sidebar quick actions (theme / oneko / collapse) ─────────────────────────
+function railToggleTheme() {
+  hap(6);
+  const cur = document.documentElement.getAttribute("data-theme");
+  applyTheme(cur === "dark" ? "light" : "dark");
+}
+function railToggleOneko() {
+  hap(6);
+  const cb = document.getElementById("switch-oneko");
+  if (!cb) return;
+  cb.checked = !cb.checked;
+  onOnekoSwitch(cb);
+  document.getElementById("rail-oneko-btn")?.classList.toggle("on", cb.checked);
+}
+function toggleSidebarCollapse() {
+  hap(6);
+  const collapsed = document.body.classList.toggle("sidebar-collapsed");
+  localStorage.setItem("anitrack-sidebar-collapsed", collapsed ? "1" : "0");
+}
+if (localStorage.getItem("anitrack-sidebar-collapsed") === "1") {
+  document.body.classList.add("sidebar-collapsed");
+}
+if (localStorage.getItem("oneko-on") === "1") {
+  document.getElementById("rail-oneko-btn")?.classList.add("on");
 }
 
 // ── Slide-out side menu ──────────────────────────────────────────────────────
