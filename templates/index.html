@@ -608,10 +608,12 @@
   .hero-card{
     position:relative;border-radius:20px;overflow:hidden;margin-bottom:16px;
     background:var(--glass-bg);border:1px solid var(--border-lo);
+    opacity:1;transition:opacity .22s ease;
   }
   .hero-media{
     position:relative;aspect-ratio:16/11;width:100%;
     background:#111420 center/cover no-repeat;
+    transition:background-image .22s ease;
   }
   .hero-scrim{
     position:absolute;inset:0;
@@ -1609,6 +1611,18 @@ function renderSchedule() {
 let _heroSlides = [];
 let _heroIndex  = 0;
 let _heroTimer  = null;
+const _heroPreloaded = new Set();
+
+// Preloads an image URL so swapping to it later never shows a blank/loading
+// flash. Resolves either way (a failed image shouldn't block the slide).
+function preloadHeroImage(url) {
+  if (!url || _heroPreloaded.has(url)) return Promise.resolve();
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = img.onerror = () => { _heroPreloaded.add(url); resolve(); };
+    img.src = url;
+  });
+}
 
 function renderHomeHero() {
   const hero = document.getElementById('home-hero');
@@ -1635,15 +1649,36 @@ function renderHomeHero() {
   buildGenreChips();
 }
 
-function renderHeroSlide() {
+async function renderHeroSlide() {
   const hero = document.getElementById('home-hero');
   if (!hero || !_heroSlides.length) return;
   clearTimeout(_heroTimer);
 
   const featured = _heroSlides[_heroIndex];
+  const upcomingBg = featured.media.bannerImage || featured.media.coverImage?.large || '';
+
+  // If a slide is already showing, preload the next image and fade the old
+  // one out first, so the swap never flashes a blank card while the new
+  // banner loads over the network.
+  const existingCard = hero.querySelector('.hero-card');
+  if (existingCard) {
+    await preloadHeroImage(upcomingBg);
+    // Bail out if the user has since navigated to a different slide/page
+    // while we were waiting on the image (e.g. clicked another dot fast).
+    if (!hero.isConnected) return;
+    existingCard.style.opacity = '0';
+    await new Promise(r => setTimeout(r, 220));
+  } else {
+    await preloadHeroImage(upcomingBg);
+  }
+  if (!hero.isConnected) return;
+
+  buildHeroSlideMarkup(hero, featured, upcomingBg);
+}
+
+function buildHeroSlideMarkup(hero, featured, bg) {
   const m      = featured.media;
   const title  = m.title?.english || m.title?.romaji || 'Unknown';
-  const bg     = m.bannerImage || m.coverImage?.large || '';
   const genres = (m.genres || []).slice(0, 3).join(' · ');
   const next   = m.nextAiringEpisode;
   const total  = m.episodes || '?';
@@ -1675,7 +1710,7 @@ function renderHeroSlide() {
       </div>` : '';
 
   hero.innerHTML = `
-    <div class="hero-card" style="animation:fadeIn .35s ease">
+    <div class="hero-card" style="opacity:0">
       <div class="hero-media" style="background-image:url('${bg}')">
         <div class="hero-scrim"></div>
         <div class="hero-top-badges">${topBadge}${nav}</div>
@@ -1697,6 +1732,14 @@ function renderHeroSlide() {
       </div>
       ${dots}
     </div>`;
+
+  // Image is already preloaded at this point, so it renders instantly at
+  // opacity 0 above — this rAF just triggers the CSS transition to fade it
+  // in, instead of the image popping in abruptly.
+  requestAnimationFrame(() => {
+    const card = hero.querySelector('.hero-card');
+    if (card) card.style.opacity = '1';
+  });
 
   // Auto-advance every 4s, pausing whenever the person interacts manually.
   if (_heroSlides.length > 1) {
