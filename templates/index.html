@@ -287,6 +287,10 @@
     border:none;transition:transform .15s;position:relative;
   }
   .avatar-btn:active{transform:scale(0.9)}
+  .avatar-letter{width:100%;height:100%;align-items:center;justify-content:center}
+  .avatar-btn .avatar-letter{display:flex}
+  .profile-avatar .avatar-letter{display:flex}
+  .avatar-img{display:block}
 
   .avatar-dropdown-wrap{position:relative}
   .avatar-dropdown{
@@ -910,7 +914,10 @@
         <div class="notif-list" id="notif-list"></div>
       </div>
       <div class="avatar-dropdown-wrap">
-        <button class="avatar-btn" id="avatar-btn" aria-label="Account" onclick="toggleAvatarDropdown(event)">{% if anilist_avatar %}<img src="{{ anilist_avatar }}" alt="{{ anilist_username }}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;display:block">{% else %}{{ anilist_username[0]|upper }}{% endif %}</button>
+        <button class="avatar-btn" id="avatar-btn" aria-label="Account" onclick="toggleAvatarDropdown(event)">
+          <span class="avatar-letter" id="avatar-btn-letter" style="display:{% if anilist_avatar %}none{% else %}flex{% endif %}">{{ anilist_username[0]|upper }}</span>
+          <img class="avatar-img" id="avatar-btn-img" alt="{{ anilist_username }}" {% if anilist_avatar %}src="{{ anilist_avatar }}"{% endif %} style="width:100%;height:100%;border-radius:50%;object-fit:cover;display:{% if anilist_avatar %}block{% else %}none{% endif %}" onerror="this.style.display='none';document.getElementById('avatar-btn-letter').style.display='flex'">
+        </button>
         <div class="avatar-dropdown" id="avatar-dropdown">
           <button class="avatar-dropdown-option" onclick="closeAvatarDropdown();navigateTo('profile')">
             <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
@@ -1027,7 +1034,10 @@
   <!-- ── Profile Page ── -->
   <div class="page" id="page-profile">
     <div class="profile-head">
-      <div class="profile-avatar">{% if anilist_avatar %}<img src="{{ anilist_avatar }}" alt="{{ anilist_username }}" style="width:100%;height:100%;border-radius:50%;object-fit:cover">{% else %}{{ anilist_username[0]|upper }}{% endif %}</div>
+      <div class="profile-avatar">
+        <span class="avatar-letter" id="profile-avatar-letter" style="display:{% if anilist_avatar %}none{% else %}flex{% endif %}">{{ anilist_username[0]|upper }}</span>
+        <img class="avatar-img" id="profile-avatar-img" alt="{{ anilist_username }}" {% if anilist_avatar %}src="{{ anilist_avatar }}"{% endif %} style="width:100%;height:100%;border-radius:50%;object-fit:cover;display:{% if anilist_avatar %}block{% else %}none{% endif %}" onerror="this.style.display='none';document.getElementById('profile-avatar-letter').style.display='flex'">
+      </div>
       <div class="profile-name">{{ anilist_username }}</div>
       <div class="profile-sub">{% if al_connected %}Signed in via AniList{% elif mal_connected %}Signed in via MAL{% else %}Local username{% endif %}</div>
       <div class="profile-accounts">
@@ -1199,6 +1209,34 @@ let ANILIST_USERNAME = localStorage.getItem('anitrack-username') || _DEFAULT_USE
 
 // ── Haptic helper ─────────────────────────────────────────────────────────────
 function hap(ms) { try { navigator.vibrate && navigator.vibrate(ms ?? 8); } catch(e) {} }
+
+// ── Avatar (client-side fallback in case the server-rendered one failed) ──────
+const GQL_USER_AVATAR = `query($name:String){User(name:$name){avatar{large medium}}}`;
+async function loadAvatar() {
+  const btnImg = document.getElementById('avatar-btn-img');
+  const btnLetter = document.getElementById('avatar-btn-letter');
+  const profImg = document.getElementById('profile-avatar-img');
+  const profLetter = document.getElementById('profile-avatar-letter');
+  // Already have one server-rendered and loaded successfully? skip the extra request.
+  if (btnImg && btnImg.src && btnImg.style.display !== 'none') return;
+  try {
+    const res = await fetch("https://graphql.anilist.co", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query: GQL_USER_AVATAR, variables: { name: ANILIST_USERNAME } })
+    });
+    const json = await res.json();
+    const url = json?.data?.User?.avatar?.large || json?.data?.User?.avatar?.medium;
+    if (!url) return;
+    [[btnImg, btnLetter], [profImg, profLetter]].forEach(([img, letter]) => {
+      if (!img) return;
+      img.src = url;
+      img.style.display = 'block';
+      if (letter) letter.style.display = 'none';
+    });
+  } catch (e) { /* keep letter fallback */ }
+}
+loadAvatar();
 
 // ── Auto-dismiss success banners ─────────────────────────────────────────────
 ["mal-success-banner","al-success-banner"].forEach(id => {
@@ -1660,9 +1698,9 @@ function renderHeroSlide() {
       ${dots}
     </div>`;
 
-  // Auto-advance every 8s, pausing whenever the person interacts manually.
+  // Auto-advance every 4s, pausing whenever the person interacts manually.
   if (_heroSlides.length > 1) {
-    _heroTimer = setTimeout(() => heroNext(true), 8000);
+    _heroTimer = setTimeout(() => heroNext(true), 4000);
   }
 }
 
