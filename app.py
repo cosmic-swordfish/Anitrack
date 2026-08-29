@@ -20,10 +20,31 @@ try:
         print("[DB] DATABASE_URL is not set — token persistence disabled. "
               "Add DATABASE_URL to your .env or Vercel env vars to enable it.")
 
+    # A new psycopg2.connect() (fresh TCP + TLS handshake to Postgres) used to
+    # happen on every single query, even multiple times within one request.
+    # On a serverless deployment (see vercel.json) the same worker process
+    # handles several requests back-to-back while "warm", so we keep one
+    # connection alive across calls on that process instead of paying the
+    # handshake cost every time. Call sites now leave the connection open;
+    # only the cursor is closed after each use.
+    _db_conn = None
+
     def _get_db():
+        global _db_conn
         if not DB_URL:
             raise RuntimeError("DATABASE_URL is not set")
-        return psycopg2.connect(DB_URL, sslmode="require")
+        if _db_conn is not None:
+            try:
+                if _db_conn.closed == 0:
+                    # Roll back any dangling transaction left by a previous
+                    # call that raised before it could commit, so the
+                    # connection is guaranteed usable for the next query.
+                    _db_conn.rollback()
+                    return _db_conn
+            except Exception:
+                pass
+        _db_conn = psycopg2.connect(DB_URL, sslmode="require")
+        return _db_conn
 
     def _ensure_tables():
         if not DB_URL:
@@ -65,7 +86,7 @@ try:
                 CREATE INDEX IF NOT EXISTS idx_anime_list_username
                 ON anime_list (username)
             """)
-            conn.commit(); cur.close(); conn.close()
+            conn.commit(); cur.close()
             print("[DB] Connected — user_tokens + anime_list tables ready.")
         except Exception as e:
             print(f"[DB] Table init error: {e}")
@@ -83,7 +104,7 @@ try:
                 ON CONFLICT (username) DO UPDATE
                 SET al_token=EXCLUDED.al_token, mal_token=EXCLUDED.mal_token, updated_at=now()
             """, (username, json.dumps(al_token), json.dumps(mal_token)))
-            conn.commit(); cur.close(); conn.close()
+            conn.commit(); cur.close()
             print(f"[DB] Tokens saved for {username}")
         except Exception as e:
             print(f"[DB] Save error: {e}")
@@ -94,7 +115,7 @@ try:
             conn = _get_db()
             cur  = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
             cur.execute("SELECT username, al_token, mal_token FROM user_tokens")
-            rows = cur.fetchall(); cur.close(); conn.close()
+            rows = cur.fetchall(); cur.close()
             return rows
         except Exception as e:
             print(f"[DB] Load error: {e}"); return []
@@ -104,7 +125,7 @@ try:
         try:
             conn = _get_db(); cur = conn.cursor()
             cur.execute("DELETE FROM user_tokens WHERE username=%s", (username,))
-            conn.commit(); cur.close(); conn.close()
+            conn.commit(); cur.close()
         except Exception as e:
             print(f"[DB] Delete error: {e}")
 
@@ -180,7 +201,7 @@ try:
                             updated_at   = EXCLUDED.updated_at,
                             synced_at    = now()
                     """, (username, al_id, mal_id, title, status, progress, score, episodes, media_status, started_at, completed_at))
-            conn.commit(); cur.close(); conn.close()
+            conn.commit(); cur.close()
             print(f"[DB] anime_list: saved {len(entries)} entries for {username}")
         except Exception as e:
             print(f"[DB] anime_list save error: {e}")
@@ -201,7 +222,7 @@ try:
                     "SELECT * FROM anime_list WHERE username=%s ORDER BY title",
                     (username,)
                 )
-            rows = cur.fetchall(); cur.close(); conn.close()
+            rows = cur.fetchall(); cur.close()
             return [dict(r) for r in rows]
         except Exception as e:
             print(f"[DB] anime_list load error: {e}"); return []
@@ -212,7 +233,7 @@ try:
         try:
             conn = _get_db(); cur = conn.cursor()
             cur.execute("DELETE FROM anime_list WHERE username=%s", (username,))
-            conn.commit(); cur.close(); conn.close()
+            conn.commit(); cur.close()
         except Exception as e:
             print(f"[DB] anime_list delete error: {e}")
 
@@ -765,7 +786,7 @@ def db_status():
             rows = [{"username": r[0], "updated_at": str(r[1]),
                      "al_connected": r[2], "mal_connected": r[3]}
                     for r in cur.fetchall()]
-        cur.close(); conn.close()
+        cur.close()
         return jsonify({
             "status": "ok",
             "table_exists": table_exists,
@@ -968,7 +989,16 @@ def sync_auto():
                     results.append({"title": diff["title"], **r})
                 except Exception as item_err:
                     results.append({"title": diff.get("title", "?"), "error": str(item_err)})
-                time.sleep(0.3)
+                # Note: AniList calls are already paced by _al_throttle() based on
+                # the real X-RateLimit-* headers (see anilist_query()). This extra
+                # fixed delay used to run unconditionally on EVERY item on top of
+                # that, which for a list with dozens of diffs could push this
+                # single request well past typical serverless function timeouts
+                # (Vercel), making a big sync look like it "hung". MAL updates
+                # don't need pacing at all, so we only add a small delay, and
+                # only for the items that actually touched AniList.
+                if diff.get("needs_al_update") or diff["action"] == "only_on_mal":
+                    time.sleep(0.1)
         # Save post-sync AL list to Supabase
         db_save_anime_list(username, al_list)
         return jsonify({"synced": len(results), "results": results})
