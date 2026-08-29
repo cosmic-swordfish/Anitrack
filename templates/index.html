@@ -99,6 +99,7 @@
     --settings-section-label: rgba(255,255,255,0.25);
     --switch-track-off: rgba(255,255,255,0.12);
     --switch-thumb: #ffffff;
+    --menu-solid: rgba(20,22,32,0.96);
   }
 
   /* ─────────────────── LIGHT THEME ─────────────────── */
@@ -175,6 +176,7 @@
     --settings-section-label: rgba(0,0,0,0.3);
     --switch-track-off: rgba(0,0,0,0.15);
     --switch-thumb: #ffffff;
+    --menu-solid: rgba(255,255,255,0.97);
   }
 
   body{
@@ -296,7 +298,7 @@
   .avatar-dropdown-wrap{position:relative}
   .avatar-dropdown{
     position:absolute;top:calc(100% + 10px);right:0;min-width:190px;
-    background:var(--surface, var(--glass-bg));border:1px solid var(--border);
+    background:var(--menu-solid);border:1px solid var(--border);
     border-radius:14px;padding:8px;z-index:150;
     box-shadow:0 12px 32px rgba(0,0,0,0.28);
     backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
@@ -323,7 +325,7 @@
   }
   .notif-panel{
     position:absolute;top:calc(100% + 10px);right:0;width:min(340px,90vw);max-height:70vh;
-    background:var(--surface, var(--glass-bg));border:1px solid var(--border);
+    background:var(--menu-solid);border:1px solid var(--border);
     border-radius:16px;z-index:150;overflow:hidden;display:flex;flex-direction:column;
     box-shadow:0 12px 32px rgba(0,0,0,0.28);
     backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
@@ -2114,7 +2116,11 @@ function toggleNotifPanel(e) {
   const panel = document.getElementById('notif-panel');
   const opening = !panel.classList.contains('open');
   panel.classList.toggle('open');
-  if (opening) renderNotifications();
+  if (opening) {
+    renderNotifications();
+    markNotifsSeen(getAiringSoonEntries());
+    updateNotifBadge();
+  }
 }
 function closeNotifPanel() {
   document.getElementById('notif-panel')?.classList.remove('open');
@@ -2132,10 +2138,32 @@ function getAiringSoonEntries(hoursWindow = 48) {
     .sort((a, b) => a.media.nextAiringEpisode.timeUntilAiring - b.media.nextAiringEpisode.timeUntilAiring);
 }
 
+// Notifications have no server-side "read" state, so we track which
+// upcoming episodes the person has already been shown in localStorage.
+// The badge only counts entries not yet in that set, and opening the panel
+// marks everything currently listed as seen — otherwise the same "airing
+// soon" episode would keep the badge lit forever even after checking it.
+const NOTIF_SEEN_KEY = 'anitrack_notif_seen_v1';
+function notifEntryId(e) {
+  return `${e.media.id}:${e.media.nextAiringEpisode.episode}`;
+}
+function getSeenNotifIds() {
+  try { return new Set(JSON.parse(localStorage.getItem(NOTIF_SEEN_KEY) || '[]')); }
+  catch { return new Set(); }
+}
+function markNotifsSeen(entries) {
+  const seen = getSeenNotifIds();
+  entries.forEach(e => seen.add(notifEntryId(e)));
+  // Trim to avoid unbounded growth as episodes air and roll off the window.
+  const trimmed = Array.from(seen).slice(-200);
+  localStorage.setItem(NOTIF_SEEN_KEY, JSON.stringify(trimmed));
+}
+
 function updateNotifBadge() {
   const badge = document.getElementById('notif-badge');
   if (!badge) return;
-  const count = getAiringSoonEntries().length;
+  const seen = getSeenNotifIds();
+  const count = getAiringSoonEntries().filter(e => !seen.has(notifEntryId(e))).length;
   badge.textContent = count > 9 ? '9+' : String(count);
   badge.style.display = count > 0 ? '' : 'none';
 }
