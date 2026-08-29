@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<title>Schedule · MIRJRO.TV</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  @keyframes slideUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+  /* ─────────────────── DARK THEME (default) ─────────────────── */
+  :root {
+    --color-scheme: dark;
+    --bg-mesh: radial-gradient(ellipse 80% 60% at 20% 10%, rgba(2,169,255,0.06) 0%, transparent 60%),
+               radial-gradient(ellipse 60% 50% at 80% 80%, rgba(192,132,252,0.05) 0%, transparent 55%),
+               #0a0c12;
+    --surface: rgba(255,255,255,0.08);
+    --header-bg: rgba(8,10,18,0.75);
+    --glass-bg: rgba(255,255,255,0.04);
+    --border: rgba(255,255,255,0.11);
+    --border-lo: rgba(255,255,255,0.055);
+    --text: #e4e4e8;
+    --text-title: #f0f0f4;
+    --text-sub: rgba(255,255,255,0.38);
+    --text-muted: rgba(255,255,255,0.24);
+    --accent: #02A9FF;
+    --accent-bg: rgba(2,169,255,0.11);
+    --accent-border: rgba(2,169,255,0.30);
+    --glass: blur(40px) saturate(260%);
+  }
+
+  /* ─────────────────── LIGHT THEME ─────────────────── */
+  [data-theme="light"] {
+    --color-scheme: light;
+    --bg-mesh: radial-gradient(ellipse 80% 60% at 15% 5%, rgba(0,113,227,0.07) 0%, transparent 55%),
+               radial-gradient(ellipse 60% 50% at 85% 85%, rgba(109,40,217,0.06) 0%, transparent 50%),
+               radial-gradient(ellipse 50% 40% at 50% 50%, rgba(255,200,230,0.15) 0%, transparent 60%),
+               #F5F5F7;
+    --surface: rgba(255,255,255,0.52);
+    --header-bg: rgba(245,245,247,0.72);
+    --glass-bg: rgba(255,255,255,0.45);
+    --border: rgba(0,0,0,0.08);
+    --border-lo: rgba(0,0,0,0.05);
+    --text: #1d1d1f;
+    --text-title: #000000;
+    --text-sub: rgba(0,0,0,0.45);
+    --text-muted: rgba(0,0,0,0.3);
+    --accent: #0071e3;
+    --accent-bg: rgba(0,113,227,0.08);
+    --accent-border: rgba(0,113,227,0.24);
+    --glass: blur(24px) saturate(210%);
+  }
+
+  body{
+    background: var(--bg-mesh);
+    background-attachment: fixed;
+    color:var(--text);
+    font-family:'SF Pro Display',-apple-system,'Helvetica Neue',system-ui,sans-serif;
+    min-height:100vh;
+    transition:background 0.4s ease,color 0.25s ease;
+    overflow-x:hidden;
+  }
+  main{max-width:520px;margin:0 auto;padding:0 16px 32px}
+  .page{display:none}.page.active{display:block;animation:slideUp 0.3s ease both}
+
+  /* ─── Header ─── */
+  header{
+    padding:max(14px, env(safe-area-inset-top)) 16px 12px;
+    background:var(--header-bg);
+    border-bottom:1px solid var(--border);
+    position:sticky;top:0;z-index:100;
+    backdrop-filter:var(--glass);-webkit-backdrop-filter:var(--glass);
+    display:flex;align-items:center;justify-content:space-between;
+    max-width:520px;margin:0 auto;
+  }
+  .logo{font-weight:800;font-size:17px;letter-spacing:.02em;color:var(--text-title)}
+  .logo span{color:var(--accent)}
+  .theme-toggle{
+    width:34px;height:34px;border-radius:10px;border:1px solid var(--border);
+    background:var(--glass-bg);color:var(--text-sub);cursor:pointer;
+    display:flex;align-items:center;justify-content:center;font-size:16px;
+    transition:all .15s;
+  }
+  .theme-toggle:hover{background:var(--accent-bg);color:var(--accent);border-color:var(--accent-border)}
+
+  /* ─── Filter Pills ─── */
+  .filter-row{display:flex;gap:8px;padding:16px 0 0}
+  #sched-quick-row{flex-wrap:wrap;padding:16px 0 16px}
+  .filter-pill{
+    flex-shrink:0;padding:7px 16px;border-radius:100px;
+    font-size:12px;font-weight:600;letter-spacing:.02em;
+    border:1.5px solid var(--border);background:var(--glass-bg);color:var(--text-sub);
+    cursor:pointer;transition:all .2s;white-space:nowrap;
+    backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  }
+  .filter-pill:hover{background:var(--surface);color:var(--text)}
+  .filter-pill.active{background:var(--accent-bg);border-color:var(--accent-border);color:var(--accent)}
+
+  /* ─── Day crumb ─── */
+  .day-crumb{display:flex;align-items:flex-end;gap:9px;overflow-x:auto;padding:4px 4px 20px;scrollbar-width:none;white-space:nowrap;-webkit-mask-image:linear-gradient(90deg,transparent 0,transparent 6px,#000 48px,#000 100%);mask-image:linear-gradient(90deg,transparent 0,transparent 6px,#000 48px,#000 100%)}
+  .day-crumb::-webkit-scrollbar{display:none}
+  .day-crumb-item{flex-shrink:0;font-size:19px;font-weight:700;color:var(--text-muted);cursor:pointer;transition:color .2s;line-height:1}
+  .day-crumb-item:hover{color:var(--text-sub)}
+  .day-crumb-sep{flex-shrink:0;font-size:19px;font-weight:300;color:var(--text-muted);opacity:.5}
+  .day-crumb-item.active{font-size:36px;font-weight:800;color:var(--text-title)}
+  .day-crumb-date{display:block;font-size:13px;font-weight:500;color:var(--text-muted);margin-top:3px}
+
+  /* ─── Hour-group timeline ─── */
+  .sched-list{display:flex;flex-direction:column;gap:0}
+  .hour-group{margin-bottom:26px}
+  .hour-group:last-child{margin-bottom:0}
+  .hour-header{display:flex;align-items:center;gap:6px;font-size:19px;font-weight:800;color:var(--text-title);margin-bottom:12px}
+  .hour-header .chev{color:var(--accent);font-size:15px;font-weight:700;transform:translateY(-1px)}
+  .hour-entries{display:flex;flex-direction:column;gap:12px;margin-left:8px;padding-left:18px;border-left:2px solid var(--border-lo)}
+
+  .sched-row{display:flex;align-items:center;gap:12px;padding:12px;border-radius:16px;background:var(--glass-bg);border:1px solid var(--border-lo)}
+  .sched-thumb{width:52px;height:74px;border-radius:10px;flex-shrink:0;background:#111420;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:20px}
+  .sched-thumb img{width:100%;height:100%;object-fit:cover}
+  .sched-info{flex:1;min-width:0}
+  .sched-title{font-size:14px;font-weight:700;color:var(--text-title);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:7px}
+  .sched-ep-badge{display:inline-block;font-size:11px;font-weight:700;color:var(--text-sub);font-family:monospace;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px 9px}
+  .sched-time-badge{flex-shrink:0;font-size:13px;font-weight:700;color:var(--text);font-family:monospace;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:7px 12px;white-space:nowrap}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">MIRJRO<span>.TV</span></div>
+  <button class="theme-toggle" id="theme-toggle-btn" aria-label="Toggle theme" onclick="toggleTheme()">◐</button>
+</header>
+
+<main>
+  <div class="page active" id="page-schedule">
+    <div class="filter-row" id="sched-quick-row">
+      <button class="filter-pill" data-quick="yesterday" onclick="schedQuickJump(this,'yesterday')">Yesterday</button>
+      <button class="filter-pill active" data-quick="today" onclick="schedQuickJump(this,'today')">Today</button>
+      <button class="filter-pill" data-quick="tomorrow" onclick="schedQuickJump(this,'tomorrow')">Tomorrow</button>
+      <button class="filter-pill" data-quick="prevweek" onclick="schedQuickJump(this,'prevweek')">Previous week</button>
+      <button class="filter-pill" data-quick="nextweekend" onclick="schedQuickJump(this,'nextweekend')">Next weekend</button>
+    </div>
+    <div class="day-crumb" id="day-tabs"></div>
+    <div class="sched-list" id="sched-list"></div>
+  </div>
+</main>
+
+<script>
+function hap(ms) { try { navigator.vibrate && navigator.vibrate(ms ?? 8); } catch(e) {} }
+function emptyMsg(msg) { return `<div style="color:var(--text-muted);font-family:monospace;font-size:12px;padding:12px 4px">${msg}</div>`; }
+
+function toggleTheme() {
+  const html = document.documentElement;
+  html.dataset.theme = html.dataset.theme === 'light' ? 'dark' : 'light';
+}
+
+// ── Mock data ───────────────────────────────────────────────────────────────
+// Stands in for the real AniList "currently watching" list so this page runs
+// on its own. Airing times are generated relative to whenever the page is
+// opened, so the demo always has something to show on every quick-jump pill.
+function mockAiringAt(dayOffset, hour, minute) {
+  const d = new Date();
+  d.setDate(d.getDate() + dayOffset);
+  d.setHours(hour, minute, 0, 0);
+  return Math.floor(d.getTime() / 1000);
+}
+
+function buildMockEntries() {
+  const todayIdx = new Date().getDay();
+  const thisWeekMonday = -((todayIdx + 6) % 7);
+  const prevWeekOffset = thisWeekMonday - 7;
+  let nextWeekendOffset = (6 - todayIdx + 7) % 7;
+  if (nextWeekendOffset === 0) nextWeekendOffset = 7;
+
+  const raw = [
+    ['Pan no Akachan (TV)',                 373, -1,  5, 15, 'PA'],
+    ['RILAKKUMA',                             22, -1,  6, 11, 'RK'],
+    ['A Good Day to Ascend',                   9, -1,  6, 45, 'GD'],
+    ['Link Click Season 3',                    4, -1,  8, 45, 'LC'],
+    ['Pokémon Horizons: The Series',          147, -1, 15, 40, 'PH'],
+    ["I Became a Legend After My 10 Years",    9, -1, 19, 15, 'LG'],
+    ['Soul Land 2: The Peerless Tang Clan',   168,  0,  7, 45, 'SL'],
+    ['Shin Chan',                            1350,  0, 13, 15, 'SC'],
+    ['The Frontier Lord Begins with Zero',      3,  1, 20,  0, 'FL'],
+    ['Vintage Rerun Marathon',                 12, prevWeekOffset,  9,  0, 'VR'],
+    ['Weekend Special: Legends Cup',            5, nextWeekendOffset, 10, 0, 'WS'],
+  ];
+
+  return raw.map(([title, episode, dayOffset, hour, minute, initials]) => ({
+    status: 'CURRENT',
+    media: {
+      title: { english: title },
+      coverImage: { large: `https://placehold.co/120x170/111420/e4e4e8?text=${initials}` },
+      nextAiringEpisode: {
+        episode,
+        airingAt: mockAiringAt(dayOffset, hour, minute),
+      },
+    },
+  }));
+}
+
+const _allEntries = buildMockEntries();
+
+// ── Schedule ──────────────────────────────────────────────────────────────────
+const DAY_NAMES_FULL = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+// The selected day is stored as an OFFSET IN DAYS FROM REAL TODAY (can be
+// negative or positive, unbounded) — not a bare 0–6 weekday index. A plain
+// weekday index breaks the moment a jump crosses a week boundary: e.g. from
+// Saturday (idx 6), "Tomorrow" is Sunday (idx 0), and 0 < 6 makes "stay in
+// this calendar week" math subtract six days instead of adding one. Offsets
+// don't have that problem — schedDate/schedWeekday derive both the actual
+// date and the weekday name from the same offset, so they can never disagree.
+let _scheduleOffset = 0; // 0 = today
+
+function schedWeekday(offset) {
+  const base = new Date().getDay();
+  return ((base + offset) % 7 + 7) % 7;
+}
+function schedDate(offset) {
+  const d = new Date();
+  d.setDate(d.getDate() + offset);
+  return d;
+}
+
+// Breadcrumb trail of the two days leading up to the selected day, ending on
+// a large bold "today" style treatment for the selected day itself (e.g.
+// "…Thu / Fri / Saturday, August 29"). The leading days fade out under a
+// mask so the strip reads as a continuation you can scroll back through.
+function buildDayCrumb() {
+  const wrap = document.getElementById('day-tabs');
+  if (!wrap) return;
+  const trailOffsets = [_scheduleOffset - 2, _scheduleOffset - 1, _scheduleOffset];
+
+  wrap.innerHTML = trailOffsets.map((offset, pos) => {
+    const isActive = pos === trailOffsets.length - 1;
+    const sep = pos > 0 ? '<span class="day-crumb-sep">/</span>' : '';
+    const dayIdx = schedWeekday(offset);
+    if (!isActive) {
+      return `${sep}<span class="day-crumb-item" onclick="selectScheduleDay(${offset})">${DAY_NAMES_FULL[dayIdx]}</span>`;
+    }
+    const dateLabel = schedDate(offset).toLocaleDateString(undefined, { month: 'long', day: 'numeric' });
+    return `${sep}<span class="day-crumb-item active" onclick="selectScheduleDay(${offset})">${DAY_NAMES_FULL[dayIdx]}<span class="day-crumb-date">${dateLabel}</span></span>`;
+  }).join('');
+}
+
+function syncQuickPillActive() {
+  const map = { yesterday: -1, today: 0, tomorrow: 1 };
+  let matched = null;
+  for (const [k, v] of Object.entries(map)) if (v === _scheduleOffset) matched = k;
+  document.querySelectorAll('#sched-quick-row .filter-pill').forEach(p => {
+    p.classList.toggle('active', p.dataset.quick === matched);
+  });
+}
+
+function selectScheduleDay(offset) {
+  hap(6);
+  _scheduleOffset = offset;
+  syncQuickPillActive();
+  renderSchedule();
+}
+
+// Quick-jump pills. "Yesterday/Today/Tomorrow" map to real relative days.
+// The schedule reflects your watching list's normal weekly airing slot (not
+// a full simulcast calendar), so "Previous week" / "Next weekend" jump the
+// day-strip to the start of last week / the coming weekend rather than
+// filtering by an absolute date range.
+function schedQuickJump(btn, kind) {
+  hap(6);
+  document.querySelectorAll('#sched-quick-row .filter-pill').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  const todayIdx = new Date().getDay();
+  if      (kind === 'yesterday') _scheduleOffset = -1;
+  else if (kind === 'today')     _scheduleOffset = 0;
+  else if (kind === 'tomorrow')  _scheduleOffset = 1;
+  else if (kind === 'prevweek') {
+    const thisWeekMonday = -((todayIdx + 6) % 7); // offset of this calendar week's Monday
+    _scheduleOffset = thisWeekMonday - 7;          // Monday of the week before that
+  } else if (kind === 'nextweekend') {
+    let satOffset = (6 - todayIdx + 7) % 7;        // offset of the upcoming/current Saturday
+    if (satOffset === 0) satOffset = 7;            // today IS Saturday — jump to the *next* one
+    _scheduleOffset = satOffset;
+  }
+  renderSchedule();
+}
+
+// On-the-hour label for a group header, e.g. hourLabel(5) -> "05:00 AM".
+// Built manually rather than via toLocaleTimeString so it always lands
+// exactly on the hour regardless of locale formatting quirks.
+function hourLabel(hour) {
+  const h12 = hour % 12 === 0 ? 12 : hour % 12;
+  const ampm = hour < 12 ? 'AM' : 'PM';
+  return `${String(h12).padStart(2, '0')}:00 ${ampm}`;
+}
+
+function renderSchedRow(e) {
+  const m     = e.media;
+  const title = m.title?.english || m.title?.romaji || 'Unknown';
+  const cover = m.coverImage?.extraLarge || m.coverImage?.large || '';
+  const next  = m.nextAiringEpisode;
+  const d     = new Date(next.airingAt * 1000);
+  const time  = d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  return `<div class="sched-row"><div class="sched-thumb">${cover ? `<img src="${cover}" loading="lazy">` : '📺'}</div><div class="sched-info"><div class="sched-title">${title}</div><span class="sched-ep-badge">EP ${next.episode}</span></div><div class="sched-time-badge">${time}</div></div>`;
+}
+
+function renderSchedule() {
+  buildDayCrumb();
+  const list = document.getElementById('sched-list');
+  if (!list) return;
+
+  const entries = (_allEntries || [])
+    .filter(e => e.status === 'CURRENT' && e.media?.nextAiringEpisode)
+    .filter(e => new Date(e.media.nextAiringEpisode.airingAt * 1000).getDay() === schedWeekday(_scheduleOffset))
+    .sort((a, b) => a.media.nextAiringEpisode.airingAt - b.media.nextAiringEpisode.airingAt);
+
+  if (!entries.length) {
+    list.innerHTML = emptyMsg('Nothing from your watching list airs on this day.');
+    return;
+  }
+
+  // Bucket entries into hour groups so the list reads like a TV-guide
+  // timeline: one header per hour ("05:00 AM"), entries nested beneath it
+  // along a connecting rail.
+  const groups = [];
+  let lastHour = null;
+  entries.forEach(e => {
+    const hr = new Date(e.media.nextAiringEpisode.airingAt * 1000).getHours();
+    if (hr !== lastHour) { groups.push({ hour: hr, items: [] }); lastHour = hr; }
+    groups[groups.length - 1].items.push(e);
+  });
+
+  list.innerHTML = groups.map(g => `
+    <div class="hour-group">
+      <div class="hour-header"><span class="chev">›</span>${hourLabel(g.hour)}</div>
+      <div class="hour-entries">${g.items.map(renderSchedRow).join('')}</div>
+    </div>
+  `).join('');
+}
+
+renderSchedule();
+</script>
+</body>
+</html>
