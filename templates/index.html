@@ -349,7 +349,8 @@
 
   /* ─── Slide-out side menu ─── */
   .side-menu-overlay{
-    position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:800;
+    position:fixed;inset:0;background:rgba(0,0,0,0.38);z-index:800;
+    backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
     opacity:0;pointer-events:none;transition:opacity .22s ease;
   }
   .side-menu-overlay.open{opacity:1;pointer-events:auto}
@@ -412,11 +413,10 @@
       transition:width .22s cubic-bezier(0.22,1,0.36,1);
       box-shadow:0 20px 60px rgba(0,0,0,0.35);
     }
-    /* The rail itself always reserves this much space, but expanding the
-       sidebar beyond it overlays on top of main (which never resizes) —
-       so the hero/content stays full-size and sits visually behind the
-       sidebar instead of being pushed over and shrinking. */
-    header,main{margin-left:var(--sbw-rail)}
+    /* Main resizes with the sidebar: rail width while collapsed, full
+       sidebar width while open, so the hero/content shrinks over instead
+       of sitting behind an overlay. */
+    header,main{margin-left:var(--sbw);transition:margin-left .22s cubic-bezier(0.22,1,0.36,1)}
     #hamburger-btn{display:none}
     .grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
     .side-menu-collapse-btn{
@@ -663,16 +663,20 @@
   .hero-pill-btn-solid{background:var(--accent);border-color:var(--accent);color:#04121c}
   .hero-pill-btn-solid svg{fill:currentColor;stroke:none}
 
-  .hero-pagination{display:flex;align-items:center;gap:6px;flex-shrink:0}
+  .hero-pagination{
+    display:flex;align-items:center;gap:2px;flex-shrink:0;padding:3px;
+    background:rgba(0,0,0,0.38);border:1px solid rgba(255,255,255,0.14);
+    border-radius:10px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  }
   .hero-nav-btn{
-    width:26px;height:26px;border-radius:50%;border:none;flex-shrink:0;cursor:pointer;
-    background:rgba(255,255,255,0.16);color:#fff;backdrop-filter:blur(6px);
+    width:24px;height:24px;border-radius:6px;border:none;flex-shrink:0;cursor:pointer;
+    background:transparent;color:#fff;
     display:flex;align-items:center;justify-content:center;transition:background .15s,transform .15s;
   }
-  .hero-nav-btn:hover{background:rgba(255,255,255,0.28)}
+  .hero-nav-btn:hover{background:rgba(255,255,255,0.18)}
   .hero-nav-btn:active{transform:scale(0.9)}
   .hero-nav-btn svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
-  .hero-counter{color:#fff;font-size:11px;font-weight:700;font-family:monospace;min-width:34px;text-align:center;text-shadow:0 1px 4px rgba(0,0,0,0.6)}
+  .hero-counter{color:#fff;font-size:11px;font-weight:700;font-family:monospace;min-width:34px;text-align:center;padding:0 2px;text-shadow:0 1px 4px rgba(0,0,0,0.6)}
 
   #genre-chip-row .filter-pill{font-size:11px}
   .sync-stats{font-size:12px;font-family:monospace;color:var(--text-dim);margin:5px 0 16px}
