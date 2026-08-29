@@ -247,14 +247,10 @@
 
   /* ─── Header / Glass Nav ─── */
   header{
-    padding:max(18px, env(safe-area-inset-top)) 16px 10px;
-    background:var(--header-bg);
-    border-bottom:1px solid var(--border);
+    padding:max(14px, env(safe-area-inset-top)) 14px 0;
+    background:transparent;
     position:sticky;top:0;z-index:100;
-    backdrop-filter:var(--glass);
-    -webkit-backdrop-filter:var(--glass);
-    transition:background 0.4s ease,border-color 0.25s ease;
-    box-shadow:0 1px 0 rgba(255,255,255,0.04),0 8px 40px rgba(0,0,0,0.25)
+    transition:background 0.4s ease;
   }
 
   .header-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:10px}
@@ -269,7 +265,13 @@
   .pill-sep{opacity:.4}
 
   /* ─── Top bar: hamburger / logo / search / inbox / avatar ─── */
-  .top-bar{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+  .top-bar{
+    display:flex;align-items:center;gap:8px;
+    margin:0 0 14px;padding:9px 14px;
+    background:var(--header-bg);border:1px solid var(--border);border-radius:20px;
+    backdrop-filter:var(--glass);-webkit-backdrop-filter:var(--glass);
+    box-shadow:0 1px 0 rgba(255,255,255,0.04),0 8px 32px rgba(0,0,0,0.22);
+  }
   .top-bar .logo{margin-right:auto}
   .icon-btn{
     width:38px;height:38px;border-radius:50%;flex-shrink:0;
@@ -402,14 +404,19 @@
 
   /* ─── Persistent sidebar on desktop ─── */
   @media (min-width:900px){
-    :root{--sbw:264px}
+    :root{--sbw:264px;--sbw-rail:76px}
     body.sidebar-collapsed{--sbw:76px}
     .side-menu-overlay{display:none}
     .side-menu{
       position:fixed;transform:none;width:var(--sbw);
       transition:width .22s cubic-bezier(0.22,1,0.36,1);
+      box-shadow:0 20px 60px rgba(0,0,0,0.35);
     }
-    header,main{margin-left:var(--sbw);transition:margin-left .22s cubic-bezier(0.22,1,0.36,1)}
+    /* The rail itself always reserves this much space, but expanding the
+       sidebar beyond it overlays on top of main (which never resizes) —
+       so the hero/content stays full-size and sits visually behind the
+       sidebar instead of being pushed over and shrinking. */
+    header,main{margin-left:var(--sbw-rail)}
     #hamburger-btn{display:none}
     .grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
     .side-menu-collapse-btn{
@@ -432,8 +439,10 @@
     /* Constrain the content column on wide screens — without this, main
        stretches edge-to-edge on desktop and the hero banner (sized off its
        own width via aspect-ratio) becomes excessively tall, pushing the
-       title/buttons overlay below the fold. */
-    main{max-width:1100px;margin:0 auto;width:100%}
+       title/buttons overlay below the fold. Margin-left stays pinned to
+       the rail width (set above) rather than auto-centering, so this
+       doesn't fight the sidebar-overlay fix. */
+    main{max-width:1100px;margin-right:auto;width:100%}
     .hero-media{aspect-ratio:21/8}
   }
 
@@ -820,7 +829,8 @@
   .ios-thumb { transition: transform 0.28s cubic-bezier(.4,0,.2,1); }
 
   @media(max-width:600px){
-    header{padding:max(14px, env(safe-area-inset-top)) 10px 8px}
+    header{padding:max(14px, env(safe-area-inset-top)) 10px 0}
+    .top-bar{margin-bottom:10px;padding:8px 12px}
     main{padding:6px 10px 110px}
     .filter-row{padding:0 10px 10px 10px;margin:0 -10px 4px -10px;}
     .sync-toolbar{flex-wrap:wrap}
