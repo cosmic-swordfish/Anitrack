@@ -187,7 +187,8 @@
     min-height:100vh;
     display:flex;
     flex-direction:column;
-    transition:background 0.4s ease,color 0.25s ease
+    transition:background 0.4s ease,color 0.25s ease;
+    overflow-x:hidden; /* guards against the hero's full-bleed 100vw breakout below */
   }
   main{flex:1;padding-bottom:32px}
 
@@ -585,22 +586,22 @@
   .profile-genre-pill .cnt{color:var(--accent);font-family:monospace}
 
   /* ─── Home hero ─── */
+  /* Full-bleed breakout: escapes main's max-width/padding to run edge-to-edge
+     like Miruro's, regardless of how narrow or centered the page container is. */
+  #home-hero{
+    position:relative;overflow:hidden;margin-bottom:16px;aspect-ratio:16/12;
+    width:100vw;left:50%;right:50%;margin-left:-50vw;margin-right:-50vw;
+  }
+  @media (min-width:900px){ #home-hero{aspect-ratio:21/8} }
   .hero-card{
-    position:relative;border-radius:20px;overflow:hidden;margin-bottom:16px;
-    background:var(--glass-bg);border:1px solid var(--border-lo);
-    opacity:1;transition:opacity .22s ease;
+    position:absolute;inset:0;
+    background:var(--glass-bg);
+    opacity:1;transition:opacity .45s ease;
   }
   .hero-media{
-    position:relative;aspect-ratio:16/12;width:100%;
+    position:relative;width:100%;height:100%;
     background:#111420 center/cover no-repeat;
-    transition:background-image .22s ease;
     display:flex;flex-direction:column;justify-content:flex-end;
-  }
-  /* Wider, shorter banner on desktop — declared after the base rule
-     above (same specificity) so it actually wins the cascade instead
-     of being silently overridden by the source order. */
-  @media (min-width:900px){
-    .hero-media{aspect-ratio:21/8}
   }
   .hero-scrim{
     position:absolute;inset:0;
@@ -1695,26 +1696,37 @@ async function renderHeroSlide() {
   const featured = _heroSlides[_heroIndex];
   const upcomingBg = featured.media.bannerImage || featured.media.coverImage?.extraLarge || featured.media.coverImage?.large || '';
 
-  // If a slide is already showing, preload the next image and fade the old
-  // one out first, so the swap never flashes a blank card while the new
-  // banner loads over the network.
-  const existingCard = hero.querySelector('.hero-card');
-  if (existingCard) {
-    await preloadHeroImage(upcomingBg);
-    // Bail out if the user has since navigated to a different slide/page
-    // while we were waiting on the image (e.g. clicked another dot fast).
-    if (!hero.isConnected) return;
-    existingCard.style.opacity = '0';
-    await new Promise(r => setTimeout(r, 220));
-  } else {
-    await preloadHeroImage(upcomingBg);
-  }
+  await preloadHeroImage(upcomingBg);
+  // Bail out if the user has since navigated to a different slide/page
+  // while we were waiting on the image (e.g. clicked another dot fast).
   if (!hero.isConnected) return;
 
-  buildHeroSlideMarkup(hero, featured, upcomingBg);
+  // True crossfade: build the incoming card stacked on top of the outgoing
+  // one (both are position:absolute inside #home-hero) and animate their
+  // opacity at the same time, so the old banner is still visible while the
+  // new one fades in — no gap where the card goes blank.
+  const oldCard = hero.querySelector('.hero-card');
+  const newCard = document.createElement('div');
+  newCard.className = 'hero-card';
+  newCard.style.opacity = '0';
+  newCard.innerHTML = buildHeroCardHTML(featured, upcomingBg);
+  hero.appendChild(newCard);
+
+  requestAnimationFrame(() => {
+    newCard.style.opacity = '1';
+    if (oldCard) oldCard.style.opacity = '0';
+  });
+  // Matches the .hero-card opacity transition duration (450ms) plus a
+  // small buffer before the old card is discarded.
+  if (oldCard) setTimeout(() => oldCard.remove(), 480);
+
+  // Auto-advance every 4s, pausing whenever the person interacts manually.
+  if (_heroSlides.length > 1) {
+    _heroTimer = setTimeout(() => heroNext(true), 4000);
+  }
 }
 
-function buildHeroSlideMarkup(hero, featured, bg) {
+function buildHeroCardHTML(featured, bg) {
   const m      = featured.media;
   const title  = m.title?.english || m.title?.romaji || 'Unknown';
   const genres = (m.genres || []).slice(0, 3).join(' · ');
@@ -1757,45 +1769,30 @@ function buildHeroSlideMarkup(hero, featured, bg) {
       </div>
       <div class="hero-counter-top">${_heroIndex + 1} / ${_heroSlides.length}</div>` : '';
 
-  hero.innerHTML = `
-    <div class="hero-card" style="opacity:0">
-      <div class="hero-media" style="background-image:url('${bg}')">
-        <div class="hero-scrim"></div>
-        ${topBadge}
-        ${sideNav}
-        <div class="hero-overlay">
-          <div class="hero-meta-row">${badges}</div>
-          <div class="hero-title">${title}</div>
-          ${genres ? `<div class="hero-genres">${(m.genres || []).slice(0, 3).map(g => `<span class="hero-genre-pill">${g}</span>`).join('')}</div>` : ''}
-          <div class="hero-bottom-row">
-            <div class="hero-pill-actions">
-              <a class="hero-pill-btn" href="${m.siteUrl || '#'}" target="_blank" rel="noopener">
-                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                Details
-              </a>
-              <button class="hero-pill-btn hero-pill-btn-solid" onclick="updateEp(${featured.id},${featured.progress},${m.episodes||0},+1)">
-                <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                +1 EP
-              </button>
-            </div>
-            ${nav}
+  return `
+    <div class="hero-media" style="background-image:url('${bg}')">
+      <div class="hero-scrim"></div>
+      ${topBadge}
+      ${sideNav}
+      <div class="hero-overlay">
+        <div class="hero-meta-row">${badges}</div>
+        <div class="hero-title">${title}</div>
+        ${genres ? `<div class="hero-genres">${(m.genres || []).slice(0, 3).map(g => `<span class="hero-genre-pill">${g}</span>`).join('')}</div>` : ''}
+        <div class="hero-bottom-row">
+          <div class="hero-pill-actions">
+            <a class="hero-pill-btn" href="${m.siteUrl || '#'}" target="_blank" rel="noopener">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+              Details
+            </a>
+            <button class="hero-pill-btn hero-pill-btn-solid" onclick="updateEp(${featured.id},${featured.progress},${m.episodes||0},+1)">
+              <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              +1 EP
+            </button>
           </div>
+          ${nav}
         </div>
       </div>
     </div>`;
-
-  // Image is already preloaded at this point, so it renders instantly at
-  // opacity 0 above — this rAF just triggers the CSS transition to fade it
-  // in, instead of the image popping in abruptly.
-  requestAnimationFrame(() => {
-    const card = hero.querySelector('.hero-card');
-    if (card) card.style.opacity = '1';
-  });
-
-  // Auto-advance every 4s, pausing whenever the person interacts manually.
-  if (_heroSlides.length > 1) {
-    _heroTimer = setTimeout(() => heroNext(true), 4000);
-  }
 }
 
 function heroPrev() {
