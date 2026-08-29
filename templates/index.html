@@ -99,7 +99,6 @@
     --settings-section-label: rgba(255,255,255,0.25);
     --switch-track-off: rgba(255,255,255,0.12);
     --switch-thumb: #ffffff;
-    --menu-solid: rgba(20,22,32,0.96);
   }
 
   /* ─────────────────── LIGHT THEME ─────────────────── */
@@ -176,7 +175,6 @@
     --settings-section-label: rgba(0,0,0,0.3);
     --switch-track-off: rgba(0,0,0,0.15);
     --switch-thumb: #ffffff;
-    --menu-solid: rgba(255,255,255,0.97);
   }
 
   body{
@@ -247,13 +245,14 @@
 
   /* ─── Header / Glass Nav ─── */
   header{
-    padding:max(14px, env(safe-area-inset-top)) 14px 12px;
+    padding:max(18px, env(safe-area-inset-top)) 16px 10px;
     background:var(--header-bg);
     border-bottom:1px solid var(--border);
     position:sticky;top:0;z-index:100;
-    backdrop-filter:var(--glass);-webkit-backdrop-filter:var(--glass);
+    backdrop-filter:var(--glass);
+    -webkit-backdrop-filter:var(--glass);
     transition:background 0.4s ease,border-color 0.25s ease;
-    box-shadow:0 1px 0 rgba(255,255,255,0.04),0 8px 40px rgba(0,0,0,0.25);
+    box-shadow:0 1px 0 rgba(255,255,255,0.04),0 8px 40px rgba(0,0,0,0.25)
   }
 
   .header-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:10px}
@@ -268,14 +267,13 @@
   .pill-sep{opacity:.4}
 
   /* ─── Top bar: hamburger / logo / search / inbox / avatar ─── */
-  .top-bar{display:flex;align-items:center;gap:8px}
+  .top-bar{display:flex;align-items:center;gap:8px;margin-bottom:10px}
   .top-bar .logo{margin-right:auto}
   .icon-btn{
     width:38px;height:38px;border-radius:50%;flex-shrink:0;
     display:flex;align-items:center;justify-content:center;
     background:var(--glass-bg);border:1px solid var(--border);
     color:var(--text-sub);cursor:pointer;transition:background .2s,color .2s,transform .15s;
-    position:relative;
   }
   .icon-btn svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
   .icon-btn:hover{background:var(--accent-bg);color:var(--accent);border-color:var(--accent-border)}
@@ -289,15 +287,11 @@
     border:none;transition:transform .15s;position:relative;
   }
   .avatar-btn:active{transform:scale(0.9)}
-  .avatar-letter{width:100%;height:100%;align-items:center;justify-content:center}
-  .avatar-btn .avatar-letter{display:flex}
-  .profile-avatar .avatar-letter{display:flex}
-  .avatar-img{display:block}
 
   .avatar-dropdown-wrap{position:relative}
   .avatar-dropdown{
     position:absolute;top:calc(100% + 10px);right:0;min-width:190px;
-    background:var(--menu-solid);border:1px solid var(--border);
+    background:var(--surface, var(--glass-bg));border:1px solid var(--border);
     border-radius:14px;padding:8px;z-index:150;
     box-shadow:0 12px 32px rgba(0,0,0,0.28);
     backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
@@ -324,7 +318,7 @@
   }
   .notif-panel{
     position:absolute;top:calc(100% + 10px);right:0;width:min(340px,90vw);max-height:70vh;
-    background:var(--menu-solid);border:1px solid var(--border);
+    background:var(--surface, var(--glass-bg));border:1px solid var(--border);
     border-radius:16px;z-index:150;overflow:hidden;display:flex;flex-direction:column;
     box-shadow:0 12px 32px rgba(0,0,0,0.28);
     backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
@@ -346,8 +340,7 @@
 
   /* ─── Slide-out side menu ─── */
   .side-menu-overlay{
-    position:fixed;inset:0;background:rgba(0,0,0,0.38);z-index:800;
-    backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+    position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:800;
     opacity:0;pointer-events:none;transition:opacity .22s ease;
   }
   .side-menu-overlay.open{opacity:1;pointer-events:auto}
@@ -402,17 +395,13 @@
 
   /* ─── Persistent sidebar on desktop ─── */
   @media (min-width:900px){
-    :root{--sbw:264px;--sbw-rail:76px}
+    :root{--sbw:264px}
     body.sidebar-collapsed{--sbw:76px}
     .side-menu-overlay{display:none}
     .side-menu{
       position:fixed;transform:none;width:var(--sbw);
       transition:width .22s cubic-bezier(0.22,1,0.36,1);
-      box-shadow:0 20px 60px rgba(0,0,0,0.35);
     }
-    /* Main resizes with the sidebar: rail width while collapsed, full
-       sidebar width while open, so the hero/content shrinks over instead
-       of sitting behind an overlay. */
     header,main{margin-left:var(--sbw);transition:margin-left .22s cubic-bezier(0.22,1,0.36,1)}
     #hamburger-btn{display:none}
     .grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
@@ -432,17 +421,6 @@
     body.sidebar-collapsed .side-menu-user-wrap{display:none}
     body.sidebar-collapsed .side-menu-footer-gear{display:none}
     body.sidebar-collapsed .side-menu-header{justify-content:center;padding-left:0;padding-right:0}
-
-    /* Center the content column in the space to the right of the sidebar
-       instead of left-aligning it — previously margin-right:auto let the
-       leftover space pile up entirely on the right on wide screens, so the
-       right-hand gutter never matched the left. */
-    main{
-      width:min(1100px, calc(100% - var(--sbw)));
-      margin-left:calc(var(--sbw) + max(0px, (100% - var(--sbw) - 1100px)/2));
-      margin-right:auto;
-    }
-    .hero-media{aspect-ratio:21/8}
   }
 
   /* ─── Sign-in gate ─── */
@@ -626,56 +604,51 @@
   .hero-card{
     position:relative;border-radius:20px;overflow:hidden;margin-bottom:16px;
     background:var(--glass-bg);border:1px solid var(--border-lo);
-    opacity:1;transition:opacity .22s ease;
   }
   .hero-media{
-    position:relative;aspect-ratio:16/12;width:100%;
+    position:relative;aspect-ratio:16/11;width:100%;
     background:#111420 center/cover no-repeat;
-    transition:background-image .22s ease;
-    display:flex;flex-direction:column;justify-content:flex-end;
   }
   .hero-scrim{
     position:absolute;inset:0;
-    background:linear-gradient(180deg, rgba(10,12,20,0.12) 0%, rgba(10,12,20,0.02) 25%, rgba(10,12,20,0.38) 58%, rgba(10,12,20,0.94) 100%);
+    background:linear-gradient(180deg, rgba(10,12,20,0.35) 0%, rgba(10,12,20,0.05) 30%, rgba(10,12,20,0.05) 65%, rgba(10,12,20,0.75) 100%);
   }
-  .hero-badge-floating{position:absolute;top:14px;left:14px;z-index:2}
+  .hero-top-badges{position:absolute;left:14px;right:14px;top:14px;z-index:1;display:flex;justify-content:space-between;align-items:flex-start}
   .hero-badge{display:flex;align-items:center;gap:5px;background:rgba(0,0,0,0.55);color:#fff;font-size:11px;font-weight:700;padding:6px 11px;border-radius:20px;font-family:monospace;backdrop-filter:blur(6px)}
   .hero-badge svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2.3;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
-
-  .hero-overlay{position:relative;z-index:1;padding:16px 14px 14px}
-  .hero-meta-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
-  .hero-meta-pill{display:flex;align-items:center;gap:5px;background:rgba(255,255,255,0.14);border:1px solid rgba(255,255,255,0.2);color:#fff;font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;backdrop-filter:blur(4px)}
-  .hero-title{font-size:19px;font-weight:800;color:#fff;line-height:1.22;margin-bottom:6px;text-shadow:0 2px 14px rgba(0,0,0,0.55)}
-  .hero-genres{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
-  .hero-genre-pill{background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.18);color:rgba(255,255,255,0.8);font-size:10px;font-weight:700;padding:4px 10px;border-radius:20px;backdrop-filter:blur(4px)}
-
-  .hero-bottom-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
-  .hero-pill-actions{display:flex;gap:8px;min-width:0}
-  .hero-pill-btn{
-    display:flex;align-items:center;gap:6px;padding:9px 14px;border-radius:20px;
-    border:1px solid rgba(255,255,255,0.24);cursor:pointer;background:rgba(255,255,255,0.16);
-    color:#fff;font-size:11px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;
-    transition:transform .15s,background .15s;text-decoration:none;white-space:nowrap;backdrop-filter:blur(8px);
+  .hero-body{position:relative;z-index:1;padding:16px 16px 18px}
+  .hero-meta-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+  .hero-meta-pill{display:flex;align-items:center;gap:5px;background:var(--pill-bg);border:1px solid var(--pill-border);color:var(--text-sub);font-size:10.5px;font-weight:700;padding:4px 10px;border-radius:20px}
+  .hero-title{font-size:20px;font-weight:800;color:var(--text-title);line-height:1.2;margin-bottom:8px}
+  .hero-genres{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
+  .hero-genre-pill{background:var(--pill-bg);border:1px solid var(--pill-border);color:var(--text-dim);font-size:10.5px;font-weight:700;padding:5px 11px;border-radius:20px}
+  .hero-actions{display:flex;gap:8px}
+  .hero-btn{
+    flex:1;display:flex;align-items:center;justify-content:center;gap:7px;
+    padding:11px;border-radius:22px;border:1px solid var(--pill-border);cursor:pointer;
+    font-size:12px;font-weight:800;line-height:1;letter-spacing:.03em;text-transform:uppercase;
+    transition:transform .15s,background .15s;text-decoration:none;white-space:nowrap;
   }
-  .hero-pill-btn:active{transform:scale(0.95)}
-  .hero-pill-btn svg{width:13px;height:13px;flex-shrink:0;fill:none;stroke:currentColor;stroke-width:2.3;stroke-linecap:round;stroke-linejoin:round}
-  .hero-pill-btn-solid{background:var(--accent);border-color:var(--accent);color:#04121c}
-  .hero-pill-btn-solid svg{fill:currentColor;stroke:none}
-
-  .hero-pagination{
-    display:flex;align-items:center;gap:2px;flex-shrink:0;padding:3px;
-    background:rgba(0,0,0,0.38);border:1px solid rgba(255,255,255,0.14);
-    border-radius:10px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
-  }
+  .hero-btn:active{transform:scale(0.96)}
+  .hero-btn svg{width:13px;height:13px;flex-shrink:0}
+  .hero-btn-ghost{background:var(--pill-bg);color:var(--text-title)}
+  .hero-btn-ghost:hover{background:var(--surface-hover)}
+  .hero-btn-ghost svg{fill:none;stroke:currentColor;stroke-width:2.3;stroke-linecap:round;stroke-linejoin:round}
+  .hero-btn-solid{background:var(--accent);border-color:var(--accent);color:#04121c}
+  .hero-btn-solid svg{fill:currentColor;stroke:none}
+  .hero-nav{display:flex;align-items:center;gap:8px}
   .hero-nav-btn{
-    width:24px;height:24px;border-radius:6px;border:none;flex-shrink:0;cursor:pointer;
-    background:transparent;color:#fff;
+    width:28px;height:28px;border-radius:50%;border:none;flex-shrink:0;cursor:pointer;
+    background:rgba(0,0,0,0.45);color:#fff;backdrop-filter:blur(6px);
     display:flex;align-items:center;justify-content:center;transition:background .15s,transform .15s;
   }
-  .hero-nav-btn:hover{background:rgba(255,255,255,0.18)}
+  .hero-nav-btn:hover{background:rgba(0,0,0,0.65)}
   .hero-nav-btn:active{transform:scale(0.9)}
-  .hero-nav-btn svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
-  .hero-counter{color:#fff;font-size:11px;font-weight:700;font-family:monospace;min-width:34px;text-align:center;padding:0 2px;text-shadow:0 1px 4px rgba(0,0,0,0.6)}
+  .hero-nav-btn svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+  .hero-counter{background:rgba(0,0,0,0.45);color:#fff;font-size:10.5px;font-weight:700;padding:5px 10px;border-radius:20px;font-family:monospace;backdrop-filter:blur(6px);min-width:40px;text-align:center}
+  .hero-dots{display:flex;gap:5px;justify-content:center;padding:0 0 14px}
+  .hero-dot{width:6px;height:6px;border-radius:50%;background:var(--pill-border);border:none;cursor:pointer;padding:0;transition:all .2s}
+  .hero-dot.active{background:#fff;width:16px;border-radius:3px}
 
   #genre-chip-row .filter-pill{font-size:11px}
   .sync-stats{font-size:12px;font-family:monospace;color:var(--text-dim);margin:5px 0 16px}
@@ -832,7 +805,7 @@
   .ios-thumb { transition: transform 0.28s cubic-bezier(.4,0,.2,1); }
 
   @media(max-width:600px){
-    header{padding:max(14px, env(safe-area-inset-top)) 10px 10px}
+    header{padding:max(14px, env(safe-area-inset-top)) 10px 8px}
     main{padding:6px 10px 110px}
     .filter-row{padding:0 10px 10px 10px;margin:0 -10px 4px -10px;}
     .sync-toolbar{flex-wrap:wrap}
@@ -937,10 +910,7 @@
         <div class="notif-list" id="notif-list"></div>
       </div>
       <div class="avatar-dropdown-wrap">
-        <button class="avatar-btn" id="avatar-btn" aria-label="Account" onclick="toggleAvatarDropdown(event)">
-          <span class="avatar-letter" id="avatar-btn-letter" style="display:{% if anilist_avatar %}none{% else %}flex{% endif %}">{{ anilist_username[0]|upper }}</span>
-          <img class="avatar-img" id="avatar-btn-img" alt="{{ anilist_username }}" {% if anilist_avatar %}src="{{ anilist_avatar }}"{% endif %} style="width:100%;height:100%;border-radius:50%;object-fit:cover;display:{% if anilist_avatar %}block{% else %}none{% endif %}" onerror="this.style.display='none';document.getElementById('avatar-btn-letter').style.display='flex'">
-        </button>
+        <button class="avatar-btn" id="avatar-btn" aria-label="Account" onclick="toggleAvatarDropdown(event)">{% if anilist_avatar %}<img src="{{ anilist_avatar }}" alt="{{ anilist_username }}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;display:block">{% else %}{{ anilist_username[0]|upper }}{% endif %}</button>
         <div class="avatar-dropdown" id="avatar-dropdown">
           <button class="avatar-dropdown-option" onclick="closeAvatarDropdown();navigateTo('profile')">
             <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
@@ -1057,10 +1027,7 @@
   <!-- ── Profile Page ── -->
   <div class="page" id="page-profile">
     <div class="profile-head">
-      <div class="profile-avatar">
-        <span class="avatar-letter" id="profile-avatar-letter" style="display:{% if anilist_avatar %}none{% else %}flex{% endif %}">{{ anilist_username[0]|upper }}</span>
-        <img class="avatar-img" id="profile-avatar-img" alt="{{ anilist_username }}" {% if anilist_avatar %}src="{{ anilist_avatar }}"{% endif %} style="width:100%;height:100%;border-radius:50%;object-fit:cover;display:{% if anilist_avatar %}block{% else %}none{% endif %}" onerror="this.style.display='none';document.getElementById('profile-avatar-letter').style.display='flex'">
-      </div>
+      <div class="profile-avatar">{% if anilist_avatar %}<img src="{{ anilist_avatar }}" alt="{{ anilist_username }}" style="width:100%;height:100%;border-radius:50%;object-fit:cover">{% else %}{{ anilist_username[0]|upper }}{% endif %}</div>
       <div class="profile-name">{{ anilist_username }}</div>
       <div class="profile-sub">{% if al_connected %}Signed in via AniList{% elif mal_connected %}Signed in via MAL{% else %}Local username{% endif %}</div>
       <div class="profile-accounts">
@@ -1232,34 +1199,6 @@ let ANILIST_USERNAME = localStorage.getItem('anitrack-username') || _DEFAULT_USE
 
 // ── Haptic helper ─────────────────────────────────────────────────────────────
 function hap(ms) { try { navigator.vibrate && navigator.vibrate(ms ?? 8); } catch(e) {} }
-
-// ── Avatar (client-side fallback in case the server-rendered one failed) ──────
-const GQL_USER_AVATAR = `query($name:String){User(name:$name){avatar{large medium}}}`;
-async function loadAvatar() {
-  const btnImg = document.getElementById('avatar-btn-img');
-  const btnLetter = document.getElementById('avatar-btn-letter');
-  const profImg = document.getElementById('profile-avatar-img');
-  const profLetter = document.getElementById('profile-avatar-letter');
-  // Already have one server-rendered and loaded successfully? skip the extra request.
-  if (btnImg && btnImg.src && btnImg.style.display !== 'none') return;
-  try {
-    const res = await fetch("https://graphql.anilist.co", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query: GQL_USER_AVATAR, variables: { name: ANILIST_USERNAME } })
-    });
-    const json = await res.json();
-    const url = json?.data?.User?.avatar?.large || json?.data?.User?.avatar?.medium;
-    if (!url) return;
-    [[btnImg, btnLetter], [profImg, profLetter]].forEach(([img, letter]) => {
-      if (!img) return;
-      img.src = url;
-      img.style.display = 'block';
-      if (letter) letter.style.display = 'none';
-    });
-  } catch (e) { /* keep letter fallback */ }
-}
-loadAvatar();
 
 // ── Auto-dismiss success banners ─────────────────────────────────────────────
 ["mal-success-banner","al-success-banner"].forEach(id => {
@@ -1632,18 +1571,6 @@ function renderSchedule() {
 let _heroSlides = [];
 let _heroIndex  = 0;
 let _heroTimer  = null;
-const _heroPreloaded = new Set();
-
-// Preloads an image URL so swapping to it later never shows a blank/loading
-// flash. Resolves either way (a failed image shouldn't block the slide).
-function preloadHeroImage(url) {
-  if (!url || _heroPreloaded.has(url)) return Promise.resolve();
-  return new Promise(resolve => {
-    const img = new Image();
-    img.onload = img.onerror = () => { _heroPreloaded.add(url); resolve(); };
-    img.src = url;
-  });
-}
 
 function renderHomeHero() {
   const hero = document.getElementById('home-hero');
@@ -1670,54 +1597,31 @@ function renderHomeHero() {
   buildGenreChips();
 }
 
-async function renderHeroSlide() {
+function renderHeroSlide() {
   const hero = document.getElementById('home-hero');
   if (!hero || !_heroSlides.length) return;
   clearTimeout(_heroTimer);
 
   const featured = _heroSlides[_heroIndex];
-  const upcomingBg = featured.media.bannerImage || featured.media.coverImage?.large || '';
-
-  // If a slide is already showing, preload the next image and fade the old
-  // one out first, so the swap never flashes a blank card while the new
-  // banner loads over the network.
-  const existingCard = hero.querySelector('.hero-card');
-  if (existingCard) {
-    await preloadHeroImage(upcomingBg);
-    // Bail out if the user has since navigated to a different slide/page
-    // while we were waiting on the image (e.g. clicked another dot fast).
-    if (!hero.isConnected) return;
-    existingCard.style.opacity = '0';
-    await new Promise(r => setTimeout(r, 220));
-  } else {
-    await preloadHeroImage(upcomingBg);
-  }
-  if (!hero.isConnected) return;
-
-  buildHeroSlideMarkup(hero, featured, upcomingBg);
-}
-
-function buildHeroSlideMarkup(hero, featured, bg) {
   const m      = featured.media;
   const title  = m.title?.english || m.title?.romaji || 'Unknown';
+  const bg     = m.bannerImage || m.coverImage?.large || '';
   const genres = (m.genres || []).slice(0, 3).join(' · ');
   const next   = m.nextAiringEpisode;
   const total  = m.episodes || '?';
 
   const badges = [
     m.format ? m.format.replace('_', ' ') : null,
-    m.episodes ? `${m.episodes} EP` : null,
     m.duration ? `${m.duration} min` : null,
     m.averageScore ? `★ ${(m.averageScore / 10).toFixed(1)}` : null,
   ].filter(Boolean).map(b => `<span class="hero-meta-pill">${b}</span>`).join('');
 
   const topBadge = next
-    ? `<span class="hero-badge hero-badge-floating"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>EP ${next.episode} · ${fmtCountdown(next.timeUntilAiring)}</span>`
-    : `<span class="hero-badge hero-badge-floating"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>EP ${featured.progress}/${total}</span>`;
+    ? `<span class="hero-badge"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>EP ${next.episode} · ${fmtCountdown(next.timeUntilAiring)}</span>`
+    : `<span class="hero-badge"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>EP ${featured.progress}/${total}</span>`;
 
-  // Fraction counter + prev/next arrows, AniList-style, anchored bottom-right.
   const nav = _heroSlides.length > 1 ? `
-      <div class="hero-pagination">
+      <div class="hero-nav">
         <button class="hero-nav-btn" aria-label="Previous" onclick="heroPrev()">
           <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
         </button>
@@ -1727,43 +1631,38 @@ function buildHeroSlideMarkup(hero, featured, bg) {
         </button>
       </div>` : '';
 
+  const dots = _heroSlides.length > 1 ? `
+      <div class="hero-dots">
+        ${_heroSlides.map((_, i) => `<button class="hero-dot${i === _heroIndex ? ' active' : ''}" aria-label="Slide ${i + 1}" onclick="heroGoTo(${i})"></button>`).join('')}
+      </div>` : '';
+
   hero.innerHTML = `
-    <div class="hero-card" style="opacity:0">
+    <div class="hero-card" style="animation:fadeIn .35s ease">
       <div class="hero-media" style="background-image:url('${bg}')">
         <div class="hero-scrim"></div>
-        ${topBadge}
-        <div class="hero-overlay">
-          <div class="hero-meta-row">${badges}</div>
-          <div class="hero-title">${title}</div>
-          ${genres ? `<div class="hero-genres">${(m.genres || []).slice(0, 3).map(g => `<span class="hero-genre-pill">${g}</span>`).join('')}</div>` : ''}
-          <div class="hero-bottom-row">
-            <div class="hero-pill-actions">
-              <a class="hero-pill-btn" href="${m.siteUrl || '#'}" target="_blank" rel="noopener">
-                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                Details
-              </a>
-              <button class="hero-pill-btn hero-pill-btn-solid" onclick="updateEp(${featured.id},${featured.progress},${m.episodes||0},+1)">
-                <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                +1 EP
-              </button>
-            </div>
-            ${nav}
-          </div>
+        <div class="hero-top-badges">${topBadge}${nav}</div>
+      </div>
+      <div class="hero-body">
+        <div class="hero-meta-row">${badges}</div>
+        <div class="hero-title">${title}</div>
+        ${genres ? `<div class="hero-genres">${(m.genres || []).slice(0, 3).map(g => `<span class="hero-genre-pill">${g}</span>`).join('')}</div>` : ''}
+        <div class="hero-actions">
+          <a class="hero-btn hero-btn-ghost" href="${m.siteUrl || '#'}" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            Details
+          </a>
+          <button class="hero-btn hero-btn-solid" onclick="updateEp(${featured.id},${featured.progress},${m.episodes||0},+1)">
+            <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            +1 Episode
+          </button>
         </div>
       </div>
+      ${dots}
     </div>`;
 
-  // Image is already preloaded at this point, so it renders instantly at
-  // opacity 0 above — this rAF just triggers the CSS transition to fade it
-  // in, instead of the image popping in abruptly.
-  requestAnimationFrame(() => {
-    const card = hero.querySelector('.hero-card');
-    if (card) card.style.opacity = '1';
-  });
-
-  // Auto-advance every 4s, pausing whenever the person interacts manually.
+  // Auto-advance every 8s, pausing whenever the person interacts manually.
   if (_heroSlides.length > 1) {
-    _heroTimer = setTimeout(() => heroNext(true), 4000);
+    _heroTimer = setTimeout(() => heroNext(true), 8000);
   }
 }
 
@@ -2133,11 +2032,7 @@ function toggleNotifPanel(e) {
   const panel = document.getElementById('notif-panel');
   const opening = !panel.classList.contains('open');
   panel.classList.toggle('open');
-  if (opening) {
-    renderNotifications();
-    markNotifsSeen(getAiringSoonEntries());
-    updateNotifBadge();
-  }
+  if (opening) renderNotifications();
 }
 function closeNotifPanel() {
   document.getElementById('notif-panel')?.classList.remove('open');
@@ -2155,32 +2050,10 @@ function getAiringSoonEntries(hoursWindow = 48) {
     .sort((a, b) => a.media.nextAiringEpisode.timeUntilAiring - b.media.nextAiringEpisode.timeUntilAiring);
 }
 
-// Notifications have no server-side "read" state, so we track which
-// upcoming episodes the person has already been shown in localStorage.
-// The badge only counts entries not yet in that set, and opening the panel
-// marks everything currently listed as seen — otherwise the same "airing
-// soon" episode would keep the badge lit forever even after checking it.
-const NOTIF_SEEN_KEY = 'anitrack_notif_seen_v1';
-function notifEntryId(e) {
-  return `${e.media.id}:${e.media.nextAiringEpisode.episode}`;
-}
-function getSeenNotifIds() {
-  try { return new Set(JSON.parse(localStorage.getItem(NOTIF_SEEN_KEY) || '[]')); }
-  catch { return new Set(); }
-}
-function markNotifsSeen(entries) {
-  const seen = getSeenNotifIds();
-  entries.forEach(e => seen.add(notifEntryId(e)));
-  // Trim to avoid unbounded growth as episodes air and roll off the window.
-  const trimmed = Array.from(seen).slice(-200);
-  localStorage.setItem(NOTIF_SEEN_KEY, JSON.stringify(trimmed));
-}
-
 function updateNotifBadge() {
   const badge = document.getElementById('notif-badge');
   if (!badge) return;
-  const seen = getSeenNotifIds();
-  const count = getAiringSoonEntries().filter(e => !seen.has(notifEntryId(e))).length;
+  const count = getAiringSoonEntries().length;
   badge.textContent = count > 9 ? '9+' : String(count);
   badge.style.display = count > 0 ? '' : 'none';
 }
