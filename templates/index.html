@@ -428,6 +428,13 @@
     body.sidebar-collapsed .side-menu-user-wrap{display:none}
     body.sidebar-collapsed .side-menu-footer-gear{display:none}
     body.sidebar-collapsed .side-menu-header{justify-content:center;padding-left:0;padding-right:0}
+
+    /* Constrain the content column on wide screens — without this, main
+       stretches edge-to-edge on desktop and the hero banner (sized off its
+       own width via aspect-ratio) becomes excessively tall, pushing the
+       title/buttons overlay below the fold. */
+    main{max-width:1100px;margin:0 auto;width:100%}
+    .hero-media{aspect-ratio:21/8}
   }
 
   /* ─── Sign-in gate ─── */
@@ -1742,11 +1749,9 @@ function buildHeroSlideMarkup(hero, featured, bg) {
     if (card) card.style.opacity = '1';
   });
 
-  // Auto-advance every 3-5s (randomized a bit so it doesn't feel mechanical),
-  // pausing whenever the person interacts manually.
+  // Auto-advance every 4s, pausing whenever the person interacts manually.
   if (_heroSlides.length > 1) {
-    const delay = 3000 + Math.random() * 2000;
-    _heroTimer = setTimeout(() => heroNext(true), delay);
+    _heroTimer = setTimeout(() => heroNext(true), 4000);
   }
 }
 
