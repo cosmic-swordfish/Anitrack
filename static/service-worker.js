@@ -1,11 +1,8 @@
-const CACHE = 'anitrack-v1';
+const CACHE = 'anitrack-v2';
 const STATIC = [
   '/static/favicon.png',
   '/static/logo-512.png',
   '/static/manifest.json',
-  '/static/glass.css',
-  '/static/container.js',
-  '/static/button.js',
 ];
 
 // Install: cache static assets
