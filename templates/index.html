@@ -614,50 +614,49 @@
     opacity:1;transition:opacity .22s ease;
   }
   .hero-media{
-    position:relative;aspect-ratio:16/11;width:100%;
+    position:relative;aspect-ratio:16/12;width:100%;
     background:#111420 center/cover no-repeat;
     transition:background-image .22s ease;
+    display:flex;flex-direction:column;justify-content:flex-end;
   }
   .hero-scrim{
     position:absolute;inset:0;
-    background:linear-gradient(180deg, rgba(10,12,20,0.35) 0%, rgba(10,12,20,0.05) 30%, rgba(10,12,20,0.05) 65%, rgba(10,12,20,0.75) 100%);
+    background:linear-gradient(180deg, rgba(10,12,20,0.12) 0%, rgba(10,12,20,0.02) 25%, rgba(10,12,20,0.38) 58%, rgba(10,12,20,0.94) 100%);
   }
-  .hero-top-badges{position:absolute;left:14px;right:14px;top:14px;z-index:1;display:flex;justify-content:space-between;align-items:flex-start}
+  .hero-badge-floating{position:absolute;top:14px;left:14px;z-index:2}
   .hero-badge{display:flex;align-items:center;gap:5px;background:rgba(0,0,0,0.55);color:#fff;font-size:11px;font-weight:700;padding:6px 11px;border-radius:20px;font-family:monospace;backdrop-filter:blur(6px)}
   .hero-badge svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2.3;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
-  .hero-body{position:relative;z-index:1;padding:16px 16px 18px}
-  .hero-meta-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
-  .hero-meta-pill{display:flex;align-items:center;gap:5px;background:var(--pill-bg);border:1px solid var(--pill-border);color:var(--text-sub);font-size:10.5px;font-weight:700;padding:4px 10px;border-radius:20px}
-  .hero-title{font-size:20px;font-weight:800;color:var(--text-title);line-height:1.2;margin-bottom:8px}
-  .hero-genres{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
-  .hero-genre-pill{background:var(--pill-bg);border:1px solid var(--pill-border);color:var(--text-dim);font-size:10.5px;font-weight:700;padding:5px 11px;border-radius:20px}
-  .hero-actions{display:flex;gap:8px}
-  .hero-btn{
-    flex:1;display:flex;align-items:center;justify-content:center;gap:7px;
-    padding:11px;border-radius:22px;border:1px solid var(--pill-border);cursor:pointer;
-    font-size:12px;font-weight:800;line-height:1;letter-spacing:.03em;text-transform:uppercase;
-    transition:transform .15s,background .15s;text-decoration:none;white-space:nowrap;
+
+  .hero-overlay{position:relative;z-index:1;padding:16px 14px 14px}
+  .hero-meta-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+  .hero-meta-pill{display:flex;align-items:center;gap:5px;background:rgba(255,255,255,0.14);border:1px solid rgba(255,255,255,0.2);color:#fff;font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;backdrop-filter:blur(4px)}
+  .hero-title{font-size:19px;font-weight:800;color:#fff;line-height:1.22;margin-bottom:6px;text-shadow:0 2px 14px rgba(0,0,0,0.55)}
+  .hero-genres{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+  .hero-genre-pill{background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.18);color:rgba(255,255,255,0.8);font-size:10px;font-weight:700;padding:4px 10px;border-radius:20px;backdrop-filter:blur(4px)}
+
+  .hero-bottom-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .hero-pill-actions{display:flex;gap:8px;min-width:0}
+  .hero-pill-btn{
+    display:flex;align-items:center;gap:6px;padding:9px 14px;border-radius:20px;
+    border:1px solid rgba(255,255,255,0.24);cursor:pointer;background:rgba(255,255,255,0.16);
+    color:#fff;font-size:11px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;
+    transition:transform .15s,background .15s;text-decoration:none;white-space:nowrap;backdrop-filter:blur(8px);
   }
-  .hero-btn:active{transform:scale(0.96)}
-  .hero-btn svg{width:13px;height:13px;flex-shrink:0}
-  .hero-btn-ghost{background:var(--pill-bg);color:var(--text-title)}
-  .hero-btn-ghost:hover{background:var(--surface-hover)}
-  .hero-btn-ghost svg{fill:none;stroke:currentColor;stroke-width:2.3;stroke-linecap:round;stroke-linejoin:round}
-  .hero-btn-solid{background:var(--accent);border-color:var(--accent);color:#04121c}
-  .hero-btn-solid svg{fill:currentColor;stroke:none}
-  .hero-nav{display:flex;align-items:center;gap:8px}
+  .hero-pill-btn:active{transform:scale(0.95)}
+  .hero-pill-btn svg{width:13px;height:13px;flex-shrink:0;fill:none;stroke:currentColor;stroke-width:2.3;stroke-linecap:round;stroke-linejoin:round}
+  .hero-pill-btn-solid{background:var(--accent);border-color:var(--accent);color:#04121c}
+  .hero-pill-btn-solid svg{fill:currentColor;stroke:none}
+
+  .hero-pagination{display:flex;align-items:center;gap:6px;flex-shrink:0}
   .hero-nav-btn{
-    width:28px;height:28px;border-radius:50%;border:none;flex-shrink:0;cursor:pointer;
-    background:rgba(0,0,0,0.45);color:#fff;backdrop-filter:blur(6px);
+    width:26px;height:26px;border-radius:50%;border:none;flex-shrink:0;cursor:pointer;
+    background:rgba(255,255,255,0.16);color:#fff;backdrop-filter:blur(6px);
     display:flex;align-items:center;justify-content:center;transition:background .15s,transform .15s;
   }
-  .hero-nav-btn:hover{background:rgba(0,0,0,0.65)}
+  .hero-nav-btn:hover{background:rgba(255,255,255,0.28)}
   .hero-nav-btn:active{transform:scale(0.9)}
-  .hero-nav-btn svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
-  .hero-counter{background:rgba(0,0,0,0.45);color:#fff;font-size:10.5px;font-weight:700;padding:5px 10px;border-radius:20px;font-family:monospace;backdrop-filter:blur(6px);min-width:40px;text-align:center}
-  .hero-dots{display:flex;gap:5px;justify-content:center;padding:0 0 14px}
-  .hero-dot{width:6px;height:6px;border-radius:50%;background:var(--pill-border);border:none;cursor:pointer;padding:0;transition:all .2s}
-  .hero-dot.active{background:#fff;width:16px;border-radius:3px}
+  .hero-nav-btn svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+  .hero-counter{color:#fff;font-size:11px;font-weight:700;font-family:monospace;min-width:34px;text-align:center;text-shadow:0 1px 4px rgba(0,0,0,0.6)}
 
   #genre-chip-row .filter-pill{font-size:11px}
   .sync-stats{font-size:12px;font-family:monospace;color:var(--text-dim);margin:5px 0 16px}
@@ -1688,16 +1687,18 @@ function buildHeroSlideMarkup(hero, featured, bg) {
 
   const badges = [
     m.format ? m.format.replace('_', ' ') : null,
+    m.episodes ? `${m.episodes} EP` : null,
     m.duration ? `${m.duration} min` : null,
     m.averageScore ? `★ ${(m.averageScore / 10).toFixed(1)}` : null,
   ].filter(Boolean).map(b => `<span class="hero-meta-pill">${b}</span>`).join('');
 
   const topBadge = next
-    ? `<span class="hero-badge"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>EP ${next.episode} · ${fmtCountdown(next.timeUntilAiring)}</span>`
-    : `<span class="hero-badge"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>EP ${featured.progress}/${total}</span>`;
+    ? `<span class="hero-badge hero-badge-floating"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>EP ${next.episode} · ${fmtCountdown(next.timeUntilAiring)}</span>`
+    : `<span class="hero-badge hero-badge-floating"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>EP ${featured.progress}/${total}</span>`;
 
+  // Fraction counter + prev/next arrows, AniList-style, anchored bottom-right.
   const nav = _heroSlides.length > 1 ? `
-      <div class="hero-nav">
+      <div class="hero-pagination">
         <button class="hero-nav-btn" aria-label="Previous" onclick="heroPrev()">
           <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
         </button>
@@ -1707,33 +1708,30 @@ function buildHeroSlideMarkup(hero, featured, bg) {
         </button>
       </div>` : '';
 
-  const dots = _heroSlides.length > 1 ? `
-      <div class="hero-dots">
-        ${_heroSlides.map((_, i) => `<button class="hero-dot${i === _heroIndex ? ' active' : ''}" aria-label="Slide ${i + 1}" onclick="heroGoTo(${i})"></button>`).join('')}
-      </div>` : '';
-
   hero.innerHTML = `
     <div class="hero-card" style="opacity:0">
       <div class="hero-media" style="background-image:url('${bg}')">
         <div class="hero-scrim"></div>
-        <div class="hero-top-badges">${topBadge}${nav}</div>
-      </div>
-      <div class="hero-body">
-        <div class="hero-meta-row">${badges}</div>
-        <div class="hero-title">${title}</div>
-        ${genres ? `<div class="hero-genres">${(m.genres || []).slice(0, 3).map(g => `<span class="hero-genre-pill">${g}</span>`).join('')}</div>` : ''}
-        <div class="hero-actions">
-          <a class="hero-btn hero-btn-ghost" href="${m.siteUrl || '#'}" target="_blank" rel="noopener">
-            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-            Details
-          </a>
-          <button class="hero-btn hero-btn-solid" onclick="updateEp(${featured.id},${featured.progress},${m.episodes||0},+1)">
-            <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-            +1 Episode
-          </button>
+        ${topBadge}
+        <div class="hero-overlay">
+          <div class="hero-meta-row">${badges}</div>
+          <div class="hero-title">${title}</div>
+          ${genres ? `<div class="hero-genres">${(m.genres || []).slice(0, 3).map(g => `<span class="hero-genre-pill">${g}</span>`).join('')}</div>` : ''}
+          <div class="hero-bottom-row">
+            <div class="hero-pill-actions">
+              <a class="hero-pill-btn" href="${m.siteUrl || '#'}" target="_blank" rel="noopener">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                Details
+              </a>
+              <button class="hero-pill-btn hero-pill-btn-solid" onclick="updateEp(${featured.id},${featured.progress},${m.episodes||0},+1)">
+                <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                +1 EP
+              </button>
+            </div>
+            ${nav}
+          </div>
         </div>
       </div>
-      ${dots}
     </div>`;
 
   // Image is already preloaded at this point, so it renders instantly at
@@ -1744,9 +1742,11 @@ function buildHeroSlideMarkup(hero, featured, bg) {
     if (card) card.style.opacity = '1';
   });
 
-  // Auto-advance every 4s, pausing whenever the person interacts manually.
+  // Auto-advance every 3-5s (randomized a bit so it doesn't feel mechanical),
+  // pausing whenever the person interacts manually.
   if (_heroSlides.length > 1) {
-    _heroTimer = setTimeout(() => heroNext(true), 4000);
+    const delay = 3000 + Math.random() * 2000;
+    _heroTimer = setTimeout(() => heroNext(true), delay);
   }
 }
 
