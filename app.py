@@ -797,7 +797,16 @@ def db_status():
         return jsonify({"status": "error", "detail": str(e)}), 500
 
 @app.route("/")
-def index():
+@app.route("/<any(watching,planned,schedule,sync,settings,profile):view>")
+def index(view=None):
+    # The SPA has its own client-side router (navigateTo() in index.html) for
+    # switching tabs without a full page reload. That only works once the app
+    # is already loaded, though — typing /schedule (or any other tab) into
+    # the address bar directly, refreshing on it, or opening a shared link
+    # used to 404 because Flask had no route for anything but "/". This route
+    # just serves the same page for any known tab path; the inline
+    # DOMContentLoaded handler reads window.location.pathname on load and
+    # switches to the right tab client-side.
     mal_connected = "mal_token" in session
     al_connected  = "al_token"  in session
     return render_template("index.html",
