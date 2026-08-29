@@ -405,7 +405,6 @@
   @media (min-width:900px){
     .grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
     main{max-width:1100px;margin:0 auto}
-    .hero-media{aspect-ratio:21/8}
   }
 
   /* ─── Sign-in gate ─── */
@@ -596,6 +595,12 @@
     background:#111420 center/cover no-repeat;
     transition:background-image .22s ease;
     display:flex;flex-direction:column;justify-content:flex-end;
+  }
+  /* Wider, shorter banner on desktop — declared after the base rule
+     above (same specificity) so it actually wins the cascade instead
+     of being silently overridden by the source order. */
+  @media (min-width:900px){
+    .hero-media{aspect-ratio:21/8}
   }
   .hero-scrim{
     position:absolute;inset:0;
