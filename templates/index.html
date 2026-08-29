@@ -489,7 +489,10 @@
 
   /* ─── Schedule page ─── */
   #sched-quick-row{flex-wrap:wrap;padding:0 0 16px}
-  .day-crumb{display:flex;align-items:flex-end;gap:9px;overflow-x:auto;padding:4px 4px 20px;scrollbar-width:none;white-space:nowrap;-webkit-mask-image:linear-gradient(90deg,transparent 0,transparent 6px,#000 48px,#000 100%);mask-image:linear-gradient(90deg,transparent 0,transparent 6px,#000 48px,#000 100%)}
+  .sched-day-nav{display:flex;align-items:center;gap:8px}
+  .sched-nav-btn{flex-shrink:0;width:30px;height:30px;border-radius:50%;border:1px solid var(--border);background:var(--glass-bg);color:var(--text-sub);cursor:pointer;font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center;transition:background .15s,color .15s}
+  .sched-nav-btn:hover{background:var(--accent-bg);color:var(--accent);border-color:var(--accent-border)}
+  .day-crumb{flex:1;min-width:0;display:flex;align-items:flex-end;gap:9px;overflow-x:auto;padding:4px 4px 20px;scrollbar-width:none;white-space:nowrap;-webkit-mask-image:linear-gradient(90deg,transparent 0,transparent 6px,#000 48px,#000 100%);mask-image:linear-gradient(90deg,transparent 0,transparent 6px,#000 48px,#000 100%)}
   .day-crumb::-webkit-scrollbar{display:none}
   .day-crumb-item{flex-shrink:0;font-size:19px;font-weight:700;color:var(--text-muted);cursor:pointer;transition:color .2s;line-height:1}
   .day-crumb-item:hover{color:var(--text-sub)}
@@ -1085,7 +1088,11 @@
       <button class="filter-pill" data-quick="prevweek" onclick="schedQuickJump(this,'prevweek')">Previous week</button>
       <button class="filter-pill" data-quick="nextweekend" onclick="schedQuickJump(this,'nextweekend')">Next weekend</button>
     </div>
-    <div class="day-crumb" id="day-tabs"></div>
+    <div class="sched-day-nav">
+      <button class="sched-nav-btn" aria-label="Previous day" onclick="selectScheduleDay(_scheduleOffset-1)">‹</button>
+      <div class="day-crumb" id="day-tabs"></div>
+      <button class="sched-nav-btn" aria-label="Next day" onclick="selectScheduleDay(_scheduleOffset+1)">›</button>
+    </div>
     <div class="sched-list" id="sched-list"></div>
   </div>
 
@@ -1342,7 +1349,10 @@ applyTheme(localStorage.getItem("anitrack-theme") || "light");
 
 // ── Tab navigation ────────────────────────────────────────────────────────────
 // Unified page switcher: 'watching' | 'planned' | 'schedule' | 'sync' | 'settings'
-function navigateTo(view) {
+const VALID_VIEWS = ['watching', 'planned', 'schedule', 'sync', 'settings', 'profile'];
+
+function navigateTo(view, opts) {
+  opts = opts || {};
   hap(6);
   document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
 
@@ -1357,8 +1367,16 @@ function navigateTo(view) {
     if (_allEntries.length) applyFilter();
   } else {
     document.getElementById('page-' + view)?.classList.add('active');
-    if (view === 'profile')  renderProfile();
-    if (view === 'schedule') renderSchedule();
+    if (view === 'profile') renderProfile();
+    if (view === 'schedule') {
+      // Always land on "today" when arriving at the Schedule tab fresh,
+      // rather than wherever the day-crumb was last left (e.g. still on
+      // "Saturday" from a previous visit) — that stale-offset state is
+      // what made it look like today's schedule had gone missing.
+      _scheduleOffset = 0;
+      syncQuickPillActive();
+      renderSchedule();
+    }
   }
 
   document.querySelectorAll('.side-menu-item').forEach(item => {
@@ -1369,7 +1387,20 @@ function navigateTo(view) {
   closeAvatarDropdown();
   closeNotifPanel();
   window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  // Keep the address bar in sync so the URL is shareable/refreshable and
+  // the browser back/forward buttons work, matching whichever tab you're
+  // actually looking at.
+  if (opts.pushState !== false) {
+    const path = view === 'watching' ? '/' : '/' + view;
+    if (window.location.pathname !== path) history.pushState({ view }, '', path);
+  }
 }
+
+window.addEventListener('popstate', () => {
+  const view = window.location.pathname.replace(/^\//, '') || 'watching';
+  navigateTo(VALID_VIEWS.includes(view) ? view : 'watching', { pushState: false });
+});
 
 // Ensure list page is visible without disturbing tab active states
 function ensureListPage() {
@@ -1608,6 +1639,7 @@ function renderEntries(entries) {
   renderCardList('view-planned', planned);
   updateNotifBadge();
   if (document.getElementById('page-profile')?.classList.contains('active')) renderProfile();
+  if (document.getElementById('page-schedule')?.classList.contains('active')) renderSchedule();
   renderHomeHero();
 }
 
@@ -2480,6 +2512,15 @@ function buildBackTop() {
 document.addEventListener('DOMContentLoaded', () => {
   loadList();
   buildBackTop();
+
+  // Respect whatever path the browser actually landed on (direct link,
+  // refresh, bookmark) instead of always defaulting to the Home tab.
+  const initialView = window.location.pathname.replace(/^\//, '') || 'watching';
+  if (VALID_VIEWS.includes(initialView)) {
+    navigateTo(initialView, { pushState: false });
+  } else {
+    history.replaceState({ view: 'watching' }, '', '/');
+  }
 });
 
 
