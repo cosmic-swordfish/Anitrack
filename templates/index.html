@@ -645,6 +645,47 @@
   .hero-nav-btn svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
   .hero-counter{color:#fff;font-size:11px;font-weight:700;font-family:monospace;min-width:34px;text-align:center;padding:0 2px;text-shadow:0 1px 4px rgba(0,0,0,0.6)}
 
+  /* Desktop-only nav: side arrows + floating top-right counter, Miruro-style,
+     instead of stacking everything into one bottom bar. Hidden on mobile. */
+  .hero-side-nav,.hero-counter-top{display:none}
+  @media (min-width:900px){
+    .hero-scrim{
+      background:
+        linear-gradient(180deg, rgba(10,12,20,0.10) 0%, rgba(10,12,20,0.02) 22%, rgba(10,12,20,0.30) 55%, rgba(10,12,20,0.88) 100%),
+        linear-gradient(90deg, rgba(8,10,16,0.85) 0%, rgba(8,10,16,0.5) 32%, rgba(8,10,16,0.05) 62%, transparent 80%);
+    }
+    .hero-overlay{
+      height:100%;display:flex;flex-direction:column;justify-content:center;
+      padding:0 90px 0 40px;max-width:620px;box-sizing:border-box;
+    }
+    .hero-meta-row{margin-bottom:14px}
+    .hero-title{font-size:36px;line-height:1.15;margin-bottom:10px}
+    .hero-genres{margin-bottom:22px}
+    .hero-pill-btn{padding:11px 20px;font-size:12px}
+    .hero-bottom-row{justify-content:flex-start}
+    .hero-bottom-row .hero-pagination{display:none}
+
+    .hero-side-nav{display:contents}
+    .hero-side-btn{
+      position:absolute;top:50%;transform:translateY(-50%);z-index:2;
+      width:42px;height:42px;border-radius:50%;flex-shrink:0;cursor:pointer;
+      background:rgba(0,0,0,0.35);border:1px solid rgba(255,255,255,0.18);color:#fff;
+      display:flex;align-items:center;justify-content:center;
+      transition:background .15s,transform .15s;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+    }
+    .hero-side-btn:hover{background:rgba(0,0,0,0.55)}
+    .hero-side-btn:active{transform:translateY(-50%) scale(0.92)}
+    .hero-side-btn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+    .hero-side-prev{left:16px}
+    .hero-side-next{right:16px}
+
+    .hero-counter-top{
+      display:block;position:absolute;top:16px;right:16px;z-index:2;
+      background:rgba(0,0,0,0.45);color:#fff;font-size:11px;font-weight:700;font-family:monospace;
+      padding:5px 12px;border-radius:20px;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+    }
+  }
+
   #genre-chip-row .filter-pill{font-size:11px}
   .sync-stats{font-size:12px;font-family:monospace;color:var(--text-dim);margin:5px 0 16px}
   .sync-stats b{color:var(--text-title);font-weight:700}
@@ -1691,7 +1732,9 @@ function buildHeroSlideMarkup(hero, featured, bg) {
     ? `<span class="hero-badge hero-badge-floating"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>EP ${next.episode} · ${fmtCountdown(next.timeUntilAiring)}</span>`
     : `<span class="hero-badge hero-badge-floating"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>EP ${featured.progress}/${total}</span>`;
 
-  // Fraction counter + prev/next arrows, AniList-style, anchored bottom-right.
+  // Fraction counter + prev/next arrows, AniList-style, anchored bottom-right
+  // on mobile. On desktop the equivalent controls move to side arrows +
+  // a floating top-right counter (see .hero-side-nav / .hero-counter-top).
   const nav = _heroSlides.length > 1 ? `
       <div class="hero-pagination">
         <button class="hero-nav-btn" aria-label="Previous" onclick="heroPrev()">
@@ -1703,11 +1746,23 @@ function buildHeroSlideMarkup(hero, featured, bg) {
         </button>
       </div>` : '';
 
+  const sideNav = _heroSlides.length > 1 ? `
+      <div class="hero-side-nav">
+        <button class="hero-side-btn hero-side-prev" aria-label="Previous" onclick="heroPrev()">
+          <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <button class="hero-side-btn hero-side-next" aria-label="Next" onclick="heroNext()">
+          <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+      </div>
+      <div class="hero-counter-top">${_heroIndex + 1} / ${_heroSlides.length}</div>` : '';
+
   hero.innerHTML = `
     <div class="hero-card" style="opacity:0">
       <div class="hero-media" style="background-image:url('${bg}')">
         <div class="hero-scrim"></div>
         ${topBadge}
+        ${sideNav}
         <div class="hero-overlay">
           <div class="hero-meta-row">${badges}</div>
           <div class="hero-title">${title}</div>
