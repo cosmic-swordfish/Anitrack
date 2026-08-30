@@ -489,10 +489,7 @@
 
   /* ─── Schedule page ─── */
   #sched-quick-row{flex-wrap:wrap;padding:0 0 16px}
-  .sched-day-nav{display:flex;align-items:center;gap:8px}
-  .sched-nav-btn{flex-shrink:0;width:30px;height:30px;border-radius:50%;border:1px solid var(--border);background:var(--glass-bg);color:var(--text-sub);cursor:pointer;font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center;transition:background .15s,color .15s}
-  .sched-nav-btn:hover{background:var(--accent-bg);color:var(--accent);border-color:var(--accent-border)}
-  .day-crumb{flex:1;min-width:0;display:flex;align-items:flex-end;gap:9px;overflow-x:auto;padding:4px 4px 20px;scrollbar-width:none;white-space:nowrap;-webkit-mask-image:linear-gradient(90deg,transparent 0,transparent 6px,#000 48px,#000 100%);mask-image:linear-gradient(90deg,transparent 0,transparent 6px,#000 48px,#000 100%)}
+  .day-crumb{display:flex;align-items:flex-end;gap:9px;overflow-x:auto;padding:4px 4px 20px;scrollbar-width:none;white-space:nowrap;-webkit-mask-image:linear-gradient(90deg,transparent 0,transparent 6px,#000 calc(100% - 24px),transparent 100%);mask-image:linear-gradient(90deg,transparent 0,transparent 6px,#000 calc(100% - 24px),transparent 100%)}
   .day-crumb::-webkit-scrollbar{display:none}
   .day-crumb-item{flex-shrink:0;font-size:19px;font-weight:700;color:var(--text-muted);cursor:pointer;transition:color .2s;line-height:1}
   .day-crumb-item:hover{color:var(--text-sub)}
@@ -504,7 +501,10 @@
   .hour-group:last-child{margin-bottom:0}
   .hour-header{display:flex;align-items:center;gap:6px;font-size:19px;font-weight:800;color:var(--text-title);margin-bottom:12px}
   .hour-header .chev{color:var(--accent);font-size:15px;font-weight:700;transform:translateY(-1px)}
-  .hour-entries{display:flex;flex-direction:column;gap:12px;margin-left:8px;padding-left:18px;border-left:2px solid var(--border-lo)}
+  .hour-entries{display:flex;flex-direction:column;gap:12px}
+  @media (min-width:640px){
+    .hour-entries{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+  }
   .sched-row{display:flex;align-items:center;gap:12px;padding:12px;border-radius:16px;background:var(--glass-bg);border:1px solid var(--border-lo)}
   .sched-thumb{width:52px;height:74px;border-radius:10px;flex-shrink:0;background:var(--cover-blank-bg);overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:20px}
   .sched-thumb img{width:100%;height:100%;object-fit:cover}
@@ -607,7 +607,10 @@
   }
   .hero-scrim{
     position:absolute;inset:0;
-    background:linear-gradient(180deg, rgba(10,12,20,0.12) 0%, rgba(10,12,20,0.02) 25%, rgba(10,12,20,0.38) 58%, rgba(10,12,20,0.94) 100%);
+    /* Light wash instead of a dark scrim (Miruro-style): the art stays bright
+       up top and fades to a near-opaque white base where the text sits, so
+       dark text reads clearly instead of needing a black gradient + white text. */
+    background:linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.08) 25%, rgba(255,255,255,0.55) 58%, rgba(255,255,255,0.95) 100%);
   }
   .hero-badge-floating{position:absolute;top:14px;left:14px;z-index:2}
   .hero-badge{display:flex;align-items:center;gap:5px;background:rgba(255,255,255,0.92);color:#14171f;font-size:11px;font-weight:700;padding:6px 11px;border-radius:20px;font-family:monospace;backdrop-filter:blur(6px);box-shadow:0 1px 4px rgba(0,0,0,0.18)}
@@ -616,13 +619,12 @@
   .hero-overlay{position:relative;z-index:1;padding:16px 14px 14px}
   .hero-meta-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
   .hero-meta-pill{display:flex;align-items:center;gap:5px;background:rgba(255,255,255,0.9);border:none;color:#14171f;font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;box-shadow:0 1px 3px rgba(0,0,0,0.14)}
-  .hero-title{font-size:19px;font-weight:800;color:#fff;line-height:1.22;margin-bottom:6px;text-shadow:0 2px 14px rgba(0,0,0,0.55)}
+  .hero-title{font-size:19px;font-weight:800;color:#14171f;line-height:1.22;margin-bottom:6px;text-shadow:0 1px 2px rgba(255,255,255,0.5)}
   .hero-genres{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
   .hero-genre-pill,.hero-studio-pill{background:rgba(255,255,255,0.85);border:none;color:#14171f;font-size:10px;font-weight:700;padding:4px 10px;border-radius:20px}
   .hero-desc{
-    color:rgba(255,255,255,0.82);font-size:12px;line-height:1.42;margin-bottom:14px;max-width:560px;
+    color:rgba(20,23,31,0.75);font-size:12px;line-height:1.42;margin-bottom:14px;max-width:560px;
     display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
-    text-shadow:0 1px 6px rgba(0,0,0,0.5);
   }
 
   .hero-bottom-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
@@ -660,8 +662,8 @@
   @media (min-width:900px){
     .hero-scrim{
       background:
-        linear-gradient(180deg, rgba(10,12,20,0.10) 0%, rgba(10,12,20,0.02) 22%, rgba(10,12,20,0.30) 55%, rgba(10,12,20,0.88) 100%),
-        linear-gradient(90deg, rgba(8,10,16,0.85) 0%, rgba(8,10,16,0.5) 32%, rgba(8,10,16,0.05) 62%, transparent 80%);
+        linear-gradient(180deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.02) 22%, rgba(255,255,255,0.42) 55%, rgba(255,255,255,0.92) 100%),
+        linear-gradient(90deg, rgba(255,255,255,0.94) 0%, rgba(255,255,255,0.62) 32%, rgba(255,255,255,0.06) 62%, transparent 80%);
     }
     .hero-overlay{
       height:100%;display:flex;flex-direction:column;justify-content:center;
@@ -1088,11 +1090,7 @@
       <button class="filter-pill" data-quick="prevweek" onclick="schedQuickJump(this,'prevweek')">Previous week</button>
       <button class="filter-pill" data-quick="nextweekend" onclick="schedQuickJump(this,'nextweekend')">Next weekend</button>
     </div>
-    <div class="sched-day-nav">
-      <button class="sched-nav-btn" aria-label="Previous day" onclick="selectScheduleDay(_scheduleOffset-1)">‹</button>
-      <div class="day-crumb" id="day-tabs"></div>
-      <button class="sched-nav-btn" aria-label="Next day" onclick="selectScheduleDay(_scheduleOffset+1)">›</button>
-    </div>
+    <div class="day-crumb" id="day-tabs"></div>
     <div class="sched-list" id="sched-list"></div>
   </div>
 
@@ -1774,12 +1772,14 @@ function buildHeroCardHTML(featured, bg) {
       <div class="hero-counter-top">${_heroIndex + 1} / ${_heroSlides.length}</div>` : '';
 
   // Per-anime title tint: AniList's coverImage.color (its extracted palette
-  // accent) feeding a diagonal gradient into white, same technique as
-  // Miruro's per-slide --home-carousel-title-color/-gradient vars. Falls
-  // back to plain white when a series has no extracted color.
+  // accent) feeding a diagonal gradient into a dark tone, same technique as
+  // Miruro's per-slide title-color vars. Falls back to plain dark text when
+  // a series has no extracted color. (Gradient end used to be white, which
+  // matched the old dark scrim — now that the scrim is a light wash, that
+  // end has to be dark instead or the tail of the title fades into invisible.)
   const titleColor = m.coverImage?.color;
   const titleStyle = titleColor
-    ? ` style="background-image:linear-gradient(45deg, ${titleColor}, #ffffff);-webkit-background-clip:text;background-clip:text;color:transparent;"`
+    ? ` style="background-image:linear-gradient(45deg, ${titleColor}, #14171f);-webkit-background-clip:text;background-clip:text;color:transparent;"`
     : '';
 
   return `
@@ -1879,23 +1879,30 @@ function schedDate(offset) {
   return d;
 }
 
-// Breadcrumb trail of the two days leading up to the selected day, ending on
-// a large bold treatment for the selected day itself.
+// Full calendar week (Sunday → Saturday) for the week containing the
+// selected day — matches Miruro's schedule layout. Row order is always
+// fixed (Sun first, Sat last); only which item gets the large/bold "active"
+// treatment (and a real date underneath it) changes as you pick a day.
 function buildDayCrumb() {
   const wrap = document.getElementById('day-tabs');
   if (!wrap) return;
-  const trailOffsets = [_scheduleOffset - 2, _scheduleOffset - 1, _scheduleOffset];
+  const activeWeekday = schedWeekday(_scheduleOffset);      // 0=Sun..6=Sat
+  const weekStartOffset = _scheduleOffset - activeWeekday;  // this week's Sunday, as an offset from today
 
-  wrap.innerHTML = trailOffsets.map((offset, pos) => {
-    const isActive = pos === trailOffsets.length - 1;
-    const sep = pos > 0 ? '<span class="day-crumb-sep">/</span>' : '';
-    const dayIdx = schedWeekday(offset);
+  wrap.innerHTML = Array.from({ length: 7 }, (_, dayIdx) => {
+    const offset = weekStartOffset + dayIdx;
+    const isActive = offset === _scheduleOffset;
+    const sep = dayIdx > 0 ? '<span class="day-crumb-sep">/</span>' : '';
     if (!isActive) {
       return `${sep}<span class="day-crumb-item" onclick="selectScheduleDay(${offset})">${DAY_NAMES_FULL[dayIdx]}</span>`;
     }
     const dateLabel = schedDate(offset).toLocaleDateString(undefined, { month: 'long', day: 'numeric' });
     return `${sep}<span class="day-crumb-item active" onclick="selectScheduleDay(${offset})">${DAY_NAMES_FULL[dayIdx]}<span class="day-crumb-date">${dateLabel}</span></span>`;
   }).join('');
+
+  // Keep the active day scrolled into view (relevant on mobile where the
+  // full week can overflow the viewport width).
+  wrap.querySelector('.day-crumb-item.active')?.scrollIntoView({ inline: 'center', block: 'nearest' });
 }
 
 function syncQuickPillActive() {
