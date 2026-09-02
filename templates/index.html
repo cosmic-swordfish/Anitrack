@@ -2128,11 +2128,40 @@ async function loadDiff() {
 }
 async function autoSync() {
   hap(10);
-  setSyncError(""); setSyncSpinner(true,"Syncing all…"); setSyncStatus("Running auto sync…");
+  setSyncError(""); setSyncSpinner(true,"Comparing lists…"); setSyncStatus("Running auto sync…");
+  const AUTO_SYNC_BATCH_SIZE = 5; // keep each request well under serverless timeouts
   try {
-    const res=await fetch(`/api/sync/auto?username=${encodeURIComponent(ANILIST_USERNAME)}`,{method:"POST"}); const json=await res.json();
-    if(json.error) throw new Error(json.error);
-    setSyncStatus(`✓ Synced ${json.synced} item${json.synced!==1?"s":""}`);
+    // Get a fresh diff first, rather than letting the server loop over
+    // everything in one long-running request (that's what used to time out
+    // near the end of big syncs).
+    const diffRes = await fetch(`/api/sync/diff?username=${encodeURIComponent(ANILIST_USERNAME)}`);
+    const diffJson = await diffRes.json();
+    if (diffJson.error) throw new Error(diffJson.error);
+    const actionable = (diffJson.diffs || []).filter(d =>
+      ["add_to_mal", "update", "only_on_mal"].includes(d.action) && d.malId
+    );
+    if (!actionable.length) {
+      setSyncStatus("✓ Everything is already in sync");
+      await loadDiff();
+      return;
+    }
+    let synced = 0, failed = 0;
+    for (let i = 0; i < actionable.length; i += AUTO_SYNC_BATCH_SIZE) {
+      const batch = actionable.slice(i, i + AUTO_SYNC_BATCH_SIZE);
+      setSyncSpinner(true, `Syncing ${Math.min(i + batch.length, actionable.length)} / ${actionable.length}…`);
+      const res = await fetch("/api/sync/apply", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items: batch })
+      });
+      const json = await res.json();
+      if (json.error) throw new Error(json.error);
+      for (const r of (json.results || [])) {
+        if (r.mal_ok) synced++; else failed++;
+      }
+      setSyncStatus(`Synced ${synced} / ${actionable.length}${failed ? ` (${failed} failed)` : ""}…`);
+    }
+    setSyncStatus(`✓ Synced ${synced} item${synced!==1?"s":""}${failed?` — ${failed} failed, you can retry those individually below`:""}`);
     await loadDiff();
   } catch(err){setSyncError(err.message);setSyncSpinner(false);}
 }
